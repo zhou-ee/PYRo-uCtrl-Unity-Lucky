@@ -79,7 +79,7 @@ class rc_drv_t
     TaskHandle_t _rc_task_handle{};
     ///< Handle for the FreeRTOS processing task.
     uart_drv_t *_rc_uart; ///< Pointer to the underlying UART driver instance.
-    uint8_t _priority{};  ///< Priority of the associated FreeRTOS task.
+    uint8_t _priority{};  
 };
 } // namespace pyro
 

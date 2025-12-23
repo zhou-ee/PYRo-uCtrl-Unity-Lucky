@@ -101,6 +101,7 @@ add_executable(${CMAKE_PROJECT_NAME}
 
         PYRo/Algorithm/OLS/pyro_algo_ols.cpp
         PYRo/Algorithm/PID/pyro_algo_pid.cpp
+        PYRo/Algorithm/Common/pyro_common.cpp
 
         PYRo/Component/RC/pyro_rc_base_drv.cpp
         PYRo/Component/RC/pyro_vt03_rc_drv.cpp
@@ -138,6 +139,7 @@ add_executable(${CMAKE_PROJECT_NAME}
 
         PYRo/Application/Mission/pyro_mission_planer.cpp
         PYRo/Application/Mission/pyro_init_thread.cpp
+        PYRo/Application/pyro_chassis.cpp
         PYRo/Component/Referee/CRC8_CRC16.c
         PYRo/Component/Referee/fifo.c
         PYRo/Component/Referee/referee.c
@@ -180,7 +182,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Algorithm/OLS
         PYRo/Algorithm/PID
         PYRo/Algorithm/Kinematics
-
+        PYRo/Algorithm/Common
+        
         PYRo/Component/RC
         PYRo/Component/Motor
 
@@ -208,5 +211,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         stm32cubemx
         CMSISDSP
         dsppp_lib
-        m
+        
 )
