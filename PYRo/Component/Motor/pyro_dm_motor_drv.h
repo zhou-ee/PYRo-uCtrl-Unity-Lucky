@@ -24,6 +24,7 @@ class dm_motor_drv_t : public motor_base_t // MIT only
 
     status_t enable() override;
     status_t disable() override;
+    status_t clear_error();
 
     status_t update_feedback() override;
     status_t send_torque(float torque) override;

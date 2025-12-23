@@ -1,52 +1,93 @@
 cmake_minimum_required(VERSION 3.22)
 
-#
-# This file is generated only once,
-# and is not re-generated if converter is called multiple times.
-#
-# User is free to modify the file as much as necessary
-#
+# ==============================================================================
+# 1. 编译器检测配置 (必须放在 project 命令之前)
+# ==============================================================================
+set(CMAKE_SYSTEM_NAME Generic)
+# 解决 _exit/_sbrk 缺失导致的 CMake 配置失败
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-# Setup compiler settings
+include(cmake/gcc-arm-none-eabi.cmake)
+
+# ==============================================================================
+# 2. 项目定义
+# ==============================================================================
+set(CMAKE_PROJECT_NAME PYRo)
+project(${CMAKE_PROJECT_NAME} C CXX ASM)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+
+# ==============================================================================
+# 3. 硬件架构与编译优化 (STM32H723)
+# ==============================================================================
 set(CPU_FLAGS
-    "-mcpu=cortex-m7"
-    "-mthumb"
-    "-mfpu=fpv5-d16"
-    "-mfloat-abi=hard"
+        "-mcpu=cortex-m7"
+        "-mthumb"
+        "-mfpu=fpv5-d16"
+        "-mfloat-abi=hard"
 )
 
-#add_compile_options(
-#    ${CPU_FLAGS}
-#    "-Ofast"
-#    "-Wdouble-promotion"
-#    "-funsafe-math-optimizations"
-#    "-Wall"
-#)
+add_compile_options(
+        ${CPU_FLAGS}
+        "-Ofast"
+        "-Wdouble-promotion"
+        "-funsafe-math-optimizations"
+        "-Wall"
+        "-fdata-sections"
+        "-ffunction-sections"
+)
 
-# Define the build type
+# 【关键修改】这里移除了 --specs=nano.specs 和 --specs=nosys.specs
+# 因为 add_subdirectory(cmake/stm32cubemx) 内部已经添加了它们。
+# 重复添加会导致 "attempt to rename spec 'link'" 错误。
+add_link_options(
+        ${CPU_FLAGS}
+        "-Wl,--gc-sections"
+        "-Wl,-Map=${CMAKE_PROJECT_NAME}.map"
+        "-Wl,--print-memory-usage"
+)
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
-
-# Set the project name
-set(CMAKE_PROJECT_NAME PYRo)
-
-include(cmake/gcc-arm-none-eabi.cmake)
-# Enable compile command to ease indexing with e.g. clangd
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
-
-# Core project settings
-project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
-# Enable CMake support for ASM and C languages
-enable_language(C ASM)
+# ==============================================================================
+# 4. CMSIS-DSP & dsppp 库引入
+# ==============================================================================
+set(DSP_REPO "${CMAKE_CURRENT_SOURCE_DIR}/Ported_third_lib/CMSIS-DSP")
 
-# Create an executable object type
+add_compile_definitions(
+        ARM_MATH_CM7
+        __FPU_PRESENT=1
+        ARM_MATH_LOOPUNROLL
+)
+
+set(CMSISDSP_BUILD_EXAMPLES OFF CACHE BOOL "Disable examples" FORCE)
+
+# 添加 CMSIS-DSP 子工程
+add_subdirectory(${DSP_REPO} build_cmsis_dsp)
+
+# 【关键保留】手动修复 CMSIS-Core 路径，解决 arm_math_types.h 找不到 cmsis_compiler.h 的问题
+target_include_directories(CMSISDSP PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/Include"
+)
+
+# 配置 dsppp 接口
+add_library(dsppp_lib INTERFACE)
+target_include_directories(dsppp_lib INTERFACE
+        ${DSP_REPO}/dsppp/Include
+        ${DSP_REPO}/Include
+)
+
+# ==============================================================================
+# 5. 源文件配置
+# ==============================================================================
 add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Core/Memory/pyro_core_mem.cpp
         PYRo/Core/Memory/pyro_core_dma_heap.c
@@ -84,7 +125,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Component/Shoot/pyro_trigger_drv.cpp
         PYRo/Component/Shoot/pyro_shoot_base.cpp
         PYRo/Component/Shoot/pyro_shoot_17mm_control.cpp
-        
         PYRo/Application/Demo/pyro_rc_demo.cpp
         PYRo/Application/Demo/demo_task.cpp
         PYRo/Application/Demo/pyro_motor_demo.cpp
@@ -98,7 +138,6 @@ add_executable(${CMAKE_PROJECT_NAME}
 
         PYRo/Application/Mission/pyro_mission_planer.cpp
         PYRo/Application/Mission/pyro_init_thread.cpp
-        PYRo/Application/pyro_chassis.cpp
         PYRo/Component/Referee/CRC8_CRC16.c
         PYRo/Component/Referee/fifo.c
         PYRo/Component/Referee/referee.c
@@ -119,71 +158,55 @@ add_executable(${CMAKE_PROJECT_NAME}
 
 )
 
-# Add STM32CubeMX generated sources
+# Add STM32CubeMX generated sources (这会自动引入 specs 文件)
 add_subdirectory(cmake/stm32cubemx)
 
-# Link directories setup
-target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined library search paths
-
-)
-
-# Add sources to executable
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user sources here
-)
-
-# Add include paths
+# ==============================================================================
+# 6. 包含路径与链接
+# ==============================================================================
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-    # Add user defined include paths
-    PYRo/Core/Def
-    PYRo/Core/Memory
-    PYRo/Core/Config
-    PYRo/Core/ETL
-    PYRo/Core/Lock
-    PYRo/Core/FSM
+        # Add user defined include paths
+        PYRo/Core/Def
+        PYRo/Core/Memory
+        PYRo/Core/Config
+        PYRo/Core/ETL
+        PYRo/Core/Lock
+        PYRo/Core/FSM
 
-    PYRo/Peripheral/UART
-    PYRo/Peripheral/CAN
-    PYRo/Peripheral/DWT
+        PYRo/Peripheral/UART
+        PYRo/Peripheral/CAN
+        PYRo/Peripheral/DWT
 
-    PYRo/Algorithm/OLS
-    PYRo/Algorithm/PID
-    PYRo/Algorithm/Kinematics
+        PYRo/Algorithm/OLS
+        PYRo/Algorithm/PID
+        PYRo/Algorithm/Kinematics
 
-    PYRo/Component/RC
-    PYRo/Component/Motor
+        PYRo/Component/RC
+        PYRo/Component/Motor
 
-    PYRo/Component/CRC
-    PYRo/Component/Shoot
-    PYRo/Component/IMU
-    PYRo/Component/Referee
-    PYRo/Component/Powermeter
-    PYRo/Component/Powercontrol
+        PYRo/Component/CRC
+        PYRo/Component/Shoot
+        PYRo/Component/IMU
+        PYRo/Component/Referee
+        PYRo/Component/Powermeter
+        PYRo/Component/Powercontrol
 
-    PYRo/Application/Demo
+        PYRo/Application/Demo
 
-    PYRo/Debug/VOFA
+        PYRo/Debug/VOFA
 
-    PYRo/Moudle/Chassis
-    PYRo/Moudle/Chassis/Mecanum
-    PYRo/Moudle/Chassis/Rudder
-    PYRo/Moudle/Chassis/Hybrid
-
-)
-
-# Add project symbols (macros)
-target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined symbols
+        PYRo/Moudle/Chassis
+        PYRo/Moudle/Chassis/Mecanum
+        PYRo/Moudle/Chassis/Rudder
+        PYRo/Moudle/Chassis/Hybrid
 
 )
 
-# Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
-# Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
-    stm32cubemx
-
-    # Add user defined libraries
+        stm32cubemx
+        CMSISDSP
+        dsppp_lib
+        m
 )
