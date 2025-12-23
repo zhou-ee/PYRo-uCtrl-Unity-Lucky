@@ -2,6 +2,7 @@
 #include "pyro_rc_hub.h"
 #include "pyro_dwt_drv.h"
 
+extern "C" void pyro_chassis(void* argument);
 extern "C"
 {
     pyro::can_drv_t *can1_drv;
@@ -35,6 +36,7 @@ extern "C"
         can2_drv->start();
         can3_drv->start();
 
+        xTaskCreate(pyro_chassis, "chassis", 256, nullptr, 1, nullptr);
         vTaskDelete(nullptr);
     }
 }
