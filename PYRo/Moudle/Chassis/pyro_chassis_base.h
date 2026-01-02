@@ -1,90 +1,95 @@
+/**
+ * @file pyro_chassis_base.h
+ * @brief Robot chassis base with callback-driven architecture.
+ * 基于回调驱动架构的机器人底盘基类。
+ */
+
 #ifndef __PYRO_CHASSIS_BASE_H__
 #define __PYRO_CHASSIS_BASE_H__
 
-#include "FreeRTOS.h"
+#include "pyro_core_fsm.h"
 #include "pyro_mutex.h"
-#include "task.h"
-
+#include "pyro_task.h"
 
 namespace pyro
 {
+
+/**
+ * @brief Base command structure.
+ * 基础命令结构。
+ */
+struct cmd_base_t
+{
+    enum class mode_t : uint8_t { ZERO_FORCE, ACTIVE } mode;
+    uint32_t timestamp;
+    float vx, vy, wz;
+    cmd_base_t() : mode(mode_t::ZERO_FORCE), timestamp(0),
+                   vx(0), vy(0), wz(0) {}
+    virtual ~cmd_base_t() = default;
+};
+
+/**
+ * @brief CRTP Template for Chassis Base.
+ * 底盘基类的 CRTP 模板。
+ */
+template <typename Derived, typename CmdType>
 class chassis_base_t
 {
   public:
-    /**
-     * @brief Chassis Type Enumeration
-     * Defined inside the class for scope protection.
-     */
-    enum class type_t
+    static Derived *instance()
     {
-        UNKNOWN,
-        MECANUM,   // Mecanum wheel chassis
-        WHEEL_LEG, // Wheel-legged robot
-        OMNI,      // Omni wheel chassis
-        RUDDER     // Rudder wheel (Swerve) chassis
-    };
-
-    /**
-     * @brief Base Control Packet (The "Protocol")
-     * Nested structure defining the common interface data.
-     */
-    struct cmd_base_t
-    {
-        type_t type;        // Type tag for runtime safety checks
-        uint32_t timestamp; // Timestamp for timeout detection (ms/tick)
-
-        float vx; // Linear velocity X (m/s)
-        float vy; // Linear velocity Y (m/s)
-        float wz; // Angular velocity Z (rad/s)
-        // Yaw error for heading control (rad)
-        // if not followed gimbal yaw, set to 0
-
-
-        /**
-         * @brief Constructor with default initialization
-         * @param t Specific chassis type
-         */
-        explicit cmd_base_t(const type_t t = type_t::UNKNOWN)
-            : type(t), timestamp(0), vx(0.0f), vy(0.0f), wz(0.0f)
-        {
-        }
-        // Ensure virtual destructor for polymorphism
-        virtual ~cmd_base_t() = default;
-    };
-    virtual void init()                             = 0;
-    virtual void set_command(const cmd_base_t &cmd) = 0;
-    void thread();
-    virtual ~chassis_base_t() = default;
-    /**
-     * @brief Get the chassis type
-     * @return type_e Current chassis type
-     */
-    [[nodiscard]] type_t get_type() const
-    {
-        return _type;
+        static Derived _instance_obj; //NOLINT
+        return &_instance_obj;
     }
 
-    [[nodiscard]] mutex_t &get_mutex()
-    {
-        return _mutex;
-    }
-
-    TaskHandle_t _chassis_task_handle{};
+    void start();
+    void set_command(const CmdType &cmd);
+    [[nodiscard]] mutex_t &get_mutex();
 
   protected:
-    virtual void update_feedback()                  = 0;
-    virtual void kinematics_solve()                 = 0;
-    virtual void chassis_control()                  = 0;
-    virtual void power_control()                    = 0;
-    virtual void send_motor_command()               = 0;
+    explicit chassis_base_t(
+        const char *name = "chassis", uint16_t init_stack = 512,
+        uint16_t loop_stack = 256,
+        task_base_t::priority_t priority = task_base_t::priority_t::HIGH);
+
+    virtual ~chassis_base_t() = default;
+
+    /** @brief Callback for initialization. 初始化回调。 */
+    virtual void _init() = 0;
+
+    /** @brief Callback for sensor updates. 反馈更新回调。 */
+    virtual void _update_feedback() = 0;
+
+    /** @brief Callback for FSM execution. 状态机执行回调。 */
+    virtual void _fsm_execute() = 0;
+
+    CmdType _cmd[2];
+    uint8_t _read_index{0};
+
+  private:
+    class chassis_task_t final : public task_base_t
+    {
+      public:
+        chassis_task_t(chassis_base_t *owner_ptr, const char *name,
+                       uint16_t init_stack, uint16_t loop_stack,
+                       priority_t priority);
+      protected:
+        void init() override;
+        void run_loop() override;
+      private:
+        chassis_base_t *_owner;
+    };
+
+    void _update_command();
+    void _run_loop_impl();
+
+    chassis_task_t _task;
+    bool _cmd_updated{false};
     mutex_t _mutex;
-    TaskHandle_t _chassis_init_handle{};
-    chassis_base_t();
-    explicit chassis_base_t(type_t type);
-
-
-    // Protected member variables (prefixed with _)
-    type_t _type{};
 };
+
 } // namespace pyro
-#endif
+
+#include "pyro_chassis_base.tpp"
+
+#endif // __PYRO_CHASSIS_BASE_H__
