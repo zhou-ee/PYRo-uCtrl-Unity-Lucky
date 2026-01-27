@@ -24,9 +24,10 @@ static float _radps_to_rpm(const float radps)
 // =========================================================
 
 hybrid_chassis_t::hybrid_chassis_t()
-    : chassis_base_t("hybrid", 512, 512, task_base_t::priority_t::HIGH)
+    : module_base_t("hybrid")
 {
-    _ctx.data = {};
+    _ctx = {};
+    debug_data = {};
 }
 
 void hybrid_chassis_t::_init()

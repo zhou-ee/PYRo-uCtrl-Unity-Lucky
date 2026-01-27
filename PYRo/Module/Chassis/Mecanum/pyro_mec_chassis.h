@@ -6,7 +6,7 @@
 
 namespace pyro
 {
-class mec_chassis_t final : public chassis_base_t
+class mec_chassis_t final : public module_base_t
 {
   public:
     struct cmd_mec_t final : cmd_base_t
@@ -16,7 +16,7 @@ class mec_chassis_t final : public chassis_base_t
         }
         // Additional mecanum-specific command parameters can be added here
     };
-    mec_chassis_t() : chassis_base_t(type_t::MECANUM)
+    mec_chassis_t() : module_base_t(type_t::MECANUM)
     {
     }
     ~mec_chassis_t() override;
