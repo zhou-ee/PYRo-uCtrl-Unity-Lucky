@@ -105,8 +105,8 @@ add_executable(${CMAKE_PROJECT_NAME}
 #        PYRo/Component/Shoot/pyro_trigger_drv.cpp
 
         # --- Module ---
-        PYRo/Moudle/Chassis/Hybrid/pyro_hybrid_chassis.cpp
-        PYRo/Moudle/Chassis/pyro_chassis_base.cpp
+        PYRo/Module/Chassis/Hybrid/pyro_hybrid_chassis.cpp
+        PYRo/Module/pyro_module_base.cpp
 
         # --- Application ---
         PYRo/Application/Demo/demo_task.cpp
@@ -149,10 +149,11 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Core/Memory
         PYRo/Core/Task
         PYRo/Debug/VOFA
-        PYRo/Moudle/Chassis
-        PYRo/Moudle/Chassis/Hybrid
-        PYRo/Moudle/Chassis/Mecanum
-        PYRo/Moudle/Chassis/Rudder
+        PYRo/Module
+        PYRo/Module/Chassis
+        PYRo/Module/Chassis/Hybrid
+        PYRo/Module/Chassis/Mecanum
+        PYRo/Module/Chassis/Rudder
         PYRo/Peripheral/CAN
         PYRo/Peripheral/DWT
         PYRo/Peripheral/UART

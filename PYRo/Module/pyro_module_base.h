@@ -1,11 +1,24 @@
 /**
- * @file pyro_chassis_base.h
- * @brief Robot chassis base with callback-driven architecture.
- * 基于回调驱动架构的机器人底盘基类。
+ * @file pyro_module_base.h
+ * @brief Header file for the PYRO Module Base Class.
+ * PYRO 模块基类头文件。
+ *
+ * This file defines the `pyro::module_base_t` class template, which serves as
+ * the foundation for robot modules. It utilizes the Curiously Recurring
+ * Template Pattern (CRTP) to provide a type-safe singleton mechanism (via the
+ * `instance()` method) and a callback-driven architecture, combining static
+ * type resolution with dynamic FSM execution.
+ * 本文件定义了 `pyro::module_base_t` 类模板，作为机器人模块的基础。
+ * 它利用奇异递归模板模式 (CRTP) 提供了类型安全的单例机制（通过 `instance()` 方法）
+ * 和基于回调驱动的架构，结合了静态类型解析与动态状态机执行。
+ *
+ * @author Lucky
+ * @version 1.0.0
+ * @date 2026-01-28
  */
 
-#ifndef __PYRO_CHASSIS_BASE_H__
-#define __PYRO_CHASSIS_BASE_H__
+#ifndef __PYRO_MODULE_BASE_H__
+#define __PYRO_MODULE_BASE_H__
 
 #include "pyro_core_fsm.h"
 #include "pyro_mutex.h"
@@ -22,18 +35,16 @@ struct cmd_base_t
 {
     enum class mode_t : uint8_t { ZERO_FORCE, ACTIVE } mode;
     uint32_t timestamp;
-    float vx, vy, wz;
-    cmd_base_t() : mode(mode_t::ZERO_FORCE), timestamp(0),
-                   vx(0), vy(0), wz(0) {}
+    cmd_base_t() : mode(mode_t::ZERO_FORCE), timestamp(0){}
     virtual ~cmd_base_t() = default;
 };
 
 /**
- * @brief CRTP Template for Chassis Base.
- * 底盘基类的 CRTP 模板。
+ * @brief CRTP Template for Module Base.
+ * 模块基类的 CRTP 模板。
  */
 template <typename Derived, typename CmdType>
-class chassis_base_t
+class module_base_t
 {
   public:
     static Derived *instance()
@@ -47,12 +58,12 @@ class chassis_base_t
     [[nodiscard]] mutex_t &get_mutex();
 
   protected:
-    explicit chassis_base_t(
-        const char *name = "chassis", uint16_t init_stack = 512,
+    explicit module_base_t(
+        const char *name = "module_task", uint16_t init_stack = 512,
         uint16_t loop_stack = 256,
         task_base_t::priority_t priority = task_base_t::priority_t::HIGH);
 
-    virtual ~chassis_base_t() = default;
+    virtual ~module_base_t() = default;
 
     /** @brief Callback for initialization. 初始化回调。 */
     virtual void _init() = 0;
@@ -67,29 +78,29 @@ class chassis_base_t
     uint8_t _read_index{0};
 
   private:
-    class chassis_task_t final : public task_base_t
+    class module_task_t final : public task_base_t
     {
       public:
-        chassis_task_t(chassis_base_t *owner_ptr, const char *name,
+        module_task_t(module_base_t *owner_ptr, const char *name,
                        uint16_t init_stack, uint16_t loop_stack,
                        priority_t priority);
       protected:
         void init() override;
         void run_loop() override;
       private:
-        chassis_base_t *_owner;
+        module_base_t *_owner;
     };
 
     void _update_command();
     void _run_loop_impl();
 
-    chassis_task_t _task;
+    module_task_t _task;
     bool _cmd_updated{false};
     mutex_t _mutex;
 };
 
 } // namespace pyro
 
-#include "pyro_chassis_base.tpp"
+#include "pyro_module_base.tpp"
 
-#endif // __PYRO_CHASSIS_BASE_H__
+#endif

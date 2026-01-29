@@ -2,7 +2,7 @@
 #define __PYRO_HYBRID_CHASSIS_H__
 
 #include "pyro_algo_pid.h"
-#include "pyro_chassis_base.h"
+#include "pyro_module_base.h"
 #include "pyro_dji_motor_drv.h"
 #include "pyro_dm_motor_drv.h"
 #include "pyro_kin_hybrid.h"
@@ -20,11 +20,11 @@ struct hybrid_cmd_t : cmd_base_t
     hybrid_kin_t::drive_mode_t drive_mode;
     uint8_t leg_contract_mode;
     uint8_t jump_mode;
-    float wy;
+    float vx,vy,wz,wy;
 
     hybrid_cmd_t()
         : drive_mode(hybrid_kin_t::drive_mode_t::CRUISING),
-          leg_contract_mode(0), jump_mode(0), wy(0)
+          leg_contract_mode(0), jump_mode(0), vx(0), vy(0), wz(0), wy(0)
     {
     }
 };
@@ -33,7 +33,7 @@ struct hybrid_cmd_t : cmd_base_t
 // 2. 混合底盘类
 // =========================================================
 class hybrid_chassis_t final
-    : public chassis_base_t<hybrid_chassis_t, hybrid_cmd_t>
+    : public module_base_t<hybrid_chassis_t, hybrid_cmd_t>
 {
 
     // 前向声明
