@@ -8,6 +8,8 @@ extern "C"
     pyro::can_drv_t *can2_drv;
     pyro::can_drv_t *can3_drv;
 
+    extern void pyro_app_init_thread(void *argument);
+
     void pyro_init_thread(void *argument)
     {
         pyro::dwt_drv_t::init(480); // Initialize DWT at 480 MHz
@@ -34,6 +36,9 @@ extern "C"
         can1_drv->start();
         can2_drv->start();
         can3_drv->start();
+
+        xTaskCreate(pyro_app_init_thread, "pyro_app_init_thread", 512,
+                    nullptr, configMAX_PRIORITIES - 1, nullptr);
 
         vTaskDelete(nullptr);
     }

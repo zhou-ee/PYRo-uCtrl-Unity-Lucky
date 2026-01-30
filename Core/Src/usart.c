@@ -179,10 +179,10 @@ void MX_USART10_UART_Init(void)
 
   /* USER CODE END USART10_Init 1 */
   huart10.Instance = USART10;
-  huart10.Init.BaudRate = 115200;
-  huart10.Init.WordLength = UART_WORDLENGTH_8B;
+  huart10.Init.BaudRate = 100000;
+  huart10.Init.WordLength = UART_WORDLENGTH_9B;
   huart10.Init.StopBits = UART_STOPBITS_1;
-  huart10.Init.Parity = UART_PARITY_NONE;
+  huart10.Init.Parity = UART_PARITY_EVEN;
   huart10.Init.Mode = UART_MODE_TX_RX;
   huart10.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart10.Init.OverSampling = UART_OVERSAMPLING_16;
