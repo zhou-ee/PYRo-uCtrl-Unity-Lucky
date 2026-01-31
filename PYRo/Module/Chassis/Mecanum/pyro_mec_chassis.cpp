@@ -35,10 +35,10 @@ void mec_chassis_t::_init()
     _kinematics = new mecanum_kin_t(WHEELBASE, TRACK_WIDTH);
 
     // 2. 初始化电机 (假设使用 M3508，CAN1, ID 1-4)
-    _ctx.motor.wheels[0] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_1, can_hub_t::can2); // FL
-    _ctx.motor.wheels[1] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_2, can_hub_t::can2); // FR
-    _ctx.motor.wheels[2] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_3, can_hub_t::can2); // BL
-    _ctx.motor.wheels[3] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_4, can_hub_t::can2); // BR
+    _ctx.motor.wheels[0] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_1, can_hub_t::can1); // FL
+    _ctx.motor.wheels[1] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_2, can_hub_t::can1); // FR
+    _ctx.motor.wheels[2] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_3, can_hub_t::can1); // BL
+    _ctx.motor.wheels[3] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_4, can_hub_t::can1); // BR
 
     // 3. 初始化 PID (参数需根据实际负载调整，这里使用经验值)
     // KPI, KII, KDI, IntegMax, OutMax, ...
