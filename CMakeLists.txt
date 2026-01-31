@@ -137,6 +137,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Module/Gimbal/Hero/Direct/fsm/pyro_direct_active_state.cpp
         PYRo/Module/Gimbal/Hero/Direct/fsm/pyro_direct_passive_state.cpp
         PYRo/Comunication/pyro_com_cantx.cpp
+        PYRo/Comunication/pyro_com_canrx.cpp
 )
 
 add_subdirectory(cmake/stm32cubemx)
