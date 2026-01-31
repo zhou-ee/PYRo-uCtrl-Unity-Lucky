@@ -60,12 +60,15 @@ using namespace pyro;
 #define ROTATE_DIR 1//0 means positive, 1 means negative
 #endif 
 
+float test_gyro[3];
+float test_accl[3];
+float test_q[4];
 // Define static TaskHandle_t declared in pyro::ins_drv_t
 TaskHandle_t pyro::ins_drv_t::_ins_task_handle = nullptr;
 
 status_t ins_drv_t::init()
 {
-    for(uint16_t count = 0; BMI088_init(&hspi2, IMU_CALIGRATION_EN) != BMI088_NO_ERROR && count < 10; count++)
+    for(uint16_t count = 0; BMI088_init(&hspi2, IMU_CALIGRATION_EN, &imu_data) != BMI088_NO_ERROR && count < 10; count++)
     {
        if(count >= 255) 
        {
@@ -96,7 +99,7 @@ void ins_drv_t::__static_ins_task(void* argument)
 void ins_drv_t::__ins_task()
 {
     _dwt_cnt = 0;
-    IMU_QuaternionEKF_Init(10, 0.001, 10000000, 1, 0);
+    IMU_QuaternionEKF_Init(10, 0.001, 10000000, 0.9996, 0);
 
     while(1)
     {
@@ -110,8 +113,17 @@ void ins_drv_t::__ins_task()
         _gyro_b[Y] = imu_data.Gyro[IMU_Y];
         _gyro_b[Z] = imu_data.Gyro[IMU_Z];
         
-        // IMU_QuaternionEKF_Update(_gyro_b[X], _gyro_b[Y], _gyro_b[Z], _acc_b[X], _acc_b[Y], _acc_b[Z], _dt);
+        test_gyro[X] = _gyro_b[X];
+        test_gyro[Y] = _gyro_b[Y];
+        test_gyro[Z] = _gyro_b[Z];
+        test_accl[X] = _acc_b[X];
+        test_accl[Y] = _acc_b[Y];
+        test_accl[Z] = _acc_b[Z];
+        
+        IMU_QuaternionEKF_Update(_gyro_b[X], _gyro_b[Y], _gyro_b[Z], _acc_b[X], _acc_b[Y], _acc_b[Z], _dt);
         memcpy(_q, QEKF_INS.q, sizeof(QEKF_INS.q));
+        memcpy(test_q, QEKF_INS.q, sizeof(QEKF_INS.q));
+
 
         _angle_n[X] = QEKF_INS.Roll;
         _angle_n[Y] = QEKF_INS.Pitch;

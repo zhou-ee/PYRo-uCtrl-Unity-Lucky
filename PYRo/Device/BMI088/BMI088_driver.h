@@ -34,10 +34,10 @@
 
 // Calibration values for different IDs
 #if ROBOT_ID == TEST_ROBOT_ID
-#define GxOFFSET 0.00247530174f
-#define GyOFFSET 0.000393082853f
-#define GzOFFSET 0.000393082853f
-#define gNORM 9.69293118f
+#define GxOFFSET 0.00354574085f
+#define GyOFFSET -0.00186899537f
+#define GzOFFSET -0.00250086933f
+#define gNORM 9.79719925f
 #elif ROBOT_ID == HERO_ID
 #define GxOFFSET 0.00247530174f
 #define GyOFFSET 0.000393082853f
@@ -133,8 +133,7 @@ enum
     BMI088_NO_SENSOR = 0xFF,
 };
 
-void BMI088_Init(SPI_HandleTypeDef *bmi088_SPI, uint8_t calibrate);
-extern uint8_t BMI088_init(SPI_HandleTypeDef *bmi088_SPI, uint8_t calibrate);
+extern uint8_t BMI088_init(SPI_HandleTypeDef *bmi088_SPI, uint8_t calibrate, IMU_Data_t* imu_data);
 extern uint8_t bmi088_accel_init(void);
 extern uint8_t bmi088_gyro_init(void);
 

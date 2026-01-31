@@ -108,15 +108,9 @@ static uint8_t write_BMI088_gyro_reg_data_error[BMI088_WRITE_GYRO_REG_NUM][3] =
 
 static void Calibrate_MPU_Offset(IMU_Data_t *bmi088);
 
-void BMI088_Init(SPI_HandleTypeDef *bmi088_SPI, uint8_t calibrate)
-{
-    while (BMI088_init(bmi088_SPI, calibrate))
-    {
-        ;
-    }
-}
 
-uint8_t BMI088_init(SPI_HandleTypeDef *bmi088_SPI, uint8_t calibrate)
+
+uint8_t BMI088_init(SPI_HandleTypeDef *bmi088_SPI, uint8_t calibrate, IMU_Data_t* imu_data)
 {
     BMI088_SPI = bmi088_SPI;
     error = BMI088_NO_ERROR;
@@ -124,15 +118,15 @@ uint8_t BMI088_init(SPI_HandleTypeDef *bmi088_SPI, uint8_t calibrate)
     error |= bmi088_accel_init();
     error |= bmi088_gyro_init();
     if (calibrate)
-        Calibrate_MPU_Offset(&BMI088);
+        Calibrate_MPU_Offset(imu_data);
     else
     {
-        BMI088.GyroOffset[0] = GxOFFSET;
-        BMI088.GyroOffset[1] = GyOFFSET;
-        BMI088.GyroOffset[2] = GzOFFSET;
-        BMI088.gNorm = gNORM;
-        BMI088.AccelScale = 9.81f / BMI088.gNorm;
-        BMI088.TempWhenCali = 40;
+        imu_data->GyroOffset[0] = GxOFFSET;
+        imu_data->GyroOffset[1] = GyOFFSET;
+        imu_data->GyroOffset[2] = GzOFFSET;
+        imu_data->gNorm = gNORM;
+        imu_data->AccelScale = 9.81f / imu_data->gNorm;
+        imu_data->TempWhenCali = 40;
     }
 
     return error;
