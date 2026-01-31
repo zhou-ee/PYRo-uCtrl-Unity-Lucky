@@ -11,9 +11,13 @@ using namespace pyro;
 #define IMU_DIRECT_2 2
 #define IMU_DIRECT_3 3
 #define IMU_DIRECT_4 4
+#define IMU_DIRECT_5 5
+#define IMU_DIRECT_6 6
+#define IMU_DIRECT_7 7
+#define IMU_DIRECT_8 8
 
 #if ROBOT_ID == TEST_ROBOT_ID
-#define IMU_DIRECT IMU_DIRECT_1
+#define IMU_DIRECT IMU_DIRECT_8
 #elif ROBOT_ID == HERO_ID
 #define IMU_DIRECT IMU_DIRECT_1
 #elif ROBOT_ID == SUB_HERO_ID
@@ -42,22 +46,59 @@ using namespace pyro;
 #define IMU_X 0
 #define IMU_Y 1
 #define IMU_Z 2
-#define ROTATE_DIR 0//0 means positive, 1 means negative
+#define X_DIR 0//0 means positive, 1 means negative
+#define Y_DIR 0
+#define Z_DIR 0
 #elif IMU_DIRECT == IMU_DIRECT_2
 #define IMU_X 1
 #define IMU_Y 0
 #define IMU_Z 2
-#define ROTATE_DIR 1//0 means positive, 1 means negative
+#define X_DIR 0//0 means positive, 1 means negative
+#define Y_DIR 1
+#define Z_DIR 0
 #elif IMU_DIRECT == IMU_DIRECT_3
 #define IMU_X 0
-#define IMU_Y 2
-#define IMU_Z 1
-#define ROTATE_DIR 0//0 means positive, 1 means negative
+#define IMU_Y 1
+#define IMU_Z 2
+#define X_DIR 1//0 means positive, 1 means negative
+#define Y_DIR 1
+#define Z_DIR 0
 #elif IMU_DIRECT == IMU_DIRECT_4
 #define IMU_X 1
-#define IMU_Y 2
-#define IMU_Z 0
-#define ROTATE_DIR 1//0 means positive, 1 means negative
+#define IMU_Y 0
+#define IMU_Z 2
+#define X_DIR 1//0 means positive, 1 means negative
+#define Y_DIR 0
+#define Z_DIR 0
+#elif IMU_DIRECT == IMU_DIRECT_5
+#define IMU_X 0
+#define IMU_Y 1
+#define IMU_Z 2
+#define X_DIR 0//0 means positive, 1 means negative
+#define Y_DIR 1
+#define Z_DIR 1
+#elif IMU_DIRECT == IMU_DIRECT_6
+#define IMU_X 1
+#define IMU_Y 0
+#define IMU_Z 2
+#define X_DIR 1//0 means positive, 1 means negative
+#define Y_DIR 1
+#define Z_DIR 1
+#elif IMU_DIRECT == IMU_DIRECT_7
+#define IMU_X 0
+#define IMU_Y 1
+#define IMU_Z 2
+#define X_DIR 1//0 means positive, 1 means negative
+#define Y_DIR 0
+#define Z_DIR 1
+#elif IMU_DIRECT == IMU_DIRECT_8
+#define IMU_X 1
+#define IMU_Y 0
+#define IMU_Z 2
+#define X_DIR 0//0 means positive, 1 means negative
+#define Y_DIR 0
+#define Z_DIR 1
+
 #endif 
 
 float test_gyro[3];
@@ -106,12 +147,36 @@ void ins_drv_t::__ins_task()
         _dt = dwt_drv_t::get_delta_t(&_dwt_cnt);
         _t += _dt;
         BMI088_Read(&imu_data);
-        _acc_b[X] = imu_data.Accel[IMU_X];
-        _acc_b[Y] = imu_data.Accel[IMU_Y];
-        _acc_b[Z] = imu_data.Accel[IMU_Z];
-        _gyro_b[X] = imu_data.Gyro[IMU_X];
-        _gyro_b[Y] = imu_data.Gyro[IMU_Y];
-        _gyro_b[Z] = imu_data.Gyro[IMU_Z];
+        if(X_DIR)
+        {
+            _acc_b[X] = -imu_data.Accel[IMU_X];
+            _gyro_b[X] = -imu_data.Gyro[IMU_X];
+        }
+        else
+        {
+            _acc_b[X] = imu_data.Accel[IMU_X];
+            _gyro_b[X] = imu_data.Gyro[IMU_X];
+        }
+        if(Y_DIR)
+        {
+            _acc_b[Y] = -imu_data.Accel[IMU_Y];
+            _gyro_b[Y] = -imu_data.Gyro[IMU_Y];
+        }
+        else
+        {
+            _acc_b[Y] = imu_data.Accel[IMU_Y];
+            _gyro_b[Y] = imu_data.Gyro[IMU_Y];
+        }
+        if(Z_DIR)
+        {
+            _acc_b[Z] = -imu_data.Accel[IMU_Z];
+            _gyro_b[Z] = -imu_data.Gyro[IMU_Z];
+        }
+        else
+        {
+            _acc_b[Z] = imu_data.Accel[IMU_Z];
+            _gyro_b[Z] = imu_data.Gyro[IMU_Z];
+        }
         
         test_gyro[X] = _gyro_b[X];
         test_gyro[Y] = _gyro_b[Y];
