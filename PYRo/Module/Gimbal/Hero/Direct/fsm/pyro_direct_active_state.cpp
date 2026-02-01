@@ -12,8 +12,8 @@ void direct_gimbal_t::state_active_t::enter(owner *owner)
 
 void direct_gimbal_t::state_active_t::execute(owner *owner)
 {
-    owner->_ctx.data.target_pitch_rad = owner->_ctx.cmd->pitch_delta_angle;
-    owner->_ctx.data.target_yaw_rad   = owner->_ctx.cmd->yaw_delta_angle;
+    owner->_ctx.data.target_pitch_rad += owner->_ctx.cmd->pitch_delta_angle;
+    owner->_ctx.data.target_yaw_rad   += owner->_ctx.cmd->yaw_delta_angle;
 
     _gimbal_control(&owner->_ctx);
 

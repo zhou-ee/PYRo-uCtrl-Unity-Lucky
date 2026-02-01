@@ -1,4 +1,5 @@
 #include "pyro_direct_gimbal.h"
+#include "pyro_ins.h"
 
 namespace pyro
 {
@@ -21,22 +22,22 @@ void direct_gimbal_t::_init()
     _ctx.motor.pitch = new dm_motor_drv_t(0x33, 0x43, can_hub_t::can1);
 
     // Yaw: 使用 DJI GM6020 (ID 2, CAN1)
-    _ctx.motor.yaw =
-        new dji_gm_6020_motor_drv_t(dji_motor_tx_frame_t::id_2, can_hub_t::can1);
+    _ctx.motor.yaw   = new dji_gm_6020_motor_drv_t(dji_motor_tx_frame_t::id_2,
+                                                   can_hub_t::can1);
 
     // 2. 配置 DM 电机范围 (DJI 电机无需配置)
     // NOLINTBEGIN(cppcoreguidelines-pro-type-static-cast-downcast)
     static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
         ->set_position_range(-PI, PI);
     static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
-        ->set_rotate_range(-PI, PI); // rad/s
+        ->set_rotate_range(-2.72, 2.72); // rad/s
     static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
-        ->set_torque_range(-10, 10); // Nm (DM单位通常为Nm)
+        ->set_torque_range(-27, 27); // Nm (DM单位通常为Nm)
     // NOLINTEND(cppcoreguidelines-pro-type-static-cast-downcast)
 
     // 3. 初始化串级 PID
     // Pitch 轴 (DM 电机通常响应较快，PID 参数可能需要重新整定)
-    _ctx.pid.pitch_pos = new pid_t(15.0f, 0.0f, 0.0f, 0.0f, 20.0f);
+    _ctx.pid.pitch_pos = new pid_t(10.0f, 0.0f, 0.0f, 0.0f, 20.0f);
     _ctx.pid.pitch_spd =
         new pid_t(1.2f, 0.05f, 0.0f, 5.0f, 10.0f); // 输出限制匹配 DM 电机 Nm 级
 
@@ -55,14 +56,22 @@ void direct_gimbal_t::_update_feedback()
     _ctx.motor.pitch->update_feedback();
     _ctx.motor.yaw->update_feedback();
 
-    // 2. 读取并应用偏置 (Feedback = Raw - Offset)
-    _ctx.data.current_pitch_rad =
-        _ctx.motor.pitch->get_current_position() - PITCH_OFFSET_RAD;
-    _ctx.data.current_pitch_radps = _ctx.motor.pitch->get_current_rotate();
+    ins_drv_t::get_instance()->get_angles_n(&_ctx.data.current_yaw_rad,
+                                            &_ctx.data.current_pitch_rad,
+                                            &_ctx.data.current_roll_rad);
 
-    _ctx.data.current_yaw_rad =
-        _ctx.motor.yaw->get_current_position() - YAW_OFFSET_RAD;
-    _ctx.data.current_yaw_radps = _ctx.motor.yaw->get_current_rotate();
+    ins_drv_t::get_instance()->get_gyro_b(&_ctx.data.current_yaw_radps,
+                                          &_ctx.data.current_pitch_radps,
+                                          &_ctx.data.current_roll_radps);
+
+    // // 2. 读取并应用偏置 (Feedback = Raw - Offset)
+    // _ctx.data.current_pitch_rad =
+    //     _ctx.motor.pitch->get_current_position() - PITCH_OFFSET_RAD;
+    // _ctx.data.current_pitch_radps = _ctx.motor.pitch->get_current_rotate();
+    //
+    // _ctx.data.current_yaw_rad =
+    //     _ctx.motor.yaw->get_current_position() - YAW_OFFSET_RAD;
+    // _ctx.data.current_yaw_radps = _ctx.motor.yaw->get_current_rotate();
 }
 
 void direct_gimbal_t::_gimbal_control(gimbal_context_t *ctx)

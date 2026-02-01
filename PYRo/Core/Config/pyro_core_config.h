@@ -38,7 +38,7 @@
 #define DARTS_ID 8
 #define RADAR_ID 9
 
-#define ROBOT_ID TEST_ROBOT_ID
+#define ROBOT_ID HERO_ID
 
 
 #endif //PYRO_PYRO_CORE_CONFIG_H

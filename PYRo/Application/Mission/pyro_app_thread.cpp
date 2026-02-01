@@ -20,12 +20,12 @@ extern "C"
         static auto *p_ctrl =
             static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);
 
-        // 1. 检查右侧开关状态，如果是 DOWN，则进入 ZERO_FORCE 模式
         if (pyro::dr16_drv_t::sw_state_t::SW_MID != p_ctrl->rc.s_r.state)
         {
             direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ZERO_FORCE;
             direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
             direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
+            return;
         }
         direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
         direct_gimbal_cmd_ptr->pitch_delta_angle = -p_ctrl->rc.ch_ly * 0.01f;
@@ -45,8 +45,8 @@ extern "C"
         static uint8_t active = 0;
 
         pyro::can_tx_drv_t::clear(0x101);
-        // 1. 检查左侧开关状态，如果是 DOWN，则进入 ZERO_FORCE 模式
-        if (pyro::dr16_drv_t::sw_state_t::SW_DOWN != p_ctrl->rc.s_l.state)
+
+        if (pyro::dr16_drv_t::sw_state_t::SW_MID != p_ctrl->rc.s_r.state)
         {
             vx     = 0;
             vy     = 0;
@@ -64,7 +64,7 @@ extern "C"
         vx     = static_cast<int8_t>(p_ctrl->rc.ch_ly * 127);
         vy     = static_cast<int8_t>(-p_ctrl->rc.ch_lx * 127);
         wz     = static_cast<int8_t>(-p_ctrl->rc.ch_rx * 127);
-        active = 1;
+        active = 0;
         pyro::can_tx_drv_t::add_data(0x101, 8, vx);
         pyro::can_tx_drv_t::add_data(0x101, 8, vy);
         pyro::can_tx_drv_t::add_data(0x101, 8, wz);
@@ -93,8 +93,8 @@ extern "C"
         // Initialize Hybrid Chassis
         // mec_chassis_ptr = pyro::mec_chassis_t::instance();
         // mec_cmd_ptr     = new pyro::mec_cmd_t();
-        direct_gimbal_ptr     = pyro::direct_gimbal_t::instance();
         direct_gimbal_cmd_ptr = new pyro::direct_gimbal_cmd_t();
+        direct_gimbal_ptr     = pyro::direct_gimbal_t::instance();
         rc_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
         xTaskCreate(start_app_thread, "start_app_thread", 128, nullptr,
