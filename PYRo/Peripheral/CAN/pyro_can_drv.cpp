@@ -242,7 +242,6 @@ void can_global_handle(FDCAN_HandleTypeDef *hfdcan, uint32_t identifier,
 }
 
 FDCAN_RxHeaderTypeDef rx_header;
-uint32_t a;
 extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan,
                                           uint32_t RxFifo0ITs)
 {
@@ -256,12 +255,7 @@ extern "C" void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan,
     if (FDCAN_FRAME_CLASSIC == rx_header.RxFrameType &&
         FDCAN_STANDARD_ID == rx_header.IdType)
     {
-        if (hfdcan == &hfdcan1)
-            a++;
-        else if (hfdcan == &hfdcan2)
-            a--;
-        else if (hfdcan == &hfdcan3)
-            a;
+
 
         can_global_handle(hfdcan, rx_header.Identifier, data);
     }
