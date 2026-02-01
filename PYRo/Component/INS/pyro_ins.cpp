@@ -107,6 +107,12 @@ float test_q[4];
 // Define static TaskHandle_t declared in pyro::ins_drv_t
 TaskHandle_t pyro::ins_drv_t::_ins_task_handle = nullptr;
 
+ins_drv_t* ins_drv_t::get_instance(void)
+{
+    static ins_drv_t instance;
+    return &instance;
+}
+
 status_t ins_drv_t::init()
 {
     for(uint16_t count = 0; BMI088_init(&hspi2, IMU_CALIGRATION_EN, &imu_data) != BMI088_NO_ERROR && count < 10; count++)
@@ -198,6 +204,18 @@ void ins_drv_t::__ins_task()
     }
 }
 
+status_t ins_drv_t::get_angles_b(float* yaw, float* pitch, float* roll)
+{
+    if(roll == nullptr || pitch == nullptr || yaw == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *roll = _angle_n[X];
+    *pitch = _angle_n[Y];
+    *yaw = _angle_n[Z];
+    return PYRO_OK;
+}
+
 status_t ins_drv_t::get_angles_n(float* yaw, float* pitch, float* roll)
 {
     if(roll == nullptr || pitch == nullptr || yaw == nullptr)
@@ -211,6 +229,18 @@ status_t ins_drv_t::get_angles_n(float* yaw, float* pitch, float* roll)
 }
 
 status_t ins_drv_t::get_gyro_b(float* g_yaw, float* g_pitch, float* g_roll)
+{
+    if(g_yaw == nullptr || g_pitch == nullptr || g_roll == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *g_roll = _gyro_b[X];
+    *g_pitch = _gyro_b[Y];
+    *g_yaw = _gyro_b[Z];
+    return PYRO_OK;
+}
+
+status_t ins_drv_t::get_gyro_n(float* g_yaw, float* g_pitch, float* g_roll)
 {
     if(g_yaw == nullptr || g_pitch == nullptr || g_roll == nullptr)
     {

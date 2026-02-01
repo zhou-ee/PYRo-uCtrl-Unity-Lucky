@@ -41,7 +41,7 @@ extern "C"
         can2_drv->start();
         can3_drv->start();
 
-        ins_drv = new ins_drv_t();
+        ins_drv = ins_drv_t::get_instance();
         ins_drv->init();
         while(1)
         {

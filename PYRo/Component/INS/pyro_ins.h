@@ -28,6 +28,7 @@ private:
     static void __static_ins_task(void *argument);
     
 public:
+    static ins_drv_t* get_instance(void);
     status_t init();
     status_t get_angles_b(float *yaw, float *pitch, float *roll);
     status_t get_angles_n(float *yaw, float *pitch, float *roll);
