@@ -78,7 +78,7 @@ void dr16_drv_t::disable()
 }
 
 
-/* Data Processing - Error Check ---------------------------------------------*/
+ /* Data Processing - Error Check ---------------------------------------------*/
 status_t dr16_drv_t::error_check(const dr16_buf_t *dr16_buf)
 {
     // Basic boundary validation for stick channels

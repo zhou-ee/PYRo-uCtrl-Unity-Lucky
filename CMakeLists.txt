@@ -136,8 +136,9 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Module/Gimbal/Hero/Direct/pyro_direct_gimbal.cpp
         PYRo/Module/Gimbal/Hero/Direct/fsm/pyro_direct_active_state.cpp
         PYRo/Module/Gimbal/Hero/Direct/fsm/pyro_direct_passive_state.cpp
-        PYRo/Comunication/pyro_com_cantx.cpp
-        PYRo/Comunication/pyro_com_canrx.cpp
+        PYRo/Communication/pyro_com_cantx.cpp
+        PYRo/Communication/pyro_com_canrx.cpp
+        PYRo/Module/Booster/Quad/pyro_quad_booster.cpp
 )
 
 add_subdirectory(cmake/stm32cubemx)
@@ -170,11 +171,12 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Module/Chassis/Hybrid
         PYRo/Module/Chassis/Mecanum
         PYRo/Module/Chassis/Rudder
-        PYRo/Module/Gimbal/Hero/Direct/
+        PYRo/Module/Gimbal/Hero/Direct
+        PYRo/Module/Booster/Quad
         PYRo/Peripheral/CAN
         PYRo/Peripheral/DWT
         PYRo/Peripheral/UART
-        PYRo/Comunication
+        PYRo/Communication
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
