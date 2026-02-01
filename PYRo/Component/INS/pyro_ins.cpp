@@ -101,9 +101,7 @@ using namespace pyro;
 
 #endif 
 
-float test_gyro[3];
-float test_accl[3];
-float test_q[4];
+
 // Define static TaskHandle_t declared in pyro::ins_drv_t
 TaskHandle_t pyro::ins_drv_t::_ins_task_handle = nullptr;
 
@@ -184,16 +182,10 @@ void ins_drv_t::__ins_task()
             _gyro_b[Z] = imu_data.Gyro[IMU_Z];
         }
         
-        test_gyro[X] = _gyro_b[X];
-        test_gyro[Y] = _gyro_b[Y];
-        test_gyro[Z] = _gyro_b[Z];
-        test_accl[X] = _acc_b[X];
-        test_accl[Y] = _acc_b[Y];
-        test_accl[Z] = _acc_b[Z];
+
         
         IMU_QuaternionEKF_Update(_gyro_b[X], _gyro_b[Y], _gyro_b[Z], _acc_b[X], _acc_b[Y], _acc_b[Z], _dt);
         memcpy(_q, QEKF_INS.q, sizeof(QEKF_INS.q));
-        memcpy(test_q, QEKF_INS.q, sizeof(QEKF_INS.q));
 
 
         _angle_n[X] = QEKF_INS.Roll;

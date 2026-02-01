@@ -4,9 +4,7 @@
 #include "pyro_ins.h"
 
 using namespace pyro;
-extern "C" void pyro_chassis(void* argument);
-float angle[3];
-float gyro[3];
+
 extern "C"
 {
     can_drv_t *can1_drv;
@@ -43,13 +41,7 @@ extern "C"
 
         ins_drv = ins_drv_t::get_instance();
         ins_drv->init();
-        while(1)
-        {
-            ins_drv->get_angles_n(&angle[0], &angle[1], &angle[2]);
-            ins_drv->get_gyro_b(&gyro[0], &gyro[1], &gyro[2]);
-            vTaskDelay(1);
-        }
-        // xTaskCreate(pyro_chassis, "chassis", 256, nullptr, 1, nullptr);
-        // vTaskDelete(nullptr);
+
+        vTaskDelete(nullptr);
     }
 }
