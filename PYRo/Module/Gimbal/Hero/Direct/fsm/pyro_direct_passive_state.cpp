@@ -12,6 +12,8 @@ void direct_gimbal_t::state_passive_t::enter(owner *owner)
     owner->_ctx.pid.pitch_spd->clear();
     owner->_ctx.pid.yaw_pos->clear();
     owner->_ctx.pid.yaw_spd->clear();
+
+    owner->_ctx.motor.pitch->disable();
 }
 
 void direct_gimbal_t::state_passive_t::execute(owner *owner)

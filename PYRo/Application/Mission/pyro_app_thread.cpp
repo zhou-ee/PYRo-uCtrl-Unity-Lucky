@@ -28,8 +28,8 @@ extern "C"
             return;
         }
         direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-        direct_gimbal_cmd_ptr->pitch_delta_angle = -p_ctrl->rc.ch_ly * 0.01f;
-        direct_gimbal_cmd_ptr->yaw_delta_angle   = p_ctrl->rc.ch_lx * 0.01f;
+        direct_gimbal_cmd_ptr->pitch_delta_angle = -p_ctrl->rc.ch_ry * 0.0035f;
+        direct_gimbal_cmd_ptr->yaw_delta_angle   = -p_ctrl->rc.ch_rx * 0.0035f;
     }
 
     void chassis_rc2cmd(void const *rc_ctrl)
@@ -63,8 +63,8 @@ extern "C"
         }
         vx     = static_cast<int8_t>(p_ctrl->rc.ch_ly * 127);
         vy     = static_cast<int8_t>(-p_ctrl->rc.ch_lx * 127);
-        wz     = static_cast<int8_t>(-p_ctrl->rc.ch_rx * 127);
-        active = 0;
+        wz     = 0;
+        active = 1;
         pyro::can_tx_drv_t::add_data(0x101, 8, vx);
         pyro::can_tx_drv_t::add_data(0x101, 8, vy);
         pyro::can_tx_drv_t::add_data(0x101, 8, wz);

@@ -19,11 +19,11 @@ void direct_gimbal_t::_init()
 
     // Pitch: 使用 DM 电机 (示例 ID: Master 0x11, Slave 0x21, CAN1)
     // 根据 hybrid 中的用法进行配置
-    _ctx.motor.pitch = new dm_motor_drv_t(0x33, 0x43, can_hub_t::can1);
+    _ctx.motor.pitch = new dm_motor_drv_t(0x33, 0x43, can_hub_t::can2);
 
     // Yaw: 使用 DJI GM6020 (ID 2, CAN1)
     _ctx.motor.yaw   = new dji_gm_6020_motor_drv_t(dji_motor_tx_frame_t::id_2,
-                                                   can_hub_t::can1);
+                                                   can_hub_t::can3);
 
     // 2. 配置 DM 电机范围 (DJI 电机无需配置)
     // NOLINTBEGIN(cppcoreguidelines-pro-type-static-cast-downcast)
@@ -42,8 +42,8 @@ void direct_gimbal_t::_init()
         new pid_t(1.2f, 0.05f, 0.0f, 5.0f, 10.0f); // 输出限制匹配 DM 电机 Nm 级
 
     // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
-    _ctx.pid.yaw_pos = new pid_t(10.0f, 0.0f, 0.0f, 0.0f, 10.0f);
-    _ctx.pid.yaw_spd = new pid_t(0.5f, 0.0f, 0.0f, 0.2f, 3.0f);
+    _ctx.pid.yaw_pos = new pid_t(5.2f, 0.01f, 0.22f, 0.8f, 5.0f);
+    _ctx.pid.yaw_spd = new pid_t(3.0f, 0.0003f, 0.0001f, 0.2f, 3.0f);
 }
 
 // =========================================================
@@ -56,15 +56,18 @@ void direct_gimbal_t::_update_feedback()
     _ctx.motor.pitch->update_feedback();
     _ctx.motor.yaw->update_feedback();
 
-    ins_drv_t::get_instance()->get_angles_n(&_ctx.data.current_yaw_rad,
-                                            &_ctx.data.current_pitch_rad,
-                                            &_ctx.data.current_roll_rad);
+
+    // 读取 IMU 数据作为云台姿态反馈
+    ins_drv_t::get_instance()->get_rads_n(&_ctx.data.current_yaw_rad,
+                                          &_ctx.data.current_pitch_rad,
+                                          &_ctx.data.current_roll_rad);
 
     ins_drv_t::get_instance()->get_gyro_b(&_ctx.data.current_yaw_radps,
                                           &_ctx.data.current_pitch_radps,
                                           &_ctx.data.current_roll_radps);
 
-    // // 2. 读取并应用偏置 (Feedback = Raw - Offset)
+    // 通常不用读取电机位置作为姿态反馈，改为使用 IMU 数据
+    // // 读取 电机 数据作为反馈 (含 Offset)
     // _ctx.data.current_pitch_rad =
     //     _ctx.motor.pitch->get_current_position() - PITCH_OFFSET_RAD;
     // _ctx.data.current_pitch_radps = _ctx.motor.pitch->get_current_rotate();
@@ -99,8 +102,11 @@ void direct_gimbal_t::_gimbal_control(gimbal_context_t *ctx)
 
 void direct_gimbal_t::_send_motor_command(gimbal_context_t *ctx)
 {
+    ctx->motor.pitch->send_torque(ctx->data.out_pitch_torque);
+    ctx->motor.yaw->send_torque(ctx->data.out_yaw_torque);
+
     // ctx->motor.pitch->send_torque(0);
-    ctx->motor.yaw->send_torque(0);
+    // ctx->motor.yaw->send_torque(0);
 }
 
 // =========================================================
