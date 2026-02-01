@@ -220,6 +220,30 @@ status_t ins_drv_t::get_angles_n(float* yaw, float* pitch, float* roll)
     return PYRO_OK;
 }
 
+status_t ins_drv_t::get_rads_b(float* rad_yaw, float* rad_pitch, float* rad_roll)
+{
+    if(rad_roll == nullptr || rad_pitch == nullptr || rad_yaw == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *rad_roll = _angle_n[X] * PI / 180.0f;
+    *rad_pitch = _angle_n[Y] * PI / 180.0f;
+    *rad_yaw = _angle_n[Z] * PI / 180.0f;
+    return PYRO_OK;
+}
+
+status_t ins_drv_t::get_rads_n(float* rad_yaw, float* rad_pitch, float* rad_roll)
+{
+    if(rad_roll == nullptr || rad_pitch == nullptr || rad_yaw == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *rad_roll = _angle_n[X] * PI / 180.0f;
+    *rad_pitch = _angle_n[Y] * PI / 180.0f;
+    *rad_yaw = _angle_n[Z] * PI / 180.0f;
+    return PYRO_OK;
+}
+
 status_t ins_drv_t::get_gyro_b(float* g_yaw, float* g_pitch, float* g_roll)
 {
     if(g_yaw == nullptr || g_pitch == nullptr || g_roll == nullptr)
