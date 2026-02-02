@@ -40,5 +40,14 @@
 
 #define ROBOT_ID HERO_ID
 
+#if ROBOT_ID == HERO_ID
+
+#define GIMBAL_ID 1
+#define CHASSIS_ID 2
+
+#define BOARD_ID GIMBAL_ID
+#endif
+
+
 
 #endif //PYRO_PYRO_CORE_CONFIG_H

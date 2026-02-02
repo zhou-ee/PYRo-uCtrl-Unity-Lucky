@@ -16,9 +16,8 @@ struct quad_booster_cmd_t final : public cmd_base_t
     bool fric_on;     // 摩擦轮开启
     bool fire_enable; // 拨弹开启 (true: 持续增加角度拨弹)
     float fric_rpm;   // 摩擦轮目标转速
-    float feed_rpm;   // 拨弹速度 (转换为角度增量速率)
 
-    quad_booster_cmd_t() : fric_on(false), fire_enable(false), fric_rpm(0), feed_rpm(0) {}
+    quad_booster_cmd_t() : fric_on(false), fire_enable(false), fric_rpm(0) {}
 };
 
 // =========================================================
@@ -47,7 +46,7 @@ class quad_booster_t final : public module_base_t<quad_booster_t, quad_booster_c
     void _fsm_execute() override;
 
     // --- 内部辅助 ---
-    void _run_control_loop();
+    void _booster_control();
     void _send_motor_command() const;
 
     // --- 成员变量 ---
@@ -69,18 +68,16 @@ class quad_booster_t final : public module_base_t<quad_booster_t, quad_booster_c
     struct data_ctx_t
     {
         // 反馈
-        float cur_fric_rpm[4]{};
-        float cur_trig_rpm{0};
-        float cur_trig_torque{0};
-        float cur_trig_angle_total{0}; // 累计角度（处理多圈）
+        float current_fric_rpm[4]{};
+        float current_trig_rpm{0};
+        float current_trig_torque{0};
+        float current_trig_rad{0}; // -PI ~ PI
 
         // 目标
-        float tgt_fric_rpm[4]{};
-        float tgt_trig_angle{0}; // 目标角度 (累计值)
+        float target_fric_rpm[4]{};
+        float target_trig_angle{0}; // 目标角度
+        float target_trig_rpm{0};   // 角度环输出，速度环参考
 
-        // 中间量
-        float last_trig_angle_raw{0}; // 用于计算累计角度的辅助变量
-        float trigger_spd_ref{0};     // 位置环输出的目标速度
 
         // 输出
         float out_fric_torque[4]{};
@@ -111,18 +108,25 @@ class quad_booster_t final : public module_base_t<quad_booster_t, quad_booster_c
 
     struct fsm_active_t final : public fsm_t<owner>
     {
+        struct state_homing_t final : public state_t<owner>
+        {
+            void enter(owner *owner) override;
+            void execute(owner *owner) override;
+            void exit(owner *owner) override;
+        private:
+            float _homing_turnback_time{0.0f};
+        };
         void on_enter(owner *owner) override;
         void on_execute(owner *owner) override;
         void on_exit(owner *owner) override;
+    private:
+        state_homing_t _homing_state;
     };
 
     state_passive_t _state_passive;
     fsm_active_t _state_active;
     fsm_t<owner> _main_fsm;
 
-    static constexpr float JAM_TORQUE_THRES = 6.0f;
-    static constexpr float JAM_SPEED_THRES  = 10.0f;
-    static constexpr uint16_t UNJAM_MS      = 300;
 };
 
 } // namespace pyro

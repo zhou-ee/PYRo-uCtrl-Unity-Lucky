@@ -5,11 +5,10 @@
 #include "pyro_direct_gimbal.h"
 #include "pyro_com_cantx.h"
 
-pyro::mec_chassis_t *mec_chassis_ptr             = nullptr;
-pyro::mec_cmd_t *mec_cmd_ptr                     = nullptr;
-pyro::direct_gimbal_t *direct_gimbal_ptr         = nullptr;
-pyro::direct_gimbal_cmd_t *direct_gimbal_cmd_ptr = nullptr;
-pyro::dr16_drv_t::dr16_ctrl_t const *rc_ctrl_ptr = nullptr;
+
+static pyro::direct_gimbal_t *direct_gimbal_ptr         = nullptr;
+static pyro::direct_gimbal_cmd_t *direct_gimbal_cmd_ptr = nullptr;
+static pyro::dr16_drv_t::dr16_ctrl_t const *rc_ctrl_ptr = nullptr;
 
 extern "C"
 {
@@ -74,30 +73,25 @@ extern "C"
                        pyro::can_hub_t::which_can::can3));
     }
 
-    void start_app_thread(void *argument)
+    void hero_gimbal_thread(void *argument)
     {
-        // mec_chassis_ptr->start();
         direct_gimbal_ptr->start();
         while (true)
         {
             chassis_rc2cmd(rc_ctrl_ptr);
-            // mec_chassis_ptr->set_command(*mec_cmd_ptr);
             gimbal_rc2cmd(rc_ctrl_ptr);
             direct_gimbal_ptr->set_command(*direct_gimbal_cmd_ptr);
             vTaskDelay(1);
         }
     }
 
-    void pyro_app_init_thread(void *argument)
+    void hero_gimbal_init(void *argument)
     {
-        // Initialize Hybrid Chassis
-        // mec_chassis_ptr = pyro::mec_chassis_t::instance();
-        // mec_cmd_ptr     = new pyro::mec_cmd_t();
         direct_gimbal_cmd_ptr = new pyro::direct_gimbal_cmd_t();
         direct_gimbal_ptr     = pyro::direct_gimbal_t::instance();
         rc_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
-        xTaskCreate(start_app_thread, "start_app_thread", 128, nullptr,
+        xTaskCreate(hero_gimbal_thread, "start_app_thread", 128, nullptr,
                     configMAX_PRIORITIES - 1, nullptr);
         vTaskDelete(nullptr);
     }

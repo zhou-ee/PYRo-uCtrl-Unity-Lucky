@@ -3,8 +3,8 @@
 #include "pyro_dwt_drv.h"
 #include "pyro_ins.h"
 
-using namespace pyro;
-
+namespace pyro
+{
 extern "C"
 {
     can_drv_t *can1_drv;
@@ -12,20 +12,14 @@ extern "C"
     can_drv_t *can3_drv;
     ins_drv_t *ins_drv;
 
-    extern void pyro_app_init_thread(void *argument);
-
     void pyro_init_thread(void *argument)
     {
         dwt_drv_t::init(480); // Initialize DWT at 480 MHz
 
-        uart_drv_t::get_instance(uart_drv_t::uart1)
-            ->enable_rx_dma();
-        uart_drv_t::get_instance(uart_drv_t::uart5)
-            ->enable_rx_dma();
-        uart_drv_t::get_instance(uart_drv_t::uart7)
-            ->enable_rx_dma();
-        uart_drv_t::get_instance(uart_drv_t::uart10)
-            ->enable_rx_dma();
+        uart_drv_t::get_instance(uart_drv_t::uart1)->enable_rx_dma();
+        uart_drv_t::get_instance(uart_drv_t::uart5)->enable_rx_dma();
+        uart_drv_t::get_instance(uart_drv_t::uart7)->enable_rx_dma();
+        uart_drv_t::get_instance(uart_drv_t::uart10)->enable_rx_dma();
 
         rc_hub_t::get_instance(rc_hub_t::DR16)->enable();
         rc_hub_t::get_instance(rc_hub_t::VT03)->enable();
@@ -44,9 +38,7 @@ extern "C"
         ins_drv = ins_drv_t::get_instance();
         ins_drv->init();
 
-        xTaskCreate(pyro_app_init_thread, "pyro_app_init_thread", 512,
-                    nullptr, configMAX_PRIORITIES - 1, nullptr);
-
         vTaskDelete(nullptr);
     }
 }
+} // namespace pyro

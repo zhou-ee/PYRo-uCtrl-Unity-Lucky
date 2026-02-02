@@ -76,6 +76,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Algorithm/Kinematics/pyro_kin_rudder.cpp
         PYRo/Algorithm/OLS/pyro_algo_ols.cpp
         PYRo/Algorithm/PID/pyro_algo_pid.cpp
+        PYRo/Algorithm/Common/pyro_algo_common.cpp
 
         # --- Component ---
         PYRo/Component/CRC/PYRo_crc.cpp
@@ -115,19 +116,23 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Module/Chassis/Mecanum/pyro_mec_chassis.cpp
         PYRo/Module/Chassis/Mecanum/fsm/pyro_mec_passive_state.cpp
         PYRo/Module/Chassis/Mecanum/fsm/pyro_mec_active_state.cpp
-        PYRo/Application/Mission/pyro_app_thread.cpp
         PYRo/Module/Gimbal/Hero/Direct/pyro_direct_gimbal.cpp
         PYRo/Module/Gimbal/Hero/Direct/fsm/pyro_direct_active_state.cpp
         PYRo/Module/Gimbal/Hero/Direct/fsm/pyro_direct_passive_state.cpp
         PYRo/Communication/pyro_com_cantx.cpp
         PYRo/Communication/pyro_com_canrx.cpp
         PYRo/Module/Booster/Quad/pyro_quad_booster.cpp
-        PYRo/Algorithm/Common/pyro_common.cpp
+        PYRo/Algorithm/Common/pyro_algo_common.cpp
         PYRo/Algorithm/EKF/QuaternionEKF.cpp
         PYRo/Algorithm/KF/kalman_filter.cpp
         PYRo/Component/INS/pyro_ins.cpp
         PYRo/Device/BMI088/BMI088_driver.cpp
         PYRo/Device/BMI088/BMI088_middleware.cpp
+        PYRo/Application/Mission/Hero/pyro_gimbal_app.cpp
+        PYRo/Application/Mission/Hero/pyro_booster_app.cpp
+        PYRo/Module/Booster/Quad/fsm/pyro_quad_passive_state.cpp
+        PYRo/Module/Booster/Quad/fsm/pyro_quad_active_state.cpp
+        PYRo/Module/Booster/Quad/fsm/pyro_quad_homing_state.cpp
 )
 
 add_subdirectory(cmake/stm32cubemx)
@@ -168,6 +173,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Communication
         PYRo/Algorithm/EKF
         PYRo/Algorithm/KF
+        PYRo/Algorithm/Common
         PYRo/Component/INS
         PYRo/Device/BMI088
 )
