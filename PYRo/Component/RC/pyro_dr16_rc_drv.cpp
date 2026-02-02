@@ -106,28 +106,28 @@ void dr16_drv_t::check_ctrl(switch_t &dr16_switch, const uint8_t raw_state)
     const auto state = static_cast<sw_state_t>(raw_state);
 
     // Detect transition edges and assign control events
-    if (dr16_switch.state == state)
+    if (dr16_switch.state != state)
     {
-        switch_.ctrl = sw_ctrl_t::SW_NO_CHANGE;
-    }
-    if (sw_state_t::SW_UP == dr16_switch.state && sw_state_t::SW_MID == state)
-    {
-        switch_.ctrl = sw_ctrl_t::SW_UP_TO_MID;
-    }
-    else if (sw_state_t::SW_MID == dr16_switch.state &&
-             sw_state_t::SW_DOWN == state)
-    {
-        switch_.ctrl = sw_ctrl_t::SW_MID_TO_DOWN;
-    }
-    else if (sw_state_t::SW_DOWN == dr16_switch.state &&
-             sw_state_t::SW_MID == state)
-    {
-        switch_.ctrl = sw_ctrl_t::SW_DOWN_TO_MID;
-    }
-    else if (sw_state_t::SW_MID == dr16_switch.state &&
-             sw_state_t::SW_UP == state)
-    {
-        switch_.ctrl = sw_ctrl_t::SW_MID_TO_UP;
+        if (sw_state_t::SW_UP == dr16_switch.state && sw_state_t::SW_MID == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_UP_TO_MID;
+        }
+        else if (sw_state_t::SW_MID == dr16_switch.state &&
+                 sw_state_t::SW_DOWN == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_MID_TO_DOWN;
+        }
+        else if (sw_state_t::SW_DOWN == dr16_switch.state &&
+                 sw_state_t::SW_MID == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_DOWN_TO_MID;
+        }
+        else if (sw_state_t::SW_MID == dr16_switch.state &&
+                 sw_state_t::SW_UP == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_MID_TO_UP;
+        }
+        dr16_switch.change_time = pyro::dwt_drv_t::get_timeline_ms();
     }
     switch_.state = state;
     dr16_switch   = switch_;

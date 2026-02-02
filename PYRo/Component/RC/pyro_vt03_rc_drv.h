@@ -75,7 +75,6 @@ class vt03_drv_t : public rc_drv_t
     };
     enum class gear_ctrl_t
     {
-        GEAR_NO_CHANGE    = 0,
         GEAR_LEFT_TO_MID  = 1,
         GEAR_MID_TO_RIGHT = 2,
         GEAR_RIGHT_TO_MID = 3,
@@ -113,6 +112,7 @@ class vt03_drv_t : public rc_drv_t
     {
         gear_state_t state;
         gear_ctrl_t ctrl;
+        float change_time;
     } vt03_gear_t;
 
     /**

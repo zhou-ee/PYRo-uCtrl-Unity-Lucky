@@ -66,7 +66,6 @@ class dr16_drv_t : public rc_drv_t
     // Switch logic transitions / 拨杆逻辑跃迁
     enum class sw_ctrl_t
     {
-        SW_NO_CHANGE   = 0,
         SW_UP_TO_MID   = 1,
         SW_MID_TO_DOWN = 2,
         SW_DOWN_TO_MID = 3,
@@ -105,6 +104,7 @@ class dr16_drv_t : public rc_drv_t
     {
         sw_state_t state;
         sw_ctrl_t ctrl;
+        float change_time;
     };
 
     /**
