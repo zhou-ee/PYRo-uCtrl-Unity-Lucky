@@ -116,11 +116,18 @@ class quad_booster_t final : public module_base_t<quad_booster_t, quad_booster_c
         private:
             float _homing_turnback_time{0.0f};
         };
+        struct state_ready_t final : public state_t<owner>
+        {
+            void enter(owner *owner) override;
+            void execute(owner *owner) override;
+            void exit(owner *owner) override;
+        };
         void on_enter(owner *owner) override;
         void on_execute(owner *owner) override;
         void on_exit(owner *owner) override;
     private:
         state_homing_t _homing_state;
+        state_ready_t _ready_state;
     };
 
     state_passive_t _state_passive;

@@ -133,6 +133,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Module/Booster/Quad/fsm/pyro_quad_passive_state.cpp
         PYRo/Module/Booster/Quad/fsm/pyro_quad_active_state.cpp
         PYRo/Module/Booster/Quad/fsm/pyro_quad_homing_state.cpp
+        PYRo/Module/Booster/Quad/fsm/pyro_quad_ready_state.cpp
 )
 
 add_subdirectory(cmake/stm32cubemx)
