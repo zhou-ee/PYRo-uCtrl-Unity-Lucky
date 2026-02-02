@@ -27,13 +27,13 @@ void quad_booster_t::_init()
 
     // 摩擦轮速度 PID 初始化
     _ctx.pid.fric_pid[0] =
-        new pid_t(10.0f, 0.1f, 0.0f, 1.0f, 20.0f, 100, 50, 4);
+        new pid_t(6.40f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
     _ctx.pid.fric_pid[1] =
-        new pid_t(10.0f, 0.1f, 0.0f, 1.0f, 20.0f, 100, 50, 4);
+        new pid_t(6.968f,0.02f, 0.02f,2.5f,20,  320,80,4);
     _ctx.pid.fric_pid[2] =
-        new pid_t(10.0f, 0.1f, 0.0f, 1.0f, 20.0f, 100, 50, 4);
+        new pid_t(6.968f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
     _ctx.pid.fric_pid[3] =
-        new pid_t(10.0f, 0.1f, 0.0f, 1.0f, 20.0f, 100, 50, 4);
+        new pid_t(6.4f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
 
     // 2. 拨弹电机初始化 (CAN3 ID 5)
     _ctx.motor.trigger_wheel =
@@ -52,8 +52,8 @@ void quad_booster_t::_update_feedback()
     for (int i = 0; i < 4; i++)
     {
         _ctx.motor.fric_wheels[i]->update_feedback();
-        _ctx.data.current_fric_rpm[i] =
-            radps_to_rpm(_ctx.motor.fric_wheels[i]->get_current_rotate());
+        _ctx.data.current_fric_mps[i] =
+            _ctx.motor.fric_wheels[i]->get_current_rotate() * FRIC1_RADIUS;
     }
 
     // 2. 拨弹反馈
@@ -77,32 +77,41 @@ void quad_booster_t::_fsm_execute()
     _main_fsm.execute(this);
 }
 
-void quad_booster_t::_booster_control()
+void quad_booster_t::_fric_control()
 {
     // 1. 摩擦轮控制 (单环)
     for (int i = 0; i < 4; i++)
     {
         _ctx.data.out_fric_torque[i] = _ctx.pid.fric_pid[i]->calculate(
-            _ctx.data.target_fric_rpm[i], _ctx.data.current_fric_rpm[i]);
+            _ctx.data.target_fric_mps[i], _ctx.data.current_fric_mps[i]);
     }
+}
 
+void quad_booster_t::_trigger_control()
+{
     // 2. 拨弹控制 (串级)
     // 外环：位置 -> 速度
-    _ctx.data.target_trig_rpm = _ctx.pid.trigger_pos_pid->calculate(
-        _ctx.data.target_trig_angle, _ctx.data.current_trig_rad);
+    _ctx.data.target_trig_radps = _ctx.pid.trigger_pos_pid->calculate(
+        _ctx.data.target_trig_rad, _ctx.data.current_trig_rad);
 
     // 内环：速度 -> 电流(力矩)
     _ctx.data.out_trig_torque = _ctx.pid.trigger_spd_pid->calculate(
-        _ctx.data.target_trig_rpm, _ctx.data.current_trig_rpm);
+        _ctx.data.target_trig_radps, _ctx.data.current_trig_radps);
 }
 
-void quad_booster_t::_send_motor_command() const
+
+void quad_booster_t::_send_fric_command() const
 {
     for (int i = 0; i < 4; i++)
     {
         _ctx.motor.fric_wheels[i]->send_torque(_ctx.data.out_fric_torque[i]);
     }
+}
+
+void quad_booster_t::_send_trigger_command() const
+{
     _ctx.motor.trigger_wheel->send_torque(_ctx.data.out_trig_torque);
 }
+
 
 } // namespace pyro

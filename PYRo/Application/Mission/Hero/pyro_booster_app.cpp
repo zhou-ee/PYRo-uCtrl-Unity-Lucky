@@ -8,7 +8,7 @@
 static pyro::quad_booster_t *quad_booster_ptr           = nullptr;
 static pyro::quad_booster_cmd_t *quad_booster_cmd_ptr   = nullptr;
 static pyro::dr16_drv_t::dr16_ctrl_t const *rc_ctrl_ptr = nullptr;
-
+static float using_time                                 = 0.0f;
 extern "C"
 {
     void booster_rc2cmd(void const *rc_ctrl)
@@ -21,15 +21,19 @@ extern "C"
         {
             quad_booster_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ZERO_FORCE;
             quad_booster_cmd_ptr->fric_on     = false;
-            quad_booster_cmd_ptr->fric_rpm    = 0.0f;
+            quad_booster_cmd_ptr->fric1_mps   = 0.0f;
+            quad_booster_cmd_ptr->fric2_mps   = 0.0f;
             quad_booster_cmd_ptr->fire_enable = false;
             return;
         }
-        quad_booster_cmd_ptr->mode     = pyro::cmd_base_t::mode_t::ACTIVE;
-        quad_booster_cmd_ptr->fric_rpm = 20.0f; // 可调节
+        quad_booster_cmd_ptr->mode      = pyro::cmd_base_t::mode_t::ACTIVE;
+        quad_booster_cmd_ptr->fric1_mps = 13.5f; // 可调节
+        quad_booster_cmd_ptr->fric2_mps = 10.5f;
         // 摩擦轮控制
-        if (pyro::dr16_drv_t::sw_ctrl_t::SW_UP_TO_MID == p_ctrl->rc.s_l.ctrl)
+        if (pyro::dr16_drv_t::sw_ctrl_t::SW_UP_TO_MID == p_ctrl->rc.s_l.ctrl &&
+            p_ctrl->rc.s_l.change_time != using_time)
         {
+            using_time                    = p_ctrl->rc.s_l.change_time;
             quad_booster_cmd_ptr->fric_on = !quad_booster_cmd_ptr->fric_on;
         }
         // 开火控制 (单发）
@@ -49,12 +53,12 @@ extern "C"
 
     void hero_booster_init(void *argument)
     {
-        // quad_booster_ptr     = pyro::quad_booster_t::instance();
-        // quad_booster_cmd_ptr = new pyro::quad_booster_cmd_t();
-        // rc_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
-        //     pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
-        // xTaskCreate(hero_booster_thread, "start_app_thread", 128, nullptr,
-        //             configMAX_PRIORITIES - 1, nullptr);
+        quad_booster_ptr     = pyro::quad_booster_t::instance();
+        quad_booster_cmd_ptr = new pyro::quad_booster_cmd_t();
+        rc_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
+            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
+        xTaskCreate(hero_booster_thread, "start_app_thread", 128, nullptr,
+                    configMAX_PRIORITIES - 1, nullptr);
         vTaskDelete(nullptr);
     }
 }

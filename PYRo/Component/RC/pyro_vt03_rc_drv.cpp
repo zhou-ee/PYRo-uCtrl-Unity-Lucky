@@ -130,6 +130,10 @@ void vt03_drv_t::check_ctrl(vt03_gear_t &vt03_gear, const uint8_t raw_state)
         }
         vt03_gear.change_time = pyro::dwt_drv_t::get_timeline_ms();
     }
+    else
+    {
+        gear.ctrl = vt03_gear.ctrl;
+    }
     gear.state = state;
     vt03_gear  = gear;
 }

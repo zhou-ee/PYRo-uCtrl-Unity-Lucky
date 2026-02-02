@@ -127,7 +127,12 @@ void dr16_drv_t::check_ctrl(switch_t &dr16_switch, const uint8_t raw_state)
         {
             switch_.ctrl = sw_ctrl_t::SW_MID_TO_UP;
         }
-        dr16_switch.change_time = pyro::dwt_drv_t::get_timeline_ms();
+        switch_.change_time = pyro::dwt_drv_t::get_timeline_ms();
+    }
+    else
+    {
+        switch_.ctrl = dr16_switch.ctrl;
+        switch_.change_time = dr16_switch.change_time;
     }
     switch_.state = state;
     dr16_switch   = switch_;

@@ -5,11 +5,6 @@ namespace pyro
 
 void quad_booster_t::state_passive_t::enter(owner *owner)
 {
-    for (int i = 0; i < 4; i++) 
-    {
-        owner->_ctx.pid.fric_pid[i]->clear();
-    }
-
     owner->_ctx.pid.trigger_pos_pid->clear();
     owner->_ctx.pid.trigger_spd_pid->clear();
 }
@@ -17,10 +12,19 @@ void quad_booster_t::state_passive_t::enter(owner *owner)
 void quad_booster_t::state_passive_t::execute(owner *owner)
 {
     // 持续输出0
-    for (int i = 0; i < 4; i++) owner->_ctx.data.out_fric_torque[i] = 0;
+    owner->_ctx.data.target_fric_mps[0] = 0.0f;
+    owner->_ctx.data.target_fric_mps[1] = 0.0f;
+    owner->_ctx.data.target_fric_mps[2] = 0.0f;
+    owner->_ctx.data.target_fric_mps[3] = 0.0f;
+    owner->_fric_control();
+    for (int i = 0; i < 4; i++)
+    {
+        if (abs(owner->_ctx.data.current_fric_mps[i]) < 0.3f)
+            owner->_ctx.data.out_fric_torque[i] = 0.0f;
+    }
     owner->_ctx.data.out_trig_torque = 0;
 
-    owner->_send_motor_command();
+    owner->_send_fric_command();
 }
 
 void quad_booster_t::state_passive_t::exit(owner *owner)

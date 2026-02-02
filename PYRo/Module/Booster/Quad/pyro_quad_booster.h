@@ -15,15 +15,20 @@ struct quad_booster_cmd_t final : public cmd_base_t
 {
     bool fric_on;     // 摩擦轮开启
     bool fire_enable; // 拨弹开启 (true: 持续增加角度拨弹)
-    float fric_rpm;   // 摩擦轮目标转速
+    float fric1_mps;  // 第一级摩擦轮目标转速
+    float fric2_mps;  // 第二级摩擦轮目标转速
 
-    quad_booster_cmd_t() : fric_on(false), fire_enable(false), fric_rpm(0) {}
+    quad_booster_cmd_t()
+        : fric_on(false), fire_enable(false), fric1_mps(0), fric2_mps(0)
+    {
+    }
 };
 
 // =========================================================
 // 2. 四轮发射机构类
 // =========================================================
-class quad_booster_t final : public module_base_t<quad_booster_t, quad_booster_cmd_t>
+class quad_booster_t final
+    : public module_base_t<quad_booster_t, quad_booster_cmd_t>
 {
     friend class module_base_t<quad_booster_t, quad_booster_cmd_t>;
 
@@ -46,8 +51,10 @@ class quad_booster_t final : public module_base_t<quad_booster_t, quad_booster_c
     void _fsm_execute() override;
 
     // --- 内部辅助 ---
-    void _booster_control();
-    void _send_motor_command() const;
+    void _fric_control();
+    void _trigger_control();
+    void _send_fric_command() const;
+    void _send_trigger_command() const;
 
     // --- 成员变量 ---
     struct motor_ctx_t
@@ -68,15 +75,15 @@ class quad_booster_t final : public module_base_t<quad_booster_t, quad_booster_c
     struct data_ctx_t
     {
         // 反馈
-        float current_fric_rpm[4]{};
-        float current_trig_rpm{0};
+        float current_fric_mps[4]{};
+        float current_trig_radps{0};
         float current_trig_torque{0};
         float current_trig_rad{0}; // -PI ~ PI
 
         // 目标
-        float target_fric_rpm[4]{};
-        float target_trig_angle{0}; // 目标角度
-        float target_trig_rpm{0};   // 角度环输出，速度环参考
+        float target_fric_mps[4]{};
+        float target_trig_rad{0};   // 目标角度
+        float target_trig_radps{0}; // 角度环输出，速度环参考
 
 
         // 输出
@@ -113,7 +120,8 @@ class quad_booster_t final : public module_base_t<quad_booster_t, quad_booster_c
             void enter(owner *owner) override;
             void execute(owner *owner) override;
             void exit(owner *owner) override;
-        private:
+
+          private:
             float _homing_turnback_time{0.0f};
         };
         struct state_ready_t final : public state_t<owner>
@@ -125,7 +133,8 @@ class quad_booster_t final : public module_base_t<quad_booster_t, quad_booster_c
         void on_enter(owner *owner) override;
         void on_execute(owner *owner) override;
         void on_exit(owner *owner) override;
-    private:
+
+      private:
         state_homing_t _homing_state;
         state_ready_t _ready_state;
     };
@@ -134,6 +143,8 @@ class quad_booster_t final : public module_base_t<quad_booster_t, quad_booster_c
     fsm_active_t _state_active;
     fsm_t<owner> _main_fsm;
 
+    static constexpr float FRIC1_RADIUS = 0.03f; // 第一级摩擦轮半径 (m)
+    static constexpr float FRIC2_RADIUS = 0.03f; // 第二级摩擦轮半径 (m)
 };
 
 } // namespace pyro
