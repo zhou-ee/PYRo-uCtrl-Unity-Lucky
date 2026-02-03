@@ -78,7 +78,7 @@ void dr16_drv_t::disable()
 }
 
 
-/* Data Processing - Error Check ---------------------------------------------*/
+ /* Data Processing - Error Check ---------------------------------------------*/
 status_t dr16_drv_t::error_check(const dr16_buf_t *dr16_buf)
 {
     // Basic boundary validation for stick channels
@@ -106,28 +106,33 @@ void dr16_drv_t::check_ctrl(switch_t &dr16_switch, const uint8_t raw_state)
     const auto state = static_cast<sw_state_t>(raw_state);
 
     // Detect transition edges and assign control events
-    if (dr16_switch.state == state)
+    if (dr16_switch.state != state)
     {
-        switch_.ctrl = sw_ctrl_t::SW_NO_CHANGE;
+        if (sw_state_t::SW_UP == dr16_switch.state && sw_state_t::SW_MID == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_UP_TO_MID;
+        }
+        else if (sw_state_t::SW_MID == dr16_switch.state &&
+                 sw_state_t::SW_DOWN == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_MID_TO_DOWN;
+        }
+        else if (sw_state_t::SW_DOWN == dr16_switch.state &&
+                 sw_state_t::SW_MID == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_DOWN_TO_MID;
+        }
+        else if (sw_state_t::SW_MID == dr16_switch.state &&
+                 sw_state_t::SW_UP == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_MID_TO_UP;
+        }
+        switch_.change_time = pyro::dwt_drv_t::get_timeline_ms();
     }
-    if (sw_state_t::SW_UP == dr16_switch.state && sw_state_t::SW_MID == state)
+    else
     {
-        switch_.ctrl = sw_ctrl_t::SW_UP_TO_MID;
-    }
-    else if (sw_state_t::SW_MID == dr16_switch.state &&
-             sw_state_t::SW_DOWN == state)
-    {
-        switch_.ctrl = sw_ctrl_t::SW_MID_TO_DOWN;
-    }
-    else if (sw_state_t::SW_DOWN == dr16_switch.state &&
-             sw_state_t::SW_MID == state)
-    {
-        switch_.ctrl = sw_ctrl_t::SW_DOWN_TO_MID;
-    }
-    else if (sw_state_t::SW_MID == dr16_switch.state &&
-             sw_state_t::SW_UP == state)
-    {
-        switch_.ctrl = sw_ctrl_t::SW_MID_TO_UP;
+        switch_.ctrl = dr16_switch.ctrl;
+        switch_.change_time = dr16_switch.change_time;
     }
     switch_.state = state;
     dr16_switch   = switch_;

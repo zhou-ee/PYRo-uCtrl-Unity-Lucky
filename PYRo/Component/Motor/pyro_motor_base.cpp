@@ -38,4 +38,5 @@ bool motor_base_t::is_enable(void)
     return _enable;
 }
 
+
 } // namespace pyro

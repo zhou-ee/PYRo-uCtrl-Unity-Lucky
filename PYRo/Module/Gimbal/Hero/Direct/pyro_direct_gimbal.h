@@ -34,9 +34,6 @@ class direct_gimbal_t final
     struct data_ctx_t;
     struct gimbal_context_t;
 
-  public:
-    direct_gimbal_t(const direct_gimbal_t &)            = delete;
-    direct_gimbal_t &operator=(const direct_gimbal_t &) = delete;
 
   private:
     direct_gimbal_t();
@@ -77,6 +74,10 @@ class direct_gimbal_t final
         float current_pitch_radps{0};
         float current_yaw_rad{0};
         float current_yaw_radps{0};
+
+        // 暂未使用 Roll 轴
+        float current_roll_rad{0};
+        float current_roll_radps{0};
 
         // 目标
         float target_pitch_rad{0};
@@ -128,6 +129,10 @@ class direct_gimbal_t final
     // =====================================================
     static constexpr float PITCH_OFFSET_RAD = 0.0f;
     static constexpr float YAW_OFFSET_RAD   = 0.0f;
+
+    static constexpr float PITCH_MAX_RAD = 0.1f; // 57.3 deg
+    static constexpr float PITCH_MIN_RAD = -0.73f; // -57.
+
 };
 
 } // namespace pyro
