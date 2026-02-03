@@ -19,7 +19,7 @@ void mec_chassis_t::state_passive_t::execute(owner *owner)
     {
         owner->_ctx.data.out_wheel_torque[i] = 0;
     }
-    owner->_send_motor_command(&owner->_ctx);
+    _send_motor_command(&owner->_ctx);
 }
 
 void mec_chassis_t::state_passive_t::exit(owner *owner)
