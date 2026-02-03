@@ -38,10 +38,4 @@ bool motor_base_t::is_enable(void)
     return _enable;
 }
 
-// Provide the virtual destructor definition so the vtable is emitted
-motor_base_t::~motor_base_t()
-{
-    // base class cleanup (none currently)
-}
-
 } // namespace pyro
