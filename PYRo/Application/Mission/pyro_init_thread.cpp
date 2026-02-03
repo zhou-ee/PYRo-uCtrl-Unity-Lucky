@@ -15,7 +15,7 @@ extern "C"
     void pyro_init_thread(void *argument)
     {
         dwt_drv_t::init(480); // Initialize DWT at 480 MHz
-        
+
         uart_drv_t::get_instance(uart_drv_t::uart1)
             ->enable_rx_dma();
         uart_drv_t::get_instance(uart_drv_t::uart5)

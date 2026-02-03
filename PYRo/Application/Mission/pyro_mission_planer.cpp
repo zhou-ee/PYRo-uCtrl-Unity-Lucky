@@ -1,5 +1,5 @@
 #include "cmsis_os.h"
-
+#include "pyro_core_config.h"
 extern "C"
 {
     extern void pyro_init_thread(void *argument);
@@ -8,6 +8,15 @@ extern "C"
     {
         xTaskCreate(pyro_init_thread, "pyro_init_thread", 512, nullptr,
                     configMAX_PRIORITIES - 1, nullptr);
+#if HERO
+
+#if HERO_CHASSIS_EN
+
+#elif HERO_GIMBAL_EN
+
+#endif
+
+#endif
         vTaskDelete(nullptr);
     }
 }

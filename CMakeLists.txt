@@ -61,6 +61,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Core/ETL/map.cpp
         PYRo/Core/Lock/pyro_mutex.cpp
         PYRo/Core/Lock/pyro_rw_lock.cpp
+        PYRo/Core/Task/pyro_task.cpp
         PYRo/Core/Memory/pyro_core_dma_heap.c
         PYRo/Core/Memory/pyro_core_mem.cpp
 
@@ -80,7 +81,7 @@ add_executable(${CMAKE_PROJECT_NAME}
 
         # --- Component ---
         PYRo/Component/CRC/PYRo_crc.cpp
-      
+
         PYRo/Component/Motor/pyro_dji_motor_drv.cpp
         PYRo/Component/Motor/pyro_dm_motor_drv.cpp
         PYRo/Component/Motor/pyro_motor_base.cpp
@@ -119,6 +120,21 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Debug/Debug_task.cpp
         PYRo/Debug/JCOM/pyro_jcom.cpp
         PYRo/Debug/VOFA/pyro_vofa.cpp
+#        PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_active_state.cpp
+#        PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_climbing_state.cpp
+#        PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_cruising_state.cpp
+#        PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_jumping_state.cpp
+#        PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_passive_state.cpp
+#        PYRo/Module/Gimbal/Hero/Direct/pyro_direct_gimbal.cpp
+        PYRo/Module/Chassis/Mecanum/pyro_mec_chassis.cpp
+        PYRo/Module/Chassis/Mecanum/fsm/pyro_mec_passive_state.cpp
+        PYRo/Module/Chassis/Mecanum/fsm/pyro_mec_active_state.cpp
+        PYRo/Application/Mission/pyro_app_thread.cpp
+        PYRo/Module/Gimbal/Hero/Direct/pyro_direct_gimbal.cpp
+        PYRo/Module/Gimbal/Hero/Direct/fsm/pyro_direct_active_state.cpp
+        PYRo/Module/Gimbal/Hero/Direct/fsm/pyro_direct_passive_state.cpp
+        PYRo/Comunication/pyro_com_cantx.cpp
+        PYRo/Comunication/pyro_com_canrx.cpp
 
         # --- Device ---
         PYRo/Device/BMI088/BMI088_driver.cpp
@@ -158,10 +174,12 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Module/Chassis/Hybrid
         PYRo/Module/Chassis/Mecanum
         PYRo/Module/Chassis/Rudder
+        PYRo/Module/Gimbal/Hero/Direct/
         PYRo/Peripheral/CAN
         PYRo/Peripheral/DWT
         PYRo/Peripheral/UART
         PYRo/Device/BMI088
+        PYRo/Comunication
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}

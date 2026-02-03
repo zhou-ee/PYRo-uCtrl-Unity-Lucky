@@ -89,9 +89,7 @@ status_t dr16_drv_t::error_check(const dr16_buf_t *dr16_buf)
         dr16_buf->ch2 < DR16_CH_VALUE_MIN ||
         dr16_buf->ch2 > DR16_CH_VALUE_MAX ||
         dr16_buf->ch3 < DR16_CH_VALUE_MIN ||
-        dr16_buf->ch3 > DR16_CH_VALUE_MAX ||
-        dr16_buf->wheel < DR16_CH_VALUE_MIN ||
-        dr16_buf->wheel > DR16_CH_VALUE_MAX)
+        dr16_buf->ch3 > DR16_CH_VALUE_MAX )
     {
         return PYRO_ERROR;
     }

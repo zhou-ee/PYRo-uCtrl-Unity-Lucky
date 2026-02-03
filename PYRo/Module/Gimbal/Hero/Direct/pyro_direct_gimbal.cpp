@@ -1,0 +1,117 @@
+#include "pyro_direct_gimbal.h"
+
+namespace pyro
+{
+
+// =========================================================
+// 构造与初始化
+// =========================================================
+
+direct_gimbal_t::direct_gimbal_t() : module_base_t("direct_gimbal")
+{
+    _ctx = {};
+}
+
+void direct_gimbal_t::_init()
+{
+    // 1. 初始化电机
+
+    // Pitch: 使用 DM 电机 (示例 ID: Master 0x11, Slave 0x21, CAN1)
+    // 根据 hybrid 中的用法进行配置
+    _ctx.motor.pitch = new dm_motor_drv_t(0x33, 0x43, can_hub_t::can1);
+
+    // Yaw: 使用 DJI GM6020 (ID 2, CAN1)
+    _ctx.motor.yaw =
+        new dji_gm_6020_motor_drv_t(dji_motor_tx_frame_t::id_2, can_hub_t::can1);
+
+    // 2. 配置 DM 电机范围 (DJI 电机无需配置)
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-static-cast-downcast)
+    static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
+        ->set_position_range(-PI, PI);
+    static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
+        ->set_rotate_range(-PI, PI); // rad/s
+    static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
+        ->set_torque_range(-10, 10); // Nm (DM单位通常为Nm)
+    // NOLINTEND(cppcoreguidelines-pro-type-static-cast-downcast)
+
+    // 3. 初始化串级 PID
+    // Pitch 轴 (DM 电机通常响应较快，PID 参数可能需要重新整定)
+    _ctx.pid.pitch_pos = new pid_t(15.0f, 0.0f, 0.0f, 0.0f, 20.0f);
+    _ctx.pid.pitch_spd =
+        new pid_t(1.2f, 0.05f, 0.0f, 5.0f, 10.0f); // 输出限制匹配 DM 电机 Nm 级
+
+    // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
+    _ctx.pid.yaw_pos = new pid_t(10.0f, 0.0f, 0.0f, 0.0f, 10.0f);
+    _ctx.pid.yaw_spd = new pid_t(0.5f, 0.0f, 0.0f, 0.2f, 3.0f);
+}
+
+// =========================================================
+// 核心循环回调
+// =========================================================
+
+void direct_gimbal_t::_update_feedback()
+{
+    // 1. 刷新电机数据
+    _ctx.motor.pitch->update_feedback();
+    _ctx.motor.yaw->update_feedback();
+
+    // 2. 读取并应用偏置 (Feedback = Raw - Offset)
+    _ctx.data.current_pitch_rad =
+        _ctx.motor.pitch->get_current_position() - PITCH_OFFSET_RAD;
+    _ctx.data.current_pitch_radps = _ctx.motor.pitch->get_current_rotate();
+
+    _ctx.data.current_yaw_rad =
+        _ctx.motor.yaw->get_current_position() - YAW_OFFSET_RAD;
+    _ctx.data.current_yaw_radps = _ctx.motor.yaw->get_current_rotate();
+}
+
+void direct_gimbal_t::_gimbal_control(gimbal_context_t *ctx)
+{
+
+
+    // --- Pitch 串级控制 ---
+    // 1. 位置环
+    ctx->data.target_pitch_radps = ctx->pid.pitch_pos->calculate(
+        ctx->data.target_pitch_rad, ctx->data.current_pitch_rad);
+
+    // 2. 速度环
+    ctx->data.out_pitch_torque = ctx->pid.pitch_spd->calculate(
+        ctx->data.target_pitch_radps, ctx->data.current_pitch_radps);
+
+    // --- Yaw 串级控制 ---
+    // 1. 位置环
+    ctx->data.target_yaw_radps = ctx->pid.yaw_pos->calculate(
+        ctx->data.target_yaw_rad, ctx->data.current_yaw_rad);
+
+    // 2. 速度环
+    ctx->data.out_yaw_torque = ctx->pid.yaw_spd->calculate(
+        ctx->data.target_yaw_radps, ctx->data.current_yaw_radps);
+}
+
+void direct_gimbal_t::_send_motor_command(gimbal_context_t *ctx)
+{
+    // ctx->motor.pitch->send_torque(0);
+    ctx->motor.yaw->send_torque(0);
+}
+
+// =========================================================
+// 状态机逻辑
+// =========================================================
+
+void direct_gimbal_t::_fsm_execute()
+{
+    _ctx.cmd = &_cmd[_read_index];
+
+    if (cmd_base_t::mode_t::ACTIVE == _ctx.cmd->mode)
+        _main_fsm.change_state(&_state_active);
+    else if (cmd_base_t::mode_t::ZERO_FORCE == _ctx.cmd->mode)
+        _main_fsm.change_state(&_state_passive);
+
+    _main_fsm.execute(this);
+}
+
+
+
+
+
+} // namespace pyro
