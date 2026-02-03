@@ -17,9 +17,9 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
-if(NOT CMAKE_BUILD_TYPE)
+if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
-endif()
+endif ()
 
 # ==============================================================================
 # 3. 额外性能优化 (保留工具链未包含的指令)
@@ -82,7 +82,6 @@ add_executable(${CMAKE_PROJECT_NAME}
 
         # --- Component ---
         PYRo/Component/CRC/PYRo_crc.cpp
-
         PYRo/Component/Motor/pyro_dji_motor_drv.cpp
         PYRo/Component/Motor/pyro_dm_motor_drv.cpp
         PYRo/Component/Motor/pyro_motor_base.cpp
@@ -97,31 +96,43 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Component/Referee/referee_drv.cpp
         PYRo/Component/Referee/referee_usart_task.c
         PYRo/Component/INS/pyro_ins.cpp
+        PYRo/Component/Supercap/pyro_supercap_drv.cpp
 
         # --- Module ---
         PYRo/Module/Chassis/Hybrid/pyro_hybrid_chassis.cpp
         PYRo/Module/pyro_module_base.cpp
 
         # --- Application ---
+        ## --- Demo ---
         PYRo/Application/Demo/demo_task.cpp
         PYRo/Application/Demo/pyro_control_demo.cpp
         PYRo/Application/Demo/pyro_controller_demo.cpp
         PYRo/Application/Demo/pyro_motor_demo.cpp
         PYRo/Application/Demo/pyro_rc_demo.cpp
         PYRo/Application/Demo/pyro_shoot_demo.cpp
+
+        ## --- Mission ---
         PYRo/Application/Mission/pyro_init_thread.cpp
         PYRo/Application/Mission/pyro_mission_planer.cpp
+        ### --- Hero ---
+        PYRo/Application/Mission/Hero/pyro_gimbal_app.cpp
+        PYRo/Application/Mission/Hero/pyro_booster_app.cpp
+
+
+        # --- Moudule ---
+
+        ## --- Chassis ---
         PYRo/Module/Chassis/Mecanum/pyro_mec_chassis.cpp
         PYRo/Module/Chassis/Mecanum/fsm/pyro_mec_passive_state.cpp
         PYRo/Module/Chassis/Mecanum/fsm/pyro_mec_active_state.cpp
+
+        ## --- Gimbal ---
         PYRo/Module/Gimbal/Hero/Direct/pyro_direct_gimbal.cpp
         PYRo/Module/Gimbal/Hero/Direct/fsm/pyro_direct_active_state.cpp
         PYRo/Module/Gimbal/Hero/Direct/fsm/pyro_direct_passive_state.cpp
-        PYRo/Communication/pyro_com_cantx.cpp
-        PYRo/Communication/pyro_com_canrx.cpp
+
+        ## --- Booster ---
         PYRo/Module/Booster/Quad/pyro_quad_booster.cpp
-        PYRo/Application/Mission/Hero/pyro_gimbal_app.cpp
-        PYRo/Application/Mission/Hero/pyro_booster_app.cpp
         PYRo/Module/Booster/Quad/fsm/pyro_quad_passive_state.cpp
         PYRo/Module/Booster/Quad/fsm/pyro_quad_active_state.cpp
         PYRo/Module/Booster/Quad/fsm/pyro_quad_homing_state.cpp
@@ -134,8 +145,9 @@ add_executable(${CMAKE_PROJECT_NAME}
 
 
         # --- Communication ---
-        PYRo/Comunication/pyro_com_cantx.cpp
-        PYRo/Comunication/pyro_com_canrx.cpp
+        PYRo/Communication/pyro_com_cantx.cpp
+        PYRo/Communication/pyro_com_canrx.cpp
+
 
         # --- Device ---
         PYRo/Device/BMI088/BMI088_driver.cpp
@@ -149,20 +161,7 @@ add_subdirectory(cmake/stm32cubemx)
 # 6. 包含路径与链接 (按路径排序)
 # ==============================================================================
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-        PYRo/Algorithm/Kinematics
-        PYRo/Algorithm/OLS
-        PYRo/Algorithm/PID
-        PYRo/Algorithm/EKF
-        PYRo/Algorithm/KF
-        PYRo/Component/CRC
-        PYRo/Component/IMU
-        PYRo/Component/Motor
-        PYRo/Component/Powercontrol
-        PYRo/Component/Powermeter
-        PYRo/Component/RC
-        PYRo/Component/Referee
-        PYRo/Component/Shoot
-        PYRo/Component/INS
+        # --- Core ---
         PYRo/Core/Config
         PYRo/Core/Def
         PYRo/Core/ETL
@@ -170,7 +169,36 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Core/Lock
         PYRo/Core/Memory
         PYRo/Core/Task
-        PYRo/Debug/VOFA
+
+        # --- Peripheral ---
+        PYRo/Peripheral/CAN
+        PYRo/Peripheral/DWT
+        PYRo/Peripheral/UART
+
+        # --- Device ---
+        PYRo/Device/BMI088
+
+        # --- Algorithm ---
+        PYRo/Algorithm/Common
+        PYRo/Algorithm/Kinematics
+        PYRo/Algorithm/OLS
+        PYRo/Algorithm/PID
+        PYRo/Algorithm/EKF
+        PYRo/Algorithm/KF
+
+        # --- Component ---
+        PYRo/Component/CRC
+        PYRo/Component/IMU
+        PYRo/Component/INS
+        PYRo/Component/Motor
+        PYRo/Component/Powercontrol
+        PYRo/Component/Powermeter
+        PYRo/Component/RC
+        PYRo/Component/Referee
+        PYRo/Component/Shoot
+        PYRo/Component/Supercap
+
+        # --- Module ---
         PYRo/Module
         PYRo/Module/Chassis
         PYRo/Module/Chassis/Hybrid
@@ -178,15 +206,13 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Module/Chassis/Rudder
         PYRo/Module/Gimbal/Hero/Direct
         PYRo/Module/Booster/Quad
-        PYRo/Peripheral/CAN
-        PYRo/Peripheral/DWT
-        PYRo/Peripheral/UART
+
+        # --- Communication ---
         PYRo/Communication
-        PYRo/Algorithm/EKF
-        PYRo/Algorithm/KF
-        PYRo/Algorithm/Common
-        PYRo/Component/INS
-        PYRo/Device/BMI088
+
+        # --- Debug ---
+        PYRo/Debug/VOFA
+        PYRo/Debug/JCOM
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}

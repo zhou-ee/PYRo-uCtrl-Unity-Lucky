@@ -17,7 +17,7 @@ bool referee_uart_callback(uint8_t *data, uint16_t size,
 
 extern "C" void referee_init()
 {
-    pyro::uart_drv_t::get_instance(pyro::uart_drv_t::uart1)
+    pyro::uart_drv_t::get_instance(pyro::uart_drv_t::which_uart::uart1)
         ->add_rx_event_callback(referee_uart_callback, 0x20);
 }
 

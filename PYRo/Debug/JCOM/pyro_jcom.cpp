@@ -25,7 +25,7 @@ jcom_drv_t::~jcom_drv_t()
 
 jcom_drv_t &jcom_drv_t::get_instance(uint8_t max_length)
 {
-    static jcom_drv_t instance(max_length, uart_drv_t::get_instance(uart_drv_t::uart1));
+    static jcom_drv_t instance(max_length, uart_drv_t::get_instance(uart_drv_t::which_uart::uart1));
     return instance;
 }
 

@@ -1,12 +1,13 @@
-#include "cstdint"
-
+#include <cstdint>
 #include "pyro_crc.h"
 
+// ===================================================================
+//                               CRC16
+// ===================================================================
 
-static uint16_t get_crc16_check_sum(uint8_t const *p_msg, uint16_t len,
-                                    uint16_t crc16);
+static uint16_t get_crc16_check_sum(uint8_t const *p_msg, uint16_t len, uint16_t crc16);
 
-static uint16_t crc16_init           = 0xffff;
+static uint16_t crc16_init = 0xffff;
 static const uint16_t crc16_tab[256] = {
     0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf, 0x8c48,
     0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5, 0xe97e, 0xf8f7, 0x1081, 0x0108,
@@ -38,10 +39,68 @@ static const uint16_t crc16_tab[256] = {
     0xc514, 0xb1ab, 0xa022, 0x92b9, 0x8330, 0x7bc7, 0x6a4e, 0x58d5, 0x495c,
     0x3de3, 0x2c6a, 0x1ef1, 0x0f78};
 
+/**
+ * @brief Get the crc16 checksum (Internal)
+ */
+static uint16_t get_crc16_check_sum(uint8_t const *p_msg, uint16_t len, uint16_t crc16)
+{
+    uint8_t data;
 
-static uint8_t crc8_init           = 0xff; // 对应 DJI 的 CRC8_INIT
+    if (p_msg == nullptr)
+    {
+        return 0xffff;
+    }
 
-// 对应 DJI 的 CRC8_table
+    while (len--)
+    {
+        data = *p_msg++;
+        (crc16) = (crc16 >> 8) ^
+                  crc16_tab[(crc16 ^ static_cast<uint16_t>(data)) & 0x00ff];
+    }
+
+    return crc16;
+}
+
+/**
+ * @brief crc16 verify function
+ */
+uint8_t verify_crc16_check_sum(uint8_t const *p_msg, const uint16_t len)
+{
+    uint16_t w_expected = 0;
+
+    if ((p_msg == nullptr) || (len <= 2))
+    {
+        return 0; // false
+    }
+    w_expected = get_crc16_check_sum(p_msg, len - 2, crc16_init);
+
+    return ((w_expected & 0xff) == p_msg[len - 2] &&
+            ((w_expected >> 8) & 0xff) == p_msg[len - 1]);
+}
+
+/**
+ * @brief crc16 append function
+ */
+void append_crc16_check_sum(uint8_t *p_msg, uint16_t len)
+{
+    uint16_t crc = 0;
+    if ((p_msg == nullptr) || (len <= 2))
+    {
+        return;
+    }
+    crc = get_crc16_check_sum(p_msg, len - 2, crc16_init);
+
+    // Fill the last two bytes with CRC (Little Endian as per DJI protocol)
+    p_msg[len - 2] = (uint8_t)(crc & 0x00ff);
+    p_msg[len - 1] = (uint8_t)((crc >> 8) & 0x00ff);
+}
+
+
+// ===================================================================
+//                               CRC8
+// ===================================================================
+
+static uint8_t crc8_init = 0xff;
 static const uint8_t crc8_tab[256] = {
     0x00, 0x5e, 0xbc, 0xe2, 0x61, 0x3f, 0xdd, 0x83, 0xc2, 0x9c, 0x7e, 0x20,
     0xa3, 0xfd, 0x1f, 0x41, 0x9d, 0xc3, 0x21, 0x7f, 0xfc, 0xa2, 0x40, 0x1e,
@@ -68,57 +127,9 @@ static const uint8_t crc8_tab[256] = {
 };
 
 /**
- * @brief Get the crc16 checksum
- *
- * @param p_msg Data to check
- * @param len Data length
- * @param crc16 Crc16 initialized checksum
- * @return crc16 Crc16 checksum
+ * @brief Get the crc8 checksum (Internal)
  */
-static uint16_t get_crc16_check_sum(uint8_t const *p_msg, uint16_t len,
-                                    uint16_t crc16)
-{
-    uint8_t data;
-
-    if (p_msg == nullptr)
-    {
-        return 0xffff;
-    }
-
-    while (len--)
-    {
-        data    = *p_msg++;
-        (crc16) = (crc16 >> 8) ^
-                  crc16_tab[(crc16 ^ static_cast<uint16_t>(data)) & 0x00ff];
-    }
-
-    return crc16;
-}
-
-/**
- * @brief crc16 verify function
- *
- * @param p_msg Data to verify
- * @param len Stream length=data+checksum
- * @return bool Crc16 check result
- */
-uint8_t verify_crc16_check_sum(uint8_t const *p_msg, const uint16_t len)
-{
-    uint16_t w_expected = 0;
-
-    if ((p_msg == nullptr) || (len <= 2))
-    {
-        return false;
-    }
-    w_expected = get_crc16_check_sum(p_msg, len - 2, crc16_init);
-
-    return ((w_expected & 0xff) == p_msg[len - 2] &&
-            ((w_expected >> 8) & 0xff) == p_msg[len - 1]);
-}
-
-
-static uint8_t get_crc8_check_sum(uint8_t const *p_msg, uint16_t len,
-                                  uint8_t crc8)
+static uint8_t get_crc8_check_sum(uint8_t const *p_msg, uint16_t len, uint8_t crc8)
 {
     uint8_t index;
     if (p_msg == nullptr)
@@ -133,19 +144,31 @@ static uint8_t get_crc8_check_sum(uint8_t const *p_msg, uint16_t len,
 }
 
 /**
- * @brief CRC8 校验函数 (Pyro 风格)
+ * @brief crc8 verify function
  */
 uint8_t verify_crc8_check_sum(uint8_t const *p_msg, const uint16_t len)
 {
     uint8_t expected = 0;
 
-    // DJI 版本中 dw_length <= 2 是针对数据结构的最小长度限制
     if ((p_msg == nullptr) || (len <= 1))
     {
-        return false;
+        return 0; // false
     }
 
-    // 计算前 len-1 个字节的 CRC，与最后一个字节对比
     expected = get_crc8_check_sum(p_msg, len - 1, crc8_init);
     return (expected == p_msg[len - 1]);
+}
+
+/**
+ * @brief crc8 append function
+ */
+void append_crc8_check_sum(uint8_t *p_msg, uint16_t len)
+{
+    uint8_t crc = 0;
+    if ((p_msg == nullptr) || (len <= 1))
+    {
+        return;
+    }
+    crc = get_crc8_check_sum(p_msg, len - 1, crc8_init);
+    p_msg[len - 1] = crc;
 }

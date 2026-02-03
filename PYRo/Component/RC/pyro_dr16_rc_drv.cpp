@@ -281,7 +281,7 @@ void dr16_drv_t::unpack(const dr16_buf_t *dr16_buf)
 bool dr16_drv_t::rc_callback(uint8_t *buf, const uint16_t len,
                              BaseType_t xHigherPriorityTaskWoken)
 {
-    if (len == 18)
+    if (len == sizeof(dr16_buf_t))
     {
         // Priority Arbitration:
         // Only process if no higher priority driver is active.
