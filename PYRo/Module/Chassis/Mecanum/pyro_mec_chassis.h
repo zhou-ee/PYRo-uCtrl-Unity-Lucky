@@ -2,7 +2,6 @@
 #define __PYRO_MEC_CHASSIS_H__
 
 #include "pyro_algo_pid.h"
-#include "pyro_dji_motor_drv.h"
 #include "pyro_kin_mec.h"
 #include "pyro_module_base.h"
 #include "pyro_motor_base.h"
@@ -15,9 +14,9 @@ namespace pyro
 // =========================================================
 struct mec_cmd_t final : public cmd_base_t
 {
-    float vx; // x轴速度 m/s
-    float vy; // y轴速度 m/s
-    float wz; // z轴角速度 rad/s
+    float vx; // 云台坐标系下的 X 轴速度 m/s (推前)
+    float vy; // 云台坐标系下的 Y 轴速度 m/s (推左)
+    float wz; // z轴角速度 rad/s (通常跟随模式下该值为0，除非做小陀螺)
 
     mec_cmd_t() : vx(0), vy(0), wz(0)
     {
@@ -29,7 +28,6 @@ struct mec_cmd_t final : public cmd_base_t
 // =========================================================
 class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
 {
-    // 允许 module_base_t 创建本类的单例对象（访问私有构造函数）
     friend class module_base_t<mec_chassis_t, mec_cmd_t>;
 
     struct motor_ctx_t;
@@ -38,12 +36,6 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
     struct mec_context_t;
 
   public:
-    /**
-     * @brief Public singleton accessor for code that needs an instance.
-     * This constructs the singleton inside the derived class scope, so the
-     * private constructor is accessible and no access errors occur when
-     * other translation units request the chassis singleton.
-     */
     mec_chassis_t(const mec_chassis_t &)            = delete;
     mec_chassis_t &operator=(const mec_chassis_t &) = delete;
 
@@ -64,27 +56,27 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
     // --- 成员变量 ---
     mecanum_kin_t *_kinematics{nullptr};
 
-    // 电机句柄
     struct motor_ctx_t
     {
         motor_base_t *wheels[4]{nullptr}; // FL, FR, BL, BR
+        motor_base_t *yaw_motor{nullptr};
     };
 
-    // 算法对象
     struct pid_ctx_t
     {
+        pid_t *follow_pid{nullptr};
         pid_t *wheel_pid[4]{nullptr};
     };
 
-    // 运行时数据
     struct data_ctx_t
     {
+        float current_yaw_error{0}; // 归一化后的偏航误差 (-PI ~ PI)
+
         float current_wheel_rpm[4]{};
         float target_wheel_rpm[4]{};
         float out_wheel_torque[4]{};
     };
 
-    // 总 Context
     struct mec_context_t
     {
         motor_ctx_t motor;
@@ -100,7 +92,6 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
     // =====================================================
     using owner = mec_chassis_t;
 
-    // 1. 无力状态 (Zero Force)
     struct state_passive_t : public state_t<owner>
     {
         void enter(owner *owner) override;
@@ -108,7 +99,6 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
         void exit(owner *owner) override;
     };
 
-    // 2. 有力状态 (Active Control)
     struct state_active_t : public state_t<owner>
     {
         void enter(owner *owner) override;
@@ -116,7 +106,6 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
         void exit(owner *owner) override;
     };
 
-    // 状态实例
     state_passive_t _state_passive;
     state_active_t _state_active;
     fsm_t<owner> _main_fsm;
@@ -125,10 +114,11 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
     // 物理参数常量
     // =====================================================
     static constexpr float WHEEL_RADIUS = 0.076f; // m
-    static constexpr float WHEELBASE    = 0.375f; // m (前后轴距)
-    static constexpr float TRACK_WIDTH  = 0.380f; // m (左右轮距)
+    static constexpr float WHEELBASE    = 0.375f; // m
+    static constexpr float TRACK_WIDTH  = 0.380f; // m
+
+    static constexpr float YAW_OFFSET_RAD = 0.796136022f; // 云台归中时的机械偏移量
 };
 
 } // namespace pyro
 #endif
-
