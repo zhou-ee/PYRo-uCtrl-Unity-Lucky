@@ -89,7 +89,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Component/RC/pyro_rc_base_drv.cpp
         PYRo/Component/RC/pyro_rc_hub.cpp
         PYRo/Component/RC/pyro_vt03_rc_drv.cpp
-        PYRo/Component/Referee/CRC8_CRC16.c
         PYRo/Component/Referee/fifo.c
         PYRo/Component/Referee/referee.c
         PYRo/Component/Referee/referee_drv.cpp

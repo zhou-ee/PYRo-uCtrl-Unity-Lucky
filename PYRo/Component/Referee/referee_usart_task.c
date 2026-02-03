@@ -14,7 +14,7 @@
   ****************************(C) COPYRIGHT 2019 DJI****************************
   */
 #include "referee_usart_task.h"
-#include "CRC8_CRC16.h"
+#include "pyro_crc.h"
 #include "cmsis_os.h"
 #include "fifo.h"
 #include "main.h"
@@ -143,7 +143,7 @@ void referee_unpack_fifo_data(void)
 
         if (p_obj->index == REF_PROTOCOL_HEADER_SIZE)
         {
-          if ( verify_CRC8_check_sum(p_obj->protocol_packet, REF_PROTOCOL_HEADER_SIZE) )
+          if ( verify_crc8_check_sum(p_obj->protocol_packet, REF_PROTOCOL_HEADER_SIZE) )
           {
             p_obj->unpack_step = STEP_DATA_CRC16;
           }
@@ -166,7 +166,7 @@ void referee_unpack_fifo_data(void)
           p_obj->unpack_step = STEP_HEADER_SOF;
           p_obj->index = 0;
 
-          if ( verify_CRC16_check_sum(p_obj->protocol_packet, REF_HEADER_CRC_CMDID_LEN + p_obj->data_len) )
+          if ( verify_crc16_check_sum(p_obj->protocol_packet, REF_HEADER_CRC_CMDID_LEN + p_obj->data_len) )
           {
             referee_data_solve(p_obj->protocol_packet);
           }
