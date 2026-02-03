@@ -95,6 +95,7 @@ template <typename Context> class state_t
 template <typename Context> class fsm_t : public state_t<Context>
 {
   protected:
+    state_t<Context> *_last_state   = nullptr;
     state_t<Context> *_active_state = nullptr;
     state_t<Context> *_target_state = nullptr;
 

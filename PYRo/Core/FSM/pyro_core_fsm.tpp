@@ -203,7 +203,7 @@ bool fsm_t<Context>::process_switch(Context *ctx)
         _active_state->exit(ctx);
         _active_state->discard_request();
     }
-
+    _last_state = _active_state;
     _active_state = _target_state;
 
     // Enter new state.
