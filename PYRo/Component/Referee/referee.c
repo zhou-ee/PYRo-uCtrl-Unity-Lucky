@@ -1,5 +1,4 @@
 #include "referee.h"
-#include "CRC8_CRC16.h"
 #include "protocol.h"
 #include "stdio.h"
 #include "string.h"
