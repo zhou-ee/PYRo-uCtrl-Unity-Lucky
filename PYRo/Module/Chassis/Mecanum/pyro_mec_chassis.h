@@ -6,6 +6,7 @@
 #include "pyro_module_base.h"
 #include "pyro_motor_base.h"
 #include "pyro_supercap_drv.h"
+#include "pyro_power_control_drv.h"
 
 namespace pyro
 {
@@ -50,8 +51,10 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
     void _fsm_execute() override;
 
     // --- 私有辅助方法 ---
+    static void _power_control_init();
+    void _power_control();
     void _kinematics_solve();
-    static void _chassis_control(mec_context_t *ctx);
+    void _chassis_control(mec_context_t *ctx);
     static void _send_motor_command(mec_context_t *ctx);
     void _send_supercap_command() const;
 
@@ -87,6 +90,7 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
         mec_cmd_t *cmd;
         supercap_drv_t::chassis_cmd_t supercap_cmd;
         supercap_drv_t::cap_feedback_t cap_feedback;
+        power_control_drv_t::motor_data_t power_motor_data[4];
     };
 
     mec_context_t _ctx;

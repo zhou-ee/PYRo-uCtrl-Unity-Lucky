@@ -15,9 +15,9 @@ extern "C"
         std::array<uint8_t, 8> raw_data{};
         pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can2, 0x101,
                                      raw_data);
-        mec_cmd_ptr->vx     = static_cast<float>(static_cast<int8_t>(raw_data[0])) / 127.0f;
-        mec_cmd_ptr->vy     = static_cast<float>(static_cast<int8_t>(raw_data[1])) / 127.0f;
-        mec_cmd_ptr->wz     = static_cast<float>(static_cast<int8_t>(raw_data[2])) / 127.0f;
+        mec_cmd_ptr->vx     = 3 * static_cast<float>(static_cast<int8_t>(raw_data[0])) / 127.0f;
+        mec_cmd_ptr->vy     = 3 * static_cast<float>(static_cast<int8_t>(raw_data[1])) / 127.0f;
+        mec_cmd_ptr->wz     = 3 * static_cast<float>(static_cast<int8_t>(raw_data[2])) / 127.0f;
         mec_cmd_ptr->mode = static_cast<pyro::cmd_base_t::mode_t>(raw_data[3]);
     }
 

@@ -187,12 +187,12 @@ bool supercap_drv_t::rx_callback(const uint8_t *p_data, const uint16_t size,
 /* Protocol Helpers ----------------------------------------------------------*/
 status_t supercap_drv_t::error_check(const rx_packet_t *buf)
 {
-    // 1. CRC8 Check (Header)
-    if (!verify_crc8_check_sum(reinterpret_cast<uint8_t const *>(buf),
-                               sizeof(frame_header_t)))
-    {
-        return PYRO_ERROR;
-    }
+    // // 1. CRC8 Check (Header)
+    // if (!verify_crc8_check_sum(reinterpret_cast<uint8_t const *>(buf),
+    //                            sizeof(frame_header_t)))
+    // {
+    //     return PYRO_ERROR;
+    // }
 
     // 2. CRC16 Check (Whole Packet)
     // Verify standard frame size (13 bytes). This ignores the extra '\n' if

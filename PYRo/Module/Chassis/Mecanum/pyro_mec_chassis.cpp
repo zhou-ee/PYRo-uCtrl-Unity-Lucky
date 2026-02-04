@@ -2,6 +2,7 @@
 #include "pyro_dji_motor_drv.h"
 #include "referee.h"
 
+
 namespace pyro
 {
 
@@ -13,9 +14,12 @@ namespace pyro
 static float _loop_fp32_constrain(float val, float min_val, float max_val)
 {
     float len = max_val - min_val;
-    if (len < 1e-6f) return val;
-    while (val > max_val) val -= len;
-    while (val < min_val) val += len;
+    if (len < 1e-6f)
+        return val;
+    while (val > max_val)
+        val -= len;
+    while (val < min_val)
+        val += len;
     return val;
 }
 
@@ -42,16 +46,21 @@ mec_chassis_t::mec_chassis_t() : module_base_t("mec_chassis")
 
 void mec_chassis_t::_init()
 {
-    _kinematics = new mecanum_kin_t(WHEELBASE, TRACK_WIDTH);
+    _kinematics          = new mecanum_kin_t(WHEELBASE, TRACK_WIDTH);
 
     // 假设使用 M3508，CAN1
-    _ctx.motor.wheels[0] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_1, can_hub_t::can1); // FL
-    _ctx.motor.wheels[1] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_2, can_hub_t::can1); // FR
-    _ctx.motor.wheels[2] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_3, can_hub_t::can1); // BL
-    _ctx.motor.wheels[3] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_4, can_hub_t::can1); // BR
+    _ctx.motor.wheels[0] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_1,
+                                                     can_hub_t::can1); // FL
+    _ctx.motor.wheels[1] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_2,
+                                                     can_hub_t::can1); // FR
+    _ctx.motor.wheels[2] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_3,
+                                                     can_hub_t::can1); // BL
+    _ctx.motor.wheels[3] = new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_4,
+                                                     can_hub_t::can1); // BR
 
     // Yaw 轴电机 (GM6020)，CAN2 ID 2
-    _ctx.motor.yaw_motor = new dji_gm_6020_motor_drv_t(dji_motor_tx_frame_t::id_2, can_hub_t::can2);
+    _ctx.motor.yaw_motor = new dji_gm_6020_motor_drv_t(
+        dji_motor_tx_frame_t::id_2, can_hub_t::can2);
 
     // 轮组 PID (速度环)
     for (auto &pid : _ctx.pid.wheel_pid)
@@ -62,7 +71,48 @@ void mec_chassis_t::_init()
     // 跟随 PID (位置环：输入弧度误差，输出 rad/s)
     // 注意：P 参数可能需要根据底盘重量调整 (3.0 ~ 8.0)
     _ctx.pid.follow_pid = new pid_t(5.0f, 0.0f, 0.1f, 0.0f, 10.0f, 10);
+
+    // 功率控制初始化
+    _power_control_init();
 }
+
+void mec_chassis_t::_power_control_init()
+{
+    power_control_drv_t::motor_coefficient_t coef[4];
+
+    for (auto &[k1, k2, k3, k4] : coef)
+    {
+        k1 = 0.1115f;
+        k2 = 0.1671f;
+        k3 = 0.1742f;
+        k4 = 0.5815f;
+    }
+
+    power_control_drv_t::get_instance(4).set_motor_coefficient(1, coef[0]);
+    power_control_drv_t::get_instance(4).set_motor_coefficient(2, coef[1]);
+    power_control_drv_t::get_instance(4).set_motor_coefficient(3, coef[2]);
+    power_control_drv_t::get_instance(4).set_motor_coefficient(4, coef[3]);
+}
+
+void mec_chassis_t::_power_control()
+{
+    for (int i = 0; i < 4; i++)
+    {
+        _ctx.power_motor_data[i].gyro       = _ctx.data.current_wheel_rpm[i];
+        _ctx.power_motor_data[i].torque_cmd = _ctx.data.out_wheel_torque[i];
+        _ctx.power_motor_data[i].power_predict =
+            power_control_drv_t::get_instance().motor_power_predict(
+                i, _ctx.power_motor_data[i].torque_cmd,
+                _ctx.power_motor_data[i].gyro);
+    }
+    power_control_drv_t::get_instance().calculate_restricted_torques(
+        _ctx.power_motor_data, 4,
+        referee_data.robot_status.chassis_power_limit);
+    for (int i = 0; i < 4; i++)
+        _ctx.data.out_wheel_torque[i] =
+            _ctx.power_motor_data[i].restricted_torque;
+}
+
 
 // =========================================================
 // 核心循环回调
@@ -88,30 +138,33 @@ void mec_chassis_t::_update_feedback()
     // 3. 计算 Yaw 轴跟随误差 (关键修改)
     // -------------------------------------------------------------
     // 获取当前绝对角度 (减去机械零点偏移)
-    float current_angle = _ctx.motor.yaw_motor->get_current_position() - YAW_OFFSET_RAD;
+    float current_angle =
+        _ctx.motor.yaw_motor->get_current_position() - YAW_OFFSET_RAD;
 
     // 归一化当前角度到 -PI ~ PI
-    current_angle = _loop_fp32_constrain(current_angle, -PI, PI);
+    current_angle               = _loop_fp32_constrain(current_angle, -PI, PI);
 
     // 目标是让底盘对齐云台 (角度为0)
     // Error = Target - Current = 0 - Current
-    float yaw_err = current_angle;
+    float yaw_err               = current_angle;
 
-    // 再次归一化 Error，确保走最短路径 (例如从 -3.1 到 +3.1 应该只差 0.2，而不是 6.2)
+    // 再次归一化 Error，确保走最短路径 (例如从 -3.1 到 +3.1 应该只差
+    // 0.2，而不是 6.2)
     _ctx.data.current_yaw_error = _loop_fp32_constrain(yaw_err, -PI, PI);
 
     // 4. 更新 cap_tx 数据
     _ctx.supercap_cmd.power_referee = 0;
-    _ctx.supercap_cmd.power_limit_referee = referee_data.robot_status.chassis_power_limit;
+    _ctx.supercap_cmd.power_limit_referee =
+        referee_data.robot_status.chassis_power_limit;
     _ctx.supercap_cmd.power_buffer_limit_referee = 60.0f;
-    _ctx.supercap_cmd.power_buffer_referee = referee_data.power_heat.buffer_energy;
-    _ctx.supercap_cmd.use_cap = 0;
+    _ctx.supercap_cmd.power_buffer_referee =
+        referee_data.power_heat.buffer_energy;
+    _ctx.supercap_cmd.use_cap           = 0;
     _ctx.supercap_cmd.kill_chassis_user = 0;
     _ctx.supercap_cmd.speed_up_user_now = 0;
 
     // 5. 更新 cap_rx 数据
     _ctx.cap_feedback = supercap_drv_t::get_instance()->get_feedback();
-
 }
 
 void mec_chassis_t::_kinematics_solve()
@@ -121,29 +174,30 @@ void mec_chassis_t::_kinematics_solve()
     // -------------------------------------------------------------
     // Calculate(measurement, target) 或 (error, 0)
     // 假设 pid_t::calculate(target, current)，我们将 error 作为 P项输入
-    float follow_wz = _ctx.pid.follow_pid->calculate(_ctx.data.current_yaw_error, 0.0f);
+    float follow_wz =
+        _ctx.pid.follow_pid->calculate(_ctx.data.current_yaw_error, 0.0f);
 
     // 最终角速度 = 跟随产生的角速度 + 选手手动输入的角速度(小陀螺/微调)
-    float final_wz = follow_wz + _ctx.cmd->wz;
+    float final_wz   = follow_wz + _ctx.cmd->wz;
 
     // -------------------------------------------------------------
     // 2. 矢量旋转 (将云台坐标系速度转换到底盘坐标系)
     // -------------------------------------------------------------
     // 我们需要知道底盘相对于云台的角度。
-    // current_yaw_error = 0 - current_angle => current_angle = -current_yaw_error
-    // 设 theta 为底盘相对于云台的偏角
-    float theta = -_ctx.data.current_yaw_error;
+    // current_yaw_error = 0 - current_angle => current_angle =
+    // -current_yaw_error 设 theta 为底盘相对于云台的偏角
+    float theta      = -_ctx.data.current_yaw_error;
 
-    float c_theta = cos(theta);
-    float s_theta = sin(theta);
+    float c_theta    = cos(theta);
+    float s_theta    = sin(theta);
 
     // 旋转矩阵公式 (逆时针旋转 theta)
     // V_chassis = RotationMatrix(-theta) * V_gimbal ?
     // 实际上我们需要把 云台系 投射到 底盘系。
-    // 如果云台不动，底盘左转了 90度 (theta=90)，向前推杆 (vx=1)，底盘应该向右平移 (y=-1)。
-    // vx_c = 1 * cos(90) + 0 = 0
-    // vy_c = -1 * sin(90) + 0 = -1 (符合)
-    float vx_chassis =  _ctx.cmd->vx * c_theta + _ctx.cmd->vy * s_theta;
+    // 如果云台不动，底盘左转了 90度 (theta=90)，向前推杆
+    // (vx=1)，底盘应该向右平移 (y=-1)。 vx_c = 1 * cos(90) + 0 = 0 vy_c = -1 *
+    // sin(90) + 0 = -1 (符合)
+    float vx_chassis = _ctx.cmd->vx * c_theta + _ctx.cmd->vy * s_theta;
     float vy_chassis = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
 
     // -------------------------------------------------------------
@@ -154,10 +208,14 @@ void mec_chassis_t::_kinematics_solve()
 
     // 4. 转 RPM 并分配给电机
     // 注意：右侧电机通常需要反转，取决于具体安装和电机库定义
-    _ctx.data.target_wheel_rpm[0] =  _mps_to_rpm(wheel_speeds_mps.fl, WHEEL_RADIUS);
-    _ctx.data.target_wheel_rpm[1] = -_mps_to_rpm(wheel_speeds_mps.fr, WHEEL_RADIUS);
-    _ctx.data.target_wheel_rpm[2] =  _mps_to_rpm(wheel_speeds_mps.bl, WHEEL_RADIUS);
-    _ctx.data.target_wheel_rpm[3] = -_mps_to_rpm(wheel_speeds_mps.br, WHEEL_RADIUS);
+    _ctx.data.target_wheel_rpm[0] =
+        _mps_to_rpm(wheel_speeds_mps.fl, WHEEL_RADIUS);
+    _ctx.data.target_wheel_rpm[1] =
+        -_mps_to_rpm(wheel_speeds_mps.fr, WHEEL_RADIUS);
+    _ctx.data.target_wheel_rpm[2] =
+        _mps_to_rpm(wheel_speeds_mps.bl, WHEEL_RADIUS);
+    _ctx.data.target_wheel_rpm[3] =
+        -_mps_to_rpm(wheel_speeds_mps.br, WHEEL_RADIUS);
 }
 
 void mec_chassis_t::_chassis_control(mec_context_t *ctx)
@@ -168,6 +226,7 @@ void mec_chassis_t::_chassis_control(mec_context_t *ctx)
         ctx->data.out_wheel_torque[i] = ctx->pid.wheel_pid[i]->calculate(
             ctx->data.target_wheel_rpm[i], ctx->data.current_wheel_rpm[i]);
     }
+    _power_control();
 }
 
 void mec_chassis_t::_send_motor_command(mec_context_t *ctx)
@@ -180,7 +239,7 @@ void mec_chassis_t::_send_motor_command(mec_context_t *ctx)
 
 void mec_chassis_t::_send_supercap_command() const
 {
-   supercap_drv_t::get_instance()->send_cmd(_ctx.supercap_cmd);//NOLINT
+    supercap_drv_t::get_instance()->send_cmd(_ctx.supercap_cmd); // NOLINT
 }
 // =========================================================
 // 状态机逻辑

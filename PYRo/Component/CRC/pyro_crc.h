@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief 校验 CRC16
  * @return 1 (true) if valid, 0 (false) if invalid
@@ -26,5 +30,9 @@ extern uint8_t verify_crc8_check_sum(uint8_t const* p_msg, uint16_t len);
  * @note  缓冲区长度必须包含最后1个字节的空间
  */
 extern void append_crc8_check_sum(uint8_t* p_msg, uint16_t len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

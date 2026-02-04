@@ -40,7 +40,7 @@ static size_t xBlockAllocatedBit = 0;
 
 #ifndef configTOTAL_DMA_HEAP_SIZE
 	/* 默认 DMA 堆大小为 0（不可用），如果需要使用请在 FreeRTOSConfig.h 中定义一个合理值 */
-	#define configTOTAL_DMA_HEAP_SIZE 1024
+	#define configTOTAL_DMA_HEAP_SIZE 2048
 #endif
 
 #if( configTOTAL_DMA_HEAP_SIZE > 0 )

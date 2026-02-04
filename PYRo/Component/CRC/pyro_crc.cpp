@@ -162,7 +162,7 @@ uint8_t verify_crc8_check_sum(uint8_t const *p_msg, const uint16_t len)
 /**
  * @brief crc8 append function
  */
-void append_crc8_check_sum(uint8_t *p_msg, uint16_t len)
+void append_crc8_check_sum(uint8_t *p_msg, const uint16_t len)
 {
     uint8_t crc = 0;
     if ((p_msg == nullptr) || (len <= 1))
