@@ -1,5 +1,6 @@
 #include "pyro_mec_chassis.h"
 #include "pyro_dji_motor_drv.h"
+#include "referee.h"
 
 namespace pyro
 {
@@ -98,6 +99,19 @@ void mec_chassis_t::_update_feedback()
 
     // 再次归一化 Error，确保走最短路径 (例如从 -3.1 到 +3.1 应该只差 0.2，而不是 6.2)
     _ctx.data.current_yaw_error = _loop_fp32_constrain(yaw_err, -PI, PI);
+
+    // 4. 更新 cap_tx 数据
+    _ctx.supercap_cmd.power_referee = 0;
+    _ctx.supercap_cmd.power_limit_referee = referee_data.robot_status.chassis_power_limit;
+    _ctx.supercap_cmd.power_buffer_limit_referee = 60.0f;
+    _ctx.supercap_cmd.power_buffer_referee = referee_data.power_heat.buffer_energy;
+    _ctx.supercap_cmd.use_cap = 0;
+    _ctx.supercap_cmd.kill_chassis_user = 0;
+    _ctx.supercap_cmd.speed_up_user_now = 0;
+
+    // 5. 更新 cap_rx 数据
+    _ctx.cap_feedback = supercap_drv_t::get_instance()->get_feedback();
+
 }
 
 void mec_chassis_t::_kinematics_solve()
@@ -164,6 +178,10 @@ void mec_chassis_t::_send_motor_command(mec_context_t *ctx)
     }
 }
 
+void mec_chassis_t::_send_supercap_command() const
+{
+   supercap_drv_t::get_instance()->send_cmd(_ctx.supercap_cmd);//NOLINT
+}
 // =========================================================
 // 状态机逻辑
 // =========================================================
@@ -180,6 +198,8 @@ void mec_chassis_t::_fsm_execute()
     {
         _main_fsm.change_state(&_state_passive);
     }
+
+    _send_supercap_command();
 
     _main_fsm.execute(this);
 }

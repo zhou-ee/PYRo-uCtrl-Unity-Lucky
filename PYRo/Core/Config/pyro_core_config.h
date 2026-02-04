@@ -38,7 +38,16 @@
 #define DARTS_ID 8
 #define RADAR_ID 9
 
-#define ROBOT_ID TEST_ROBOT_ID
+#define ROBOT_ID HERO_ID
+
+#if ROBOT_ID == HERO_ID
+
+#define GIMBAL_ID 1
+#define CHASSIS_ID 2
+
+#define BOARD_ID CHASSIS_ID
+#endif
+
 
 
 #endif //PYRO_PYRO_CORE_CONFIG_H

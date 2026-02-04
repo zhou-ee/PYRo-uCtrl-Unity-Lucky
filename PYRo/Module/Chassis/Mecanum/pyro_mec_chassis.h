@@ -5,6 +5,7 @@
 #include "pyro_kin_mec.h"
 #include "pyro_module_base.h"
 #include "pyro_motor_base.h"
+#include "pyro_supercap_drv.h"
 
 namespace pyro
 {
@@ -52,6 +53,7 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
     void _kinematics_solve();
     static void _chassis_control(mec_context_t *ctx);
     static void _send_motor_command(mec_context_t *ctx);
+    void _send_supercap_command() const;
 
     // --- 成员变量 ---
     mecanum_kin_t *_kinematics{nullptr};
@@ -83,6 +85,8 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t>
         pid_ctx_t pid;
         data_ctx_t data;
         mec_cmd_t *cmd;
+        supercap_drv_t::chassis_cmd_t supercap_cmd;
+        supercap_drv_t::cap_feedback_t cap_feedback;
     };
 
     mec_context_t _ctx;

@@ -27,10 +27,10 @@ extern "C"
             return;
         }
         direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-        direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
-        direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
-        // direct_gimbal_cmd_ptr->pitch_delta_angle = -p_ctrl->rc.ch_ry * 0.0035f;
-        // direct_gimbal_cmd_ptr->yaw_delta_angle   = -p_ctrl->rc.ch_rx * 0.0035f;
+        // direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
+        // direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
+        direct_gimbal_cmd_ptr->pitch_delta_angle = -p_ctrl->rc.ch_ry * 0.0035f;
+        direct_gimbal_cmd_ptr->yaw_delta_angle   = -p_ctrl->rc.ch_rx * 0.0035f;
     }
 
     void chassis_rc2cmd(void const *rc_ctrl)
