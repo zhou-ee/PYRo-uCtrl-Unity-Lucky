@@ -152,6 +152,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         # --- Device ---
         PYRo/Device/BMI088/BMI088_driver.cpp
         PYRo/Device/BMI088/BMI088_middleware.cpp
+        PYRo/Application/Mission/Hero/pyro_chassis_app.cpp
 
 )
 
