@@ -110,26 +110,29 @@ void vt03_drv_t::check_ctrl(vt03_gear_t &vt03_gear, const uint8_t raw_state)
     vt03_gear_t gear = {};
     const auto state = static_cast<gear_state_t>(raw_state);
 
-    if (vt03_gear.state == state)
+    if (vt03_gear.state != state)
     {
-        gear.ctrl = gear_ctrl_t::GEAR_NO_CHANGE;
+        if (gear_state_t::GEAR_LEFT == vt03_gear.state && gear_state_t::GEAR_MID == state)
+        {
+            gear.ctrl = gear_ctrl_t::GEAR_LEFT_TO_MID;
+        }
+        else if (gear_state_t::GEAR_MID == vt03_gear.state && gear_state_t::GEAR_LEFT == state)
+        {
+            gear.ctrl = gear_ctrl_t::GEAR_MID_TO_LEFT;
+        }
+        else if (gear_state_t::GEAR_MID == vt03_gear.state && gear_state_t::GEAR_RIGHT == state)
+        {
+            gear.ctrl = gear_ctrl_t::GEAR_MID_TO_RIGHT;
+        }
+        else if (gear_state_t::GEAR_RIGHT == vt03_gear.state && gear_state_t::GEAR_MID == state)
+        {
+            gear.ctrl = gear_ctrl_t::GEAR_RIGHT_TO_MID;
+        }
+        vt03_gear.change_time = pyro::dwt_drv_t::get_timeline_ms();
     }
-    // Detect all possible state transitions
-    if (gear_state_t::GEAR_LEFT == vt03_gear.state && gear_state_t::GEAR_MID == state)
+    else
     {
-        gear.ctrl = gear_ctrl_t::GEAR_LEFT_TO_MID;
-    }
-    else if (gear_state_t::GEAR_MID == vt03_gear.state && gear_state_t::GEAR_LEFT == state)
-    {
-        gear.ctrl = gear_ctrl_t::GEAR_MID_TO_LEFT;
-    }
-    else if (gear_state_t::GEAR_MID == vt03_gear.state && gear_state_t::GEAR_RIGHT == state)
-    {
-        gear.ctrl = gear_ctrl_t::GEAR_MID_TO_RIGHT;
-    }
-    else if (gear_state_t::GEAR_RIGHT == vt03_gear.state && gear_state_t::GEAR_MID == state)
-    {
-        gear.ctrl = gear_ctrl_t::GEAR_RIGHT_TO_MID;
+        gear.ctrl = vt03_gear.ctrl;
     }
     gear.state = state;
     vt03_gear  = gear;

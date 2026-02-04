@@ -12,7 +12,7 @@
  * @version: 1.0
  */
 #include "pyro_power_control_drv.h"
-#include <math.h>
+#include <cmath>
 
 namespace pyro
 {

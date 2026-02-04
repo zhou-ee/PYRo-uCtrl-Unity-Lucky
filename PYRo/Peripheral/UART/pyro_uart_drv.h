@@ -78,7 +78,7 @@ class uart_drv_t
     /**
      * @brief Enum to identify specific UART instances for the Singleton.
      */
-    enum which_uart
+    enum class which_uart
     {
         uart1,
         uart5,

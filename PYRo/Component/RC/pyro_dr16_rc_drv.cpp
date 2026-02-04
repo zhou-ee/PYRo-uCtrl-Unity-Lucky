@@ -78,7 +78,7 @@ void dr16_drv_t::disable()
 }
 
 
-/* Data Processing - Error Check ---------------------------------------------*/
+ /* Data Processing - Error Check ---------------------------------------------*/
 status_t dr16_drv_t::error_check(const dr16_buf_t *dr16_buf)
 {
     // Basic boundary validation for stick channels
@@ -89,9 +89,7 @@ status_t dr16_drv_t::error_check(const dr16_buf_t *dr16_buf)
         dr16_buf->ch2 < DR16_CH_VALUE_MIN ||
         dr16_buf->ch2 > DR16_CH_VALUE_MAX ||
         dr16_buf->ch3 < DR16_CH_VALUE_MIN ||
-        dr16_buf->ch3 > DR16_CH_VALUE_MAX ||
-        dr16_buf->wheel < DR16_CH_VALUE_MIN ||
-        dr16_buf->wheel > DR16_CH_VALUE_MAX)
+        dr16_buf->ch3 > DR16_CH_VALUE_MAX )
     {
         return PYRO_ERROR;
     }
@@ -108,28 +106,33 @@ void dr16_drv_t::check_ctrl(switch_t &dr16_switch, const uint8_t raw_state)
     const auto state = static_cast<sw_state_t>(raw_state);
 
     // Detect transition edges and assign control events
-    if (dr16_switch.state == state)
+    if (dr16_switch.state != state)
     {
-        switch_.ctrl = sw_ctrl_t::SW_NO_CHANGE;
+        if (sw_state_t::SW_UP == dr16_switch.state && sw_state_t::SW_MID == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_UP_TO_MID;
+        }
+        else if (sw_state_t::SW_MID == dr16_switch.state &&
+                 sw_state_t::SW_DOWN == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_MID_TO_DOWN;
+        }
+        else if (sw_state_t::SW_DOWN == dr16_switch.state &&
+                 sw_state_t::SW_MID == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_DOWN_TO_MID;
+        }
+        else if (sw_state_t::SW_MID == dr16_switch.state &&
+                 sw_state_t::SW_UP == state)
+        {
+            switch_.ctrl = sw_ctrl_t::SW_MID_TO_UP;
+        }
+        switch_.change_time = pyro::dwt_drv_t::get_timeline_ms();
     }
-    if (sw_state_t::SW_UP == dr16_switch.state && sw_state_t::SW_MID == state)
+    else
     {
-        switch_.ctrl = sw_ctrl_t::SW_UP_TO_MID;
-    }
-    else if (sw_state_t::SW_MID == dr16_switch.state &&
-             sw_state_t::SW_DOWN == state)
-    {
-        switch_.ctrl = sw_ctrl_t::SW_MID_TO_DOWN;
-    }
-    else if (sw_state_t::SW_DOWN == dr16_switch.state &&
-             sw_state_t::SW_MID == state)
-    {
-        switch_.ctrl = sw_ctrl_t::SW_DOWN_TO_MID;
-    }
-    else if (sw_state_t::SW_MID == dr16_switch.state &&
-             sw_state_t::SW_UP == state)
-    {
-        switch_.ctrl = sw_ctrl_t::SW_MID_TO_UP;
+        switch_.ctrl = dr16_switch.ctrl;
+        switch_.change_time = dr16_switch.change_time;
     }
     switch_.state = state;
     dr16_switch   = switch_;
@@ -278,7 +281,7 @@ void dr16_drv_t::unpack(const dr16_buf_t *dr16_buf)
 bool dr16_drv_t::rc_callback(uint8_t *buf, const uint16_t len,
                              BaseType_t xHigherPriorityTaskWoken)
 {
-    if (len == 18)
+    if (len == sizeof(dr16_buf_t))
     {
         // Priority Arbitration:
         // Only process if no higher priority driver is active.

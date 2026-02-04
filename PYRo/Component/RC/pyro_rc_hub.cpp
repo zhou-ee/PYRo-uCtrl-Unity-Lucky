@@ -40,7 +40,7 @@ rc_drv_t *rc_hub_t::get_instance(which_rc_t which_rc)
         {
             // Bind UART5 to the DR16 driver / 将 UART5 绑定至 DR16 驱动
             static uart_drv_t *dr16_uart =
-                uart_drv_t::get_instance(uart_drv_t::uart5);
+                uart_drv_t::get_instance(uart_drv_t::which_uart::uart5);
             static dr16_drv_t dr16_rc_drv(dr16_uart);
             return &dr16_rc_drv;
         }
@@ -48,7 +48,7 @@ rc_drv_t *rc_hub_t::get_instance(which_rc_t which_rc)
         {
             // Bind UART1 to the VT03 driver / 将 UART1 绑定至 VT03 驱动
             static uart_drv_t *vt03_uart =
-                uart_drv_t::get_instance(uart_drv_t::uart1);
+                uart_drv_t::get_instance(uart_drv_t::which_uart::uart1);
             static vt03_drv_t vt03_rc_drv(vt03_uart);
             return &vt03_rc_drv;
         }

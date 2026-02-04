@@ -2,9 +2,10 @@
 #include "pyro_rc_hub.h"
 #include "pyro_dwt_drv.h"
 #include "pyro_ins.h"
+#include "pyro_supercap_drv.h"
 
-using namespace pyro;
-
+namespace pyro
+{
 extern "C"
 {
     can_drv_t *can1_drv;
@@ -16,13 +17,13 @@ extern "C"
     {
         dwt_drv_t::init(480); // Initialize DWT at 480 MHz
         
-        uart_drv_t::get_instance(uart_drv_t::uart1)
+        uart_drv_t::get_instance(uart_drv_t::which_uart::uart1)
             ->enable_rx_dma();
-        uart_drv_t::get_instance(uart_drv_t::uart5)
+        uart_drv_t::get_instance(uart_drv_t::which_uart::uart5)
             ->enable_rx_dma();
-        uart_drv_t::get_instance(uart_drv_t::uart7)
+        uart_drv_t::get_instance(uart_drv_t::which_uart::uart7)
             ->enable_rx_dma();
-        uart_drv_t::get_instance(uart_drv_t::uart10)
+        uart_drv_t::get_instance(uart_drv_t::which_uart::uart10)
             ->enable_rx_dma();
 
         rc_hub_t::get_instance(rc_hub_t::DR16)->enable();
@@ -42,6 +43,9 @@ extern "C"
         ins_drv = ins_drv_t::get_instance();
         ins_drv->init();
 
+        supercap_drv_t::get_instance()->start_rx();
+
         vTaskDelete(nullptr);
     }
 }
+} // namespace pyro
