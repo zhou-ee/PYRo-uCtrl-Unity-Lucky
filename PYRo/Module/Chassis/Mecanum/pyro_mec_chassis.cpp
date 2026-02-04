@@ -82,8 +82,8 @@ void mec_chassis_t::_power_control_init()
 
     for (auto &[k1, k2, k3, k4] : coef)
     {
-        k1 = 0.1115f;
-        k2 = 0.1671f;
+        k1 = 0.0160f;
+        k2 = 0.0250f;
         k3 = 0.1742f;
         k4 = 0.5815f;
     }
@@ -105,9 +105,18 @@ void mec_chassis_t::_power_control()
                 i, _ctx.power_motor_data[i].torque_cmd,
                 _ctx.power_motor_data[i].gyro);
     }
-    power_control_drv_t::get_instance().calculate_restricted_torques(
-        _ctx.power_motor_data, 4,
-        referee_data.robot_status.chassis_power_limit);
+    if (_ctx.cap_feedback.vot_cap >= 1800)
+    {
+        power_control_drv_t::get_instance().calculate_restricted_torques(
+            _ctx.power_motor_data, 4,
+            static_cast<float>(referee_data.robot_status.chassis_power_limit) + 100.0f);
+    }
+    else
+    {
+        power_control_drv_t::get_instance().calculate_restricted_torques(
+            _ctx.power_motor_data, 4,
+            referee_data.robot_status.chassis_power_limit);
+    }
     for (int i = 0; i < 4; i++)
         _ctx.data.out_wheel_torque[i] =
             _ctx.power_motor_data[i].restricted_torque;
@@ -159,7 +168,7 @@ void mec_chassis_t::_update_feedback()
     _ctx.supercap_cmd.power_buffer_limit_referee = 60.0f;
     _ctx.supercap_cmd.power_buffer_referee =
         referee_data.power_heat.buffer_energy;
-    _ctx.supercap_cmd.use_cap           = 0;
+    _ctx.supercap_cmd.use_cap           = 1;
     _ctx.supercap_cmd.kill_chassis_user = 0;
     _ctx.supercap_cmd.speed_up_user_now = 0;
 
@@ -258,7 +267,31 @@ void mec_chassis_t::_fsm_execute()
         _main_fsm.change_state(&_state_passive);
     }
 
-    _send_supercap_command();
+    static uint32_t cap_time;
+    static uint8_t cap_first_flag = 1;
+
+    if (cap_time > 10)
+    {
+        if (cap_first_flag)
+        {
+            cap_time++;
+            if (cap_time > 1200)
+            {
+                _send_supercap_command();
+                cap_time = 0;
+                cap_first_flag = 0;
+            }
+        }
+        else
+        {
+            _send_supercap_command();
+            cap_time = 0;
+        }
+    }
+    else
+    {
+        cap_time++;
+    }
 
     _main_fsm.execute(this);
 }
