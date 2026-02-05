@@ -130,6 +130,12 @@ class quad_booster_t final
             void execute(owner *owner) override;
             void exit(owner *owner) override;
         };
+        struct state_stall_t final : public state_t<owner>
+        {
+            void enter(owner *owner) override;
+            void execute(owner *owner) override;
+            void exit(owner *owner) override;
+        };
         void on_enter(owner *owner) override;
         void on_execute(owner *owner) override;
         void on_exit(owner *owner) override;
@@ -137,8 +143,8 @@ class quad_booster_t final
       private:
         state_homing_t _homing_state;
         state_ready_t _ready_state;
+        state_stall_t _stall_state;
     };
-
     state_passive_t _state_passive;
     fsm_active_t _state_active;
     fsm_t<owner> _main_fsm;

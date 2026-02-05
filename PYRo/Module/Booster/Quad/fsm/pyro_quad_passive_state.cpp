@@ -23,7 +23,6 @@ void quad_booster_t::state_passive_t::execute(owner *owner)
             owner->_ctx.data.out_fric_torque[i] = 0.0f;
     }
     owner->_ctx.data.out_trig_torque = 0;
-
     owner->_send_fric_command();
 }
 
