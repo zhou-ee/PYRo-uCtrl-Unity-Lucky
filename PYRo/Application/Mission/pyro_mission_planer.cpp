@@ -3,6 +3,7 @@
 extern "C"
 {
     extern void pyro_init_thread(void *argument);
+    extern void start_debug_task(void *arg);
 
 #if ROBOT_ID == HERO_ID
 #if BOARD_ID == GIMBAL_ID
@@ -29,6 +30,12 @@ extern "C"
                     configMAX_PRIORITIES - 1, nullptr);
 #endif
 #endif
+
+#if DEBUG_MODE
+        xTaskCreate(start_debug_task, "start_debug_task", 128, nullptr,
+                    configMAX_PRIORITIES - 2, nullptr);
+#endif
+
 
         vTaskDelete(nullptr);
     }

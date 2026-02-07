@@ -7,6 +7,7 @@ void quad_booster_t::state_passive_t::enter(owner *owner)
 {
     owner->_ctx.pid.trigger_pos_pid->clear();
     owner->_ctx.pid.trigger_spd_pid->clear();
+    _trigger_stopped = false;
 }
 
 void quad_booster_t::state_passive_t::execute(owner *owner)
@@ -24,6 +25,17 @@ void quad_booster_t::state_passive_t::execute(owner *owner)
     }
     owner->_ctx.data.out_trig_torque = 0;
     owner->_send_fric_command();
+
+    owner->_ctx.data.target_trig_rad   = owner->_ctx.data.current_trig_rad;
+    owner->_ctx.data.target_trig_radps = 0.0f;
+    if (abs(owner->_ctx.data.current_trig_radps) < 0.05f)
+    {
+        owner->_ctx.data.out_trig_torque = 0.0f;
+        _trigger_stopped                 = true;
+    }
+    if (!_trigger_stopped)
+        owner->_trigger_speed_control();
+    owner->_send_trigger_command();
 }
 
 void quad_booster_t::state_passive_t::exit(owner *owner)

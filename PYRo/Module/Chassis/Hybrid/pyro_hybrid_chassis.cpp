@@ -265,11 +265,11 @@ void hybrid_chassis_t::_send_motor_command(hybrid_context_t *ctx)
 void hybrid_chassis_t::_fsm_execute()
 {
     // 1. 数据刷新
-    _ctx.cmd = &_cmd[_read_index];
+    _ctx.cmd = &_current_cmd;
 
     if (cmd_base_t::mode_t::ACTIVE == _ctx.cmd->mode)
         _main_fsm.change_state(&_state_active);
-    else if (cmd_base_t::mode_t::ZERO_FORCE == _ctx.cmd->mode)
+    else if (cmd_base_t::mode_t::PASSIVE == _ctx.cmd->mode)
         _main_fsm.change_state(&_state_passive);
 
     // 2. 反馈更新

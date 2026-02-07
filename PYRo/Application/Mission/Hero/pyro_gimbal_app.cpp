@@ -21,7 +21,7 @@ extern "C"
 
         if (pyro::dr16_drv_t::sw_state_t::SW_MID != p_ctrl->rc.s_r.state)
         {
-            direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ZERO_FORCE;
+            direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
             direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
             direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
             return;

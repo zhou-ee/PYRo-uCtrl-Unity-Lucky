@@ -59,6 +59,10 @@ void quad_booster_t::fsm_active_t::on_execute(owner *owner)
             {
                 // 进入堵转状态
                 change_state(&_stall_state);
+                if (_active_state == &_stall_state)
+                {
+                    reset();
+                }
                 stall_start_time = 0.0f; // 重置堵转计时
             }
         }

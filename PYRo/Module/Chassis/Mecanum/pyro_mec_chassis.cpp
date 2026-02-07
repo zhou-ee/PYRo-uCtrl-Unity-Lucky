@@ -256,7 +256,7 @@ void mec_chassis_t::_send_supercap_command() const
 
 void mec_chassis_t::_fsm_execute()
 {
-    _ctx.cmd = &_cmd[_read_index];
+    _ctx.cmd = &_current_cmd;
 
     if (_ctx.cmd->mode == cmd_base_t::mode_t::ACTIVE)
     {

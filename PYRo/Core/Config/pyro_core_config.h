@@ -18,7 +18,7 @@
 #if DEBUG_MODE
 
 #define VOFA_DEBUG_EN 0
-#define JCOM_DEBUG_EN 0
+#define JCOM_DEBUG_EN 1
 
 #endif
 
@@ -45,7 +45,7 @@
 #define GIMBAL_ID 1
 #define CHASSIS_ID 2
 
-#define BOARD_ID CHASSIS_ID
+#define BOARD_ID GIMBAL_ID
 #endif
 
 

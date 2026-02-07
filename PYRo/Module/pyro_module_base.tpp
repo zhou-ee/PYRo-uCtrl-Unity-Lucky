@@ -34,26 +34,36 @@ void module_base_t<Derived, CmdType>::start()
     _task.start();
 }
 
+/**
+ * @brief 写入命令到环形缓冲区 (生产者)
+ * 注意：如果缓冲区已满，新命令将被丢弃（防止覆盖未执行的旧轨迹）
+ */
 template <typename Derived, typename CmdType>
-void module_base_t<Derived, CmdType>::set_command(const CmdType &cmd)
+bool module_base_t<Derived, CmdType>::set_command(const CmdType &cmd)
 {
     scoped_mutex_t lock(_mutex);
-    _cmd[1 - _read_index] = cmd;
-    _cmd_updated          = true;
+    uint8_t next_head = (_head + 1) % CMD_BUF_SIZE;
+    if (next_head != _tail)
+    {
+        _cmd_buffer[_head] = cmd;
+        _head = next_head;
+        return true;
+    }
+    return false;
 }
 
 /**
- * @brief Updates command from double buffer.
- * 从双缓冲中更新命令。
+ * @brief 从环形缓冲区更新命令 (消费者)
+ * 注意：如果缓冲区为空，_current_cmd 保持上一次的值不变 (Zero-Order Hold)
  */
 template <typename Derived, typename CmdType>
 void module_base_t<Derived, CmdType>::_update_command()
 {
-    if (_cmd_updated)
+    scoped_mutex_t lock(_mutex);
+    if (_head != _tail)
     {
-        scoped_mutex_t lock(_mutex);
-        _read_index  = 1 - _read_index;
-        _cmd_updated = false;
+        _current_cmd = _cmd_buffer[_tail];
+        _tail = (_tail + 1) % CMD_BUF_SIZE;
     }
 }
 

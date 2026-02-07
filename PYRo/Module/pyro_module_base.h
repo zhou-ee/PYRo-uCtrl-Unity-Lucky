@@ -33,9 +33,9 @@ namespace pyro
  */
 struct cmd_base_t
 {
-    enum class mode_t : uint8_t { ZERO_FORCE, ACTIVE } mode;
+    enum class mode_t : uint8_t { PASSIVE, ACTIVE } mode;
     uint32_t timestamp;
-    cmd_base_t() : mode(mode_t::ZERO_FORCE), timestamp(0){}
+    cmd_base_t() : mode(mode_t::PASSIVE), timestamp(0){}
     virtual ~cmd_base_t() = default;
 };
 
@@ -53,8 +53,16 @@ class module_base_t
         return &_instance_obj;
     }
 
+    /*
+     * @brief Starts the module task. Must be explicitly called.
+     * 启动模块任务,需要显式调用
+     */
     void start();
-    void set_command(const CmdType &cmd);
+    /*
+     * @brief Sets the current command for the module. Thread-safe.
+     * 设置模块当前命令,线程安全（内部环形缓冲区实现）
+     */
+    bool set_command(const CmdType &cmd);
     [[nodiscard]] mutex_t &get_mutex();
 
   protected:
@@ -74,8 +82,7 @@ class module_base_t
     /** @brief Callback for FSM execution. 状态机执行回调。 */
     virtual void _fsm_execute() = 0;
 
-    CmdType _cmd[2];
-    uint8_t _read_index{0};
+    CmdType _current_cmd;
 
   private:
     class module_task_t final : public task_base_t
@@ -95,8 +102,14 @@ class module_base_t
     void _run_loop_impl();
 
     module_task_t _task;
-    bool _cmd_updated{false};
     mutex_t _mutex;
+
+    static constexpr uint8_t CMD_BUF_SIZE = 16; // 缓冲区大小，建议为 2 的幂
+    CmdType _cmd_buffer[CMD_BUF_SIZE];
+
+    // 读写指针
+    volatile uint8_t _head{0}; // 写入位置 (Write Index)
+    volatile uint8_t _tail{0}; // 读取位置 (Read Index)
 };
 
 } // namespace pyro

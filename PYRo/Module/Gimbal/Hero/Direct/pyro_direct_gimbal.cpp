@@ -115,11 +115,11 @@ void direct_gimbal_t::_send_motor_command(gimbal_context_t *ctx)
 
 void direct_gimbal_t::_fsm_execute()
 {
-    _ctx.cmd = &_cmd[_read_index];
+    _ctx.cmd = &_current_cmd;
 
     if (cmd_base_t::mode_t::ACTIVE == _ctx.cmd->mode)
         _main_fsm.change_state(&_state_active);
-    else if (cmd_base_t::mode_t::ZERO_FORCE == _ctx.cmd->mode)
+    else if (cmd_base_t::mode_t::PASSIVE == _ctx.cmd->mode)
         _main_fsm.change_state(&_state_passive);
 
     _main_fsm.execute(this);

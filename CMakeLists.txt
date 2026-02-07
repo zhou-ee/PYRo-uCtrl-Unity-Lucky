@@ -154,6 +154,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Device/BMI088/BMI088_middleware.cpp
         PYRo/Application/Mission/Hero/pyro_chassis_app.cpp
         PYRo/Module/Booster/Quad/fsm/pyro_quad_stall_state.cpp
+        PYRo/Module/Booster/Quad/fsm/pyro_quad_interim_state.cpp
+        PYRo/Module/Booster/Quad/fsm/pyro_quad_busy_state.cpp
 
 )
 
