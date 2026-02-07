@@ -188,14 +188,6 @@ bool fsm_t<Context>::process_switch(Context *ctx)
     if (!_target_state)
         return false;
 
-    // Avoid transition if the target is already active.
-    // 如果目标状态已处于活动中，则避免切换。
-    if (_target_state == _active_state)
-    {
-        _target_state = nullptr;
-        return false;
-    }
-
     // Exit old state.
     // 退出旧状态。
     if (_active_state)

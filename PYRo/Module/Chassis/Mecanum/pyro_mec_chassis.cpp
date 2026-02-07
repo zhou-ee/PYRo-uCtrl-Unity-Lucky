@@ -256,7 +256,7 @@ void mec_chassis_t::_send_supercap_command() const
 
 void mec_chassis_t::_fsm_execute()
 {
-    _ctx.cmd = &_cmd[_read_index];
+    _ctx.cmd = &_current_cmd;
 
     if (_ctx.cmd->mode == cmd_base_t::mode_t::ACTIVE)
     {
@@ -267,31 +267,7 @@ void mec_chassis_t::_fsm_execute()
         _main_fsm.change_state(&_state_passive);
     }
 
-    static uint32_t cap_time;
-    static uint8_t cap_first_flag = 1;
-
-    if (cap_time > 10)
-    {
-        if (cap_first_flag)
-        {
-            cap_time++;
-            if (cap_time > 1200)
-            {
-                _send_supercap_command();
-                cap_time = 0;
-                cap_first_flag = 0;
-            }
-        }
-        else
-        {
-            _send_supercap_command();
-            cap_time = 0;
-        }
-    }
-    else
-    {
-        cap_time++;
-    }
+    _send_supercap_command();
 
     _main_fsm.execute(this);
 }

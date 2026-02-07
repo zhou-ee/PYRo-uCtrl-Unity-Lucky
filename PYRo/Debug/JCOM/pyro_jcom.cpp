@@ -3,8 +3,10 @@
 #include "task.h"
 #include "cstring"
 #include "pyro_mec_chassis.h"
+#include "pyro_quad_booster.h"
 
 extern pyro::mec_chassis_t *mec_chassis_ptr;
+static pyro::quad_booster_t *quad_booster_ptr;
 
 namespace pyro
 {
@@ -76,8 +78,7 @@ void jcom_drv_t::update_data()
 {
     static uint8_t frame_head[4] = {0x00, 0x00, 0x80, 0x7F};
     uint8_t offset               = 0;
-    _data_pack[offset]           = *reinterpret_cast<float *>(frame_head);
-    offset++;
+    _data_pack[offset++]           = *reinterpret_cast<float *>(frame_head);
     for (const auto &[data, size] : _data_nodes)
     {
         for (uint8_t i = 0; i < size; ++i)
@@ -95,8 +96,11 @@ void jcom_drv_t::send()
 
 void jcom_drv_t::thread()
 {
-    add_data(&mec_chassis_ptr->_ctx.data.current_wheel_rpm[0]);
-    add_data(&mec_chassis_ptr->_ctx.data.out_wheel_torque[1]);
+    quad_booster_ptr = quad_booster_t::instance();
+    add_data(&quad_booster_ptr->_ctx.data.target_trig_rad);
+    add_data(&quad_booster_ptr->_ctx.data.current_trig_rad);
+    add_data(&quad_booster_ptr->_ctx.data.target_trig_radps);
+    add_data(&quad_booster_ptr->_ctx.data.current_trig_radps);
     while (true)
     {
         update_data();

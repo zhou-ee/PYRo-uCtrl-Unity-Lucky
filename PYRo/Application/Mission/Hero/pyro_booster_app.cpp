@@ -8,7 +8,6 @@
 static pyro::quad_booster_t *quad_booster_ptr           = nullptr;
 static pyro::quad_booster_cmd_t *quad_booster_cmd_ptr   = nullptr;
 static pyro::dr16_drv_t::dr16_ctrl_t const *rc_ctrl_ptr = nullptr;
-static float using_time                                 = 0.0f;
 extern "C"
 {
     void booster_rc2cmd(void const *rc_ctrl)
@@ -19,7 +18,7 @@ extern "C"
             static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);
         if (pyro::dr16_drv_t::sw_state_t::SW_MID != p_ctrl->rc.s_r.state)
         {
-            quad_booster_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ZERO_FORCE;
+            quad_booster_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
             quad_booster_cmd_ptr->fric_on     = false;
             quad_booster_cmd_ptr->fric1_mps   = 0.0f;
             quad_booster_cmd_ptr->fric2_mps   = 0.0f;
@@ -27,14 +26,26 @@ extern "C"
             return;
         }
         quad_booster_cmd_ptr->mode      = pyro::cmd_base_t::mode_t::ACTIVE;
-        quad_booster_cmd_ptr->fric1_mps = 13.5f; // 可调节
-        quad_booster_cmd_ptr->fric2_mps = 10.5f;
+        quad_booster_cmd_ptr->fric1_mps = 0.0f; // 可调节
+        quad_booster_cmd_ptr->fric2_mps = 0.0f;
         // 摩擦轮控制
+        static float sl_using_time      = 0;
         if (pyro::dr16_drv_t::sw_ctrl_t::SW_UP_TO_MID == p_ctrl->rc.s_l.ctrl &&
-            p_ctrl->rc.s_l.change_time != using_time)
+            p_ctrl->rc.s_l.change_time != sl_using_time)
         {
-            using_time                    = p_ctrl->rc.s_l.change_time;
+            sl_using_time                 = p_ctrl->rc.s_l.change_time;
             quad_booster_cmd_ptr->fric_on = !quad_booster_cmd_ptr->fric_on;
+        }
+        if (pyro::dr16_drv_t::sw_ctrl_t::SW_DOWN_TO_MID ==
+                p_ctrl->rc.s_l.ctrl &&
+            p_ctrl->rc.s_l.change_time != sl_using_time)
+        {
+            sl_using_time                     = p_ctrl->rc.s_l.change_time;
+            quad_booster_cmd_ptr->fire_enable = true;
+        }
+        else
+        {
+            quad_booster_cmd_ptr->fire_enable = false;
         }
         // 开火控制 (单发）
     }
