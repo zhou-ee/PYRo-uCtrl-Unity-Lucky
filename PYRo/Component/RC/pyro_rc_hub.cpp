@@ -17,6 +17,8 @@
 
 #include "pyro_rc_hub.h"
 
+#include "pyro_core_config.h"
+
 namespace pyro
 {
 /**
@@ -38,17 +40,15 @@ rc_drv_t *rc_hub_t::get_instance(which_rc_t which_rc)
     {
         case DR16:
         {
-            // Bind UART5 to the DR16 driver / 将 UART5 绑定至 DR16 驱动
             static uart_drv_t *dr16_uart =
-                uart_drv_t::get_instance(uart_drv_t::which_uart::uart5);
+                uart_drv_t::get_instance(static_cast<uart_drv_t::which_uart>(DR16_UART));
             static dr16_drv_t dr16_rc_drv(dr16_uart);
             return &dr16_rc_drv;
         }
         case VT03:
         {
-            // Bind UART1 to the VT03 driver / 将 UART1 绑定至 VT03 驱动
             static uart_drv_t *vt03_uart =
-                uart_drv_t::get_instance(uart_drv_t::which_uart::uart1);
+                uart_drv_t::get_instance(static_cast<uart_drv_t::which_uart>(VT03_UART));
             static vt03_drv_t vt03_rc_drv(vt03_uart);
             return &vt03_rc_drv;
         }

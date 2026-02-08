@@ -2,6 +2,7 @@
 #include "pyro_core_dma_heap.h"
 #include "task.h"
 #include "cstring"
+#include "pyro_core_config.h"
 #include "pyro_mec_chassis.h"
 #include "pyro_quad_booster.h"
 
@@ -29,7 +30,7 @@ jcom_drv_t::~jcom_drv_t()
 jcom_drv_t &jcom_drv_t::get_instance(uint8_t max_length)
 {
     static jcom_drv_t instance(
-        max_length, uart_drv_t::get_instance(uart_drv_t::which_uart::uart10));
+        max_length, uart_drv_t::get_instance(static_cast<uart_drv_t::which_uart>(JCOM_DEBUG_PORT)));
     return instance;
 }
 

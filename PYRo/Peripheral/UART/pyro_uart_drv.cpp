@@ -84,13 +84,13 @@ uart_drv_t *uart_drv_t::get_instance(const which_uart uart)
             static uart_drv_t uart_drv1(&huart1, 256);
             return &uart_drv1;
         case which_uart::uart5:
-            static uart_drv_t uart_drv5(&huart5, 36);
+            static uart_drv_t uart_drv5(&huart5, 256);
             return &uart_drv5;
         case which_uart::uart7:
-            static uart_drv_t uart_drv7(&huart7, 48);
+            static uart_drv_t uart_drv7(&huart7, 256);
             return &uart_drv7;
         case which_uart::uart10:
-            static uart_drv_t uart_drv10(&huart10, 64);
+            static uart_drv_t uart_drv10(&huart10, 256);
             return &uart_drv10;
         default:
             return nullptr;
