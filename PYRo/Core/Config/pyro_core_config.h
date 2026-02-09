@@ -11,7 +11,7 @@
 #define CONTROLLER_DEMO_EN 0
 #define CONTROL_DEMO_EN 0
 #define IMU_DEMO_EN 0
-#define REFEREE_DEMO_EN 1
+#define REFEREE_DEMO_EN 0
 
 #endif
 

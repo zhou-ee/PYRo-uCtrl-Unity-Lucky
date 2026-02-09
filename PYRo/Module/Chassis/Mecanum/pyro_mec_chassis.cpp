@@ -1,6 +1,6 @@
 #include "pyro_mec_chassis.h"
 #include "pyro_dji_motor_drv.h"
-#include "referee.h"
+#include "pyro_referee.h"
 
 
 namespace pyro
@@ -105,18 +105,18 @@ void mec_chassis_t::_power_control()
                 i, _ctx.power_motor_data[i].torque_cmd,
                 _ctx.power_motor_data[i].gyro);
     }
-    if (_ctx.cap_feedback.vot_cap >= 1800)
-    {
-        power_control_drv_t::get_instance().calculate_restricted_torques(
-            _ctx.power_motor_data, 4,
-            static_cast<float>(referee_data.robot_status.chassis_power_limit) + 100.0f);
-    }
-    else
-    {
-        power_control_drv_t::get_instance().calculate_restricted_torques(
-            _ctx.power_motor_data, 4,
-            referee_data.robot_status.chassis_power_limit);
-    }
+    // if (_ctx.cap_feedback.vot_cap >= 1800)
+    // {
+    //     power_control_drv_t::get_instance().calculate_restricted_torques(
+    //         _ctx.power_motor_data, 4,
+    //         static_cast<float>(referee_data.robot_status.chassis_power_limit) + 100.0f);
+    // }
+    // else
+    // {
+    //     power_control_drv_t::get_instance().calculate_restricted_torques(
+    //         _ctx.power_motor_data, 4,
+    //         referee_data.robot_status.chassis_power_limit);
+    // }
     for (int i = 0; i < 4; i++)
         _ctx.data.out_wheel_torque[i] =
             _ctx.power_motor_data[i].restricted_torque;
@@ -163,11 +163,11 @@ void mec_chassis_t::_update_feedback()
 
     // 4. 更新 cap_tx 数据
     _ctx.supercap_cmd.power_referee = 0;
-    _ctx.supercap_cmd.power_limit_referee =
-        referee_data.robot_status.chassis_power_limit;
-    _ctx.supercap_cmd.power_buffer_limit_referee = 60.0f;
-    _ctx.supercap_cmd.power_buffer_referee =
-        referee_data.power_heat.buffer_energy;
+    // _ctx.supercap_cmd.power_limit_referee =
+    //     referee_data.robot_status.chassis_power_limit;
+    // _ctx.supercap_cmd.power_buffer_limit_referee = 60.0f;
+    // _ctx.supercap_cmd.power_buffer_referee =
+    //     referee_data.power_heat.buffer_energy;
     _ctx.supercap_cmd.use_cap           = 1;
     _ctx.supercap_cmd.kill_chassis_user = 0;
     _ctx.supercap_cmd.speed_up_user_now = 0;

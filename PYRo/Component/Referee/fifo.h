@@ -1,10 +1,6 @@
 
 #ifndef __FIFO_H__
 #define __FIFO_H__
-#ifdef __cplusplus
-"C"
-{
-#endif
 
 #include <stdio.h>
 #include <stdint.h>
@@ -345,8 +341,5 @@
   //******************************************************************************************
   int fifo_flush(fifo_t * p_fifo);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif // __FIFO_H__
