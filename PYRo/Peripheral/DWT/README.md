@@ -1,6 +1,8 @@
 # PYRo DWT Driver (High-Resolution Timer)
 
 这是一个基于 ARM Cortex-M 核心 **DWT (Data Watchpoint and Trace)** 外设的高精度计时器驱动。该库采用 C++ 静态类封装，利用 CPU 的 `CYCCNT` 寄存器提供纳秒级的时间测量、阻塞延时以及系统运行时间统计功能。
+> 嵌入式开发前置知识：了解 DWT 外设
+
 ## Part 1:代码详解 (Code Explanation)
 
 ### 1. 核心设计理念

@@ -4,6 +4,10 @@
 
 该模块 (`pyro_uart_drv`) 解决 C++ 对象与底层 C 语言中断（ISR）的交互问题。它采用 DMA 双缓冲机制实现不定长数据的高效接收，将底层中断与上层业务逻辑完全解耦，并针对 FreeRTOS 的任务调度进行了适配。
 
+> 语法前置知识：了解Lambda表达式、std::function、std::map、std::vector的基础概念，局部静态变量的初始化机制，单例模式的实现原理。
+
+> 嵌入式开发前置知识：熟悉 STM32 系列的 UART 外设及其 HAL 库使用。
+
 ---
 
 ## Part 1: 代码全解 (Code Deep Dive)
@@ -87,6 +91,8 @@ typedef struct rx_event_callback_t
 3. **消费机制**：如果某个回调返回 `true`，表示数据已被该模块消费，循环终止，不再传递给后续回调。
     
 4. **任务唤醒**：回调中通过引用传递修改 `xHigherPriorityTaskWoken`，若置位，ISR 退出时将触发 FreeRTOS 上下文切换，保证高优先级任务即时响应。
+
+> **tip** : 即使不用freertos相关api，也需要接收BaseType_t xHigherPriorityTaskWoken，但不用在回调内使用或修改它，保持原值即可。
 
 ```C++
 extern "C" void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
