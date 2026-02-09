@@ -18,7 +18,7 @@
 namespace pyro
 {
 
-class referee_system
+class referee_drv_t
 {
   public:
     static constexpr uint16_t FIFO_BUF_LEN   = 1024;
@@ -26,15 +26,15 @@ class referee_system
     // 使用 reinterpret_cast 转换 protocol 中的常量
     static constexpr size_t MAX_TX_FRAME_LEN = FRAME_MAX_SIZE;
 
-    static referee_system *get_instance();
+    static referee_drv_t *get_instance();
 
     // 禁止拷贝
-    referee_system(const referee_system &)            = delete;
-    referee_system &operator=(const referee_system &) = delete;
+    referee_drv_t(const referee_drv_t &)            = delete;
+    referee_drv_t &operator=(const referee_drv_t &) = delete;
 
     /* ================= Init & Config ================= */
 
-    void init(std::initializer_list<CmdId> listening_ids);
+    void init(std::initializer_list<cmd_id> listening_ids);
     void init();
 
     void set_robot_id(const uint16_t id)
@@ -49,7 +49,7 @@ class referee_system
 
     /* ================= Rx API ================= */
 
-    [[nodiscard]] const RefereeData &get_data() const
+    [[nodiscard]] const referee_data_t &get_data() const
     {
         return _data;
     }
@@ -61,7 +61,7 @@ class referee_system
     /* ================= Tx API ================= */
 
     // 建议使用 send_robot_interaction 或 send_ui_interaction
-    bool send_packet(CmdId cmd_id, const void *data, uint16_t len);
+    bool send_packet(cmd_id cmd_id_val, const void *data, uint16_t len);
 
     bool send_robot_interaction(uint16_t receiver_id, uint16_t sub_cmd_id,
                                 const void *data, uint16_t len);
@@ -93,7 +93,7 @@ class referee_system
     class referee_task final : public task_base_t
     {
       public:
-        explicit referee_task(referee_system *parent)
+        explicit referee_task(referee_drv_t *parent)
             : task_base_t("referee_task", 512, 512, priority_t::NORMAL),
               _parent(parent)
         {
@@ -103,13 +103,13 @@ class referee_system
         void run_loop() override;
 
       private:
-        referee_system *_parent;
+        referee_drv_t *_parent;
     };
 
     /* Private Methods */
-    explicit referee_system(uart_drv_t *uart_handle);
+    explicit referee_drv_t(uart_drv_t *uart_handle);
     bool rx_callback(uint8_t *p, uint16_t size,
-                     BaseType_t xHigherPriorityTaskWoken);
+                     BaseType_t task_woken);
     void unpack_fifo_data();
 
     template <typename T>
@@ -132,7 +132,7 @@ class referee_system
     fifo_s_t _fifo;
     uint8_t _fifo_buf[FIFO_BUF_LEN];
 
-    RefereeData _data;
+    referee_data_t _data;
     unpack_context _unpack_obj;
 
     uint8_t _send_seq;

@@ -10,7 +10,7 @@ namespace pyro
 
 constexpr uint8_t HEADER_SOF    = 0xA5;
 constexpr size_t FRAME_MAX_SIZE = 256;
-constexpr size_t HEADER_SIZE    = 5; // sizeof(FrameHeader)
+constexpr size_t HEADER_SIZE    = 5; // sizeof(frame_header_t)
 constexpr size_t CMD_SIZE       = 2;
 constexpr size_t CRC16_SIZE     = 2;
 constexpr size_t HEADER_CRC_LEN = HEADER_SIZE + CRC16_SIZE;
@@ -21,7 +21,7 @@ constexpr size_t HEADER_CMDID_LEN = HEADER_SIZE + sizeof(uint16_t);
 #pragma pack(push, 1)
 
 // 命令码 (enum class)
-enum class CmdId : uint16_t
+enum class cmd_id : uint16_t
 {
     // --- Rx: Server -> Robot ---
     GAME_STATE          = 0x0001, // 比赛状态数据
@@ -61,7 +61,7 @@ enum class CmdId : uint16_t
 };
 
 // 交互子命令码范围 (enum class)
-enum class InteractionSubCmd : uint16_t
+enum class interaction_sub_cmd : uint16_t
 {
     // 客户端 UI 绘制 (Server -> Client)
     UI_CMD_START     = 0x0100,
@@ -73,7 +73,7 @@ enum class InteractionSubCmd : uint16_t
 };
 
 // 帧头结构
-struct FrameHeader
+struct frame_header_t
 {
     uint8_t sof;
     uint16_t data_length;
@@ -84,7 +84,7 @@ struct FrameHeader
 /* ----------------- Structure Definitions ----------------- */
 
 // 0x0001
-struct GameStatus
+struct game_status_t
 {
     uint8_t game_type     : 4;
     uint8_t game_progress : 4;
@@ -93,13 +93,13 @@ struct GameStatus
 };
 
 // 0x0002
-struct GameResult
+struct game_result_t
 {
     uint8_t winner;
 };
 
 // 0x0003
-struct GameRobotHP
+struct game_robot_hp_t
 {
     uint16_t robot_1_hp;
     uint16_t robot_2_hp;
@@ -112,13 +112,13 @@ struct GameRobotHP
 };
 
 // 0x0101
-struct EventData
+struct event_data_t
 {
     uint32_t event_type;
 };
 
 // 0x0104
-struct RefereeWarning
+struct referee_warning_t
 {
     uint8_t level;
     uint8_t offending_robot_id;
@@ -126,14 +126,14 @@ struct RefereeWarning
 };
 
 // 0x0105
-struct DartInfo
+struct dart_info_t
 {
     uint8_t dart_remaining_time;
     uint16_t dart_info;
 };
 
 // 0x0201
-struct RobotStatus
+struct robot_status_t
 {
     uint8_t robot_id;
     uint8_t robot_level;
@@ -148,7 +148,7 @@ struct RobotStatus
 };
 
 // 0x0202
-struct PowerHeatData
+struct power_heat_data_t
 {
     uint16_t reserved_1;
     uint16_t reserved_2;
@@ -159,7 +159,7 @@ struct PowerHeatData
 };
 
 // 0x0203
-struct RobotPos
+struct robot_pos_t
 {
     float x;
     float y;
@@ -168,7 +168,7 @@ struct RobotPos
 };
 
 // 0x0204
-struct BuffInfo
+struct buff_info_t
 {
     uint8_t recovery_buff;
     uint16_t cooling_buff;
@@ -179,14 +179,14 @@ struct BuffInfo
 };
 
 // 0x0206
-struct HurtData
+struct hurt_data_t
 {
     uint8_t armor_id            : 4;
     uint8_t hp_deduction_reason : 4;
 };
 
 // 0x0207
-struct ShootData
+struct shoot_data_t
 {
     uint8_t bullet_type;
     uint8_t shooter_number;
@@ -195,7 +195,7 @@ struct ShootData
 };
 
 // 0x0208
-struct ProjectileAllowance
+struct projectile_allowance_t
 {
     uint16_t projectile_allowance_17mm;
     uint16_t projectile_allowance_42mm;
@@ -204,14 +204,14 @@ struct ProjectileAllowance
 };
 
 // 0x0209
-struct RfidStatus
+struct rfid_status_t
 {
     uint32_t rfid_status;
     uint8_t rfid_status_2;
 };
 
 // 0x020A
-struct DartClientCmd
+struct dart_client_cmd_t
 {
     uint8_t dart_launch_opening_status;
     uint8_t reserved;
@@ -220,7 +220,7 @@ struct DartClientCmd
 };
 
 // 0x020B
-struct GroundRobotPosition
+struct ground_robot_position_t
 {
     float hero_x;
     float hero_y;
@@ -235,26 +235,26 @@ struct GroundRobotPosition
 };
 
 // 0x020C
-struct RadarMarkData
+struct radar_mark_data_t
 {
     uint16_t mark_progress;
 };
 
 // 0x020D
-struct SentryInfo
+struct sentry_info_t
 {
     uint32_t sentry_info;
     uint16_t sentry_info_2;
 };
 
 // 0x020E
-struct RadarInfo
+struct radar_info_t
 {
     uint8_t radar_info;
 };
 
 // 0x0303
-struct MapCommand
+struct map_command_t
 {
     float target_position_x;
     float target_position_y;
@@ -268,7 +268,7 @@ struct MapCommand
 // -----------------------------------------------------------
 
 // 0x0301 Header
-struct InteractionHeader
+struct interaction_header_t
 {
     uint16_t data_cmd_id;
     uint16_t sender_id;
@@ -276,14 +276,14 @@ struct InteractionHeader
 };
 
 // 0x0301 Payload Wrapper
-struct RobotInteractionData
+struct robot_interaction_data_t
 {
-    InteractionHeader header;
+    interaction_header_t header;
     uint8_t user_data[112];
 };
 
 // 0x0308
-struct CustomInfo
+struct custom_info_t
 {
     uint16_t sender_id;
     uint16_t receiver_id;
@@ -291,31 +291,31 @@ struct CustomInfo
 };
 
 // Main Data Holder
-struct RefereeData
+struct referee_data_t
 {
-    GameStatus game_status;
-    GameResult game_result;
-    GameRobotHP game_robot_hp;
-    EventData field_event;
-    RefereeWarning referee_warning;
-    DartInfo dart_info;
+    game_status_t game_status;
+    game_result_t game_result;
+    game_robot_hp_t game_robot_hp;
+    event_data_t field_event;
+    referee_warning_t referee_warning;
+    dart_info_t dart_info;
 
-    RobotStatus robot_status;
-    PowerHeatData power_heat;
-    RobotPos robot_pos;
-    BuffInfo buff;
-    HurtData hurt;
-    ShootData shoot;
-    ProjectileAllowance allowance;
-    RfidStatus rfid;
-    DartClientCmd dart_client_cmd;
-    GroundRobotPosition ground_robot_pos;
-    RadarMarkData radar_mark;
-    SentryInfo sentry_info;
-    RadarInfo radar_info;
+    robot_status_t robot_status;
+    power_heat_data_t power_heat;
+    robot_pos_t robot_pos;
+    buff_info_t buff;
+    hurt_data_t hurt;
+    shoot_data_t shoot;
+    projectile_allowance_t allowance;
+    rfid_status_t rfid;
+    dart_client_cmd_t dart_client_cmd;
+    ground_robot_position_t ground_robot_pos;
+    radar_mark_data_t radar_mark;
+    sentry_info_t sentry_info;
+    radar_info_t radar_info;
 
-    MapCommand map_command;
-    RobotInteractionData robot_interaction;
+    map_command_t map_command;
+    robot_interaction_data_t robot_interaction;
 };
 
 #pragma pack(pop)

@@ -17,12 +17,12 @@ namespace pyro
 // Task Implementation
 // ==========================================================================
 
-void referee_system::referee_task::init()
+void referee_drv_t::referee_task::init()
 {
     // Task-specific initialization if needed
 }
 
-void referee_system::referee_task::run_loop()
+void referee_drv_t::referee_task::run_loop()
 {
     while (true)
     {
@@ -45,14 +45,14 @@ void referee_system::referee_task::run_loop()
 // Driver Singleton & Constructor
 // ==========================================================================
 
-referee_system *referee_system::get_instance()
+referee_drv_t *referee_drv_t::get_instance()
 {
-    static referee_system instance(
+    static referee_drv_t instance(
         uart_drv_t::get_instance(uart_drv_t::which_uart::uart1));
     return &instance;
 }
 
-referee_system::referee_system(uart_drv_t *uart_handle)
+referee_drv_t::referee_drv_t(uart_drv_t *uart_handle)
     : _uart(uart_handle), _task(nullptr), _data{}, _unpack_obj{}, _send_seq(0),
       _robot_id(0), _is_online(false), _last_update_time(0)
 {
@@ -66,7 +66,7 @@ referee_system::referee_system(uart_drv_t *uart_handle)
 // Init
 // ==========================================================================
 
-void referee_system::init(const std::initializer_list<CmdId> listening_ids)
+void referee_drv_t::init(const std::initializer_list<cmd_id> listening_ids)
 {
     if (!_uart)
         return;
@@ -92,7 +92,7 @@ void referee_system::init(const std::initializer_list<CmdId> listening_ids)
         _task->start();
 }
 
-void referee_system::init()
+void referee_drv_t::init()
 {
     if (!_uart)
         return;
@@ -114,16 +114,16 @@ void referee_system::init()
 // Logic
 // ==========================================================================
 
-uint16_t referee_system::get_client_id() const
+uint16_t referee_drv_t::get_client_id() const
 {
     return _robot_id + 0x0100;
 }
 
-bool referee_system::send_packet(CmdId cmd_id, const void *data,
+bool referee_drv_t::send_packet(cmd_id cmd_id_val, const void *data,
                                  uint16_t const len)
 {
     // C++ Cast: static_cast for enum to int
-    const uint16_t cmd_val         = static_cast<uint16_t>(cmd_id);
+    const uint16_t cmd_val         = static_cast<uint16_t>(cmd_id_val);
 
     const uint16_t frame_total_len = HEADER_CMDID_LEN + len + CRC16_SIZE;
     if (frame_total_len > MAX_TX_FRAME_LEN)
@@ -132,7 +132,7 @@ bool referee_system::send_packet(CmdId cmd_id, const void *data,
         return false;
 
     // C++ Cast: reinterpret_cast for byte buffer manipulation
-    auto *p_header        = reinterpret_cast<FrameHeader *>(_tx_buffer);
+    auto *p_header        = reinterpret_cast<frame_header_t *>(_tx_buffer);
 
     p_header->sof         = HEADER_SOF;
     p_header->data_length = len;
@@ -155,18 +155,18 @@ bool referee_system::send_packet(CmdId cmd_id, const void *data,
     return (_uart->write(_tx_buffer, frame_total_len) == PYRO_OK);
 }
 
-bool referee_system::_send_interaction_packet_base(const uint16_t sub_cmd_id,
+bool referee_drv_t::_send_interaction_packet_base(const uint16_t sub_cmd_id,
                                                    const uint16_t receiver_id,
                                                    const void *data,
                                                    const uint16_t len)
 {
     // Payload max check: 128 - 9 (Frame overhead) - 6 (Interact Header) = 113
     // Safety buffer used: 112
-    if (len + sizeof(InteractionHeader) > 119)
+    if (len + sizeof(interaction_header_t) > 119)
         return false;
 
     uint8_t buffer[128]; // Use stack buffer
-    auto *p_header        = reinterpret_cast<InteractionHeader *>(buffer);
+    auto *p_header        = reinterpret_cast<interaction_header_t *>(buffer);
 
     p_header->data_cmd_id = sub_cmd_id;
     p_header->sender_id   = _robot_id;
@@ -174,14 +174,14 @@ bool referee_system::_send_interaction_packet_base(const uint16_t sub_cmd_id,
 
     if (len > 0 && data != nullptr)
     {
-        memcpy(buffer + sizeof(InteractionHeader), data, len);
+        memcpy(buffer + sizeof(interaction_header_t), data, len);
     }
 
-    return send_packet(CmdId::STUDENT_INTERACTIVE, buffer,
-                       sizeof(InteractionHeader) + len);
+    return send_packet(cmd_id::STUDENT_INTERACTIVE, buffer,
+                       sizeof(interaction_header_t) + len);
 }
 
-bool referee_system::send_robot_interaction(const uint16_t receiver_id,
+bool referee_drv_t::send_robot_interaction(const uint16_t receiver_id,
                                             const uint16_t sub_cmd_id,
                                             const void *data,
                                             const uint16_t len)
@@ -198,19 +198,19 @@ bool referee_system::send_robot_interaction(const uint16_t receiver_id,
     return _send_interaction_packet_base(sub_cmd_id, receiver_id, data, len);
 }
 
-bool referee_system::send_ui_interaction(const uint16_t sub_cmd_id,
+bool referee_drv_t::send_ui_interaction(const uint16_t sub_cmd_id,
                                          const void *data, const uint16_t len)
 {
     return _send_interaction_packet_base(sub_cmd_id, get_client_id(), data,
                                          len);
 }
 
-bool referee_system::send_custom_info(const char *message)
+bool referee_drv_t::send_custom_info(const char *message)
 {
     if (_robot_id == 0)
         return false;
 
-    CustomInfo custom_data;
+    custom_info_t custom_data;
     custom_data.sender_id   = _robot_id;
     custom_data.receiver_id = get_client_id();
 
@@ -222,23 +222,23 @@ bool referee_system::send_custom_info(const char *message)
 
     memcpy(custom_data.user_data, message, str_len);
 
-    return send_packet(CmdId::MAP_RECEIVE_ROBOT, &custom_data,
-                       sizeof(CustomInfo));
+    return send_packet(cmd_id::MAP_RECEIVE_ROBOT, &custom_data,
+                       sizeof(custom_info_t));
 }
 
 // ==========================================================================
 // RX Implementation
 // ==========================================================================
 
-bool referee_system::rx_callback(uint8_t *p, const uint16_t size,
-                                 BaseType_t xHigherPriorityTaskWoken)
+bool referee_drv_t::rx_callback(uint8_t *p, const uint16_t size,
+                                 BaseType_t task_woken)
 {
     // FIFO expects char*
     fifo_s_puts(&_fifo, reinterpret_cast<char *>(p), size);
     return true;
 }
 
-void referee_system::unpack_fifo_data()
+void referee_drv_t::unpack_fifo_data()
 {
     uint8_t byte = 0;
 
@@ -328,9 +328,9 @@ void referee_system::unpack_fifo_data()
     }
 }
 
-void referee_system::solve_data(const uint8_t *frame)
+void referee_drv_t::solve_data(const uint8_t *frame)
 {
-    auto *p_header = reinterpret_cast<const FrameHeader *>(frame);
+    auto *p_header = reinterpret_cast<const frame_header_t *>(frame);
     const uint16_t data_length =
         p_header->data_length; // 获取协议发来的实际长度
 
@@ -349,71 +349,71 @@ void referee_system::solve_data(const uint8_t *frame)
         return;
 
     // Convert integer to Enum Class for switch-case
-    auto cmd = static_cast<CmdId>(cmd_id_val);
+    auto cmd = static_cast<cmd_id>(cmd_id_val);
 
     switch (cmd)
     {
-        case CmdId::GAME_STATE:
+        case cmd_id::GAME_STATE:
             safe_copy(_data.game_status, frame + index, data_length);
             break;
-        case CmdId::GAME_RESULT:
+        case cmd_id::GAME_RESULT:
             safe_copy(_data.game_result, frame + index, data_length);
             break;
-        case CmdId::GAME_ROBOT_HP:
+        case cmd_id::GAME_ROBOT_HP:
             safe_copy(_data.game_robot_hp, frame + index, data_length);
             break;
-        case CmdId::FIELD_EVENTS:
+        case cmd_id::FIELD_EVENTS:
             safe_copy(_data.field_event, frame + index, data_length);
             break;
-        case CmdId::REFEREE_WARNING:
+        case cmd_id::REFEREE_WARNING:
             safe_copy(_data.referee_warning, frame + index, data_length);
             break;
-        case CmdId::DART_INFO:
+        case cmd_id::DART_INFO:
             safe_copy(_data.dart_info, frame + index, data_length);
             break;
-        case CmdId::ROBOT_STATE:
+        case cmd_id::ROBOT_STATE:
             safe_copy(_data.robot_status, frame + index, data_length);
             break;
-        case CmdId::POWER_HEAT_DATA:
+        case cmd_id::POWER_HEAT_DATA:
             safe_copy(_data.power_heat, frame + index, data_length);
             break;
-        case CmdId::ROBOT_POS:
+        case cmd_id::ROBOT_POS:
             safe_copy(_data.robot_pos, frame + index, data_length);
             break;
-        case CmdId::BUFF_MUSK:
+        case cmd_id::BUFF_MUSK:
             safe_copy(_data.buff, frame + index, data_length);
             break;
-        case CmdId::ROBOT_HURT:
+        case cmd_id::ROBOT_HURT:
             safe_copy(_data.hurt, frame + index, data_length);
             break;
-        case CmdId::SHOOT_DATA:
+        case cmd_id::SHOOT_DATA:
             safe_copy(_data.shoot, frame + index, data_length);
             break;
-        case CmdId::BULLET_REMAINING:
+        case cmd_id::BULLET_REMAINING:
             safe_copy(_data.allowance, frame + index, data_length);
             break;
-        case CmdId::ROBOT_RFID:
+        case cmd_id::ROBOT_RFID:
             safe_copy(_data.rfid, frame + index, data_length);
             break;
-        case CmdId::DART_CLIENT_CMD:
+        case cmd_id::DART_CLIENT_CMD:
             safe_copy(_data.dart_client_cmd, frame + index, data_length);
             break;
-        case CmdId::GROUND_ROBOT_POS:
+        case cmd_id::GROUND_ROBOT_POS:
             safe_copy(_data.ground_robot_pos, frame + index, data_length);
             break;
-        case CmdId::RADAR_MARK:
+        case cmd_id::RADAR_MARK:
             safe_copy(_data.radar_mark, frame + index, data_length);
             break;
-        case CmdId::SENTRY_INFO:
+        case cmd_id::SENTRY_INFO:
             safe_copy(_data.sentry_info, frame + index, data_length);
             break;
-        case CmdId::RADAR_INFO:
+        case cmd_id::RADAR_INFO:
             safe_copy(_data.radar_info, frame + index, data_length);
             break;
-        case CmdId::TINY_MAP_INTERACT:
+        case cmd_id::TINY_MAP_INTERACT:
             safe_copy(_data.map_command, frame + index, data_length);
             break;
-        case CmdId::STUDENT_INTERACTIVE:
+        case cmd_id::STUDENT_INTERACTIVE:
             safe_copy(_data.robot_interaction, frame + index, data_length);
             break;
 

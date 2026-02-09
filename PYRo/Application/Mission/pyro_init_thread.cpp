@@ -3,6 +3,7 @@
 #include "pyro_dwt_drv.h"
 #include "pyro_ins.h"
 #include "pyro_supercap_drv.h"
+#include "pyro_referee.h"
 
 namespace pyro
 {
@@ -12,6 +13,8 @@ extern "C"
     can_drv_t *can2_drv;
     can_drv_t *can3_drv;
     ins_drv_t *ins_drv;
+    referee_drv_t *referee_drv;
+
 
     void pyro_init_thread(void *argument)
     {
@@ -42,6 +45,9 @@ extern "C"
 
         ins_drv = ins_drv_t::get_instance();
         ins_drv->init();
+
+        referee_drv = referee_drv_t::get_instance();
+        referee_drv->init();
 
         supercap_drv_t::get_instance()->start_rx();
 
