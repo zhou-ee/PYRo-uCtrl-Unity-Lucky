@@ -50,7 +50,7 @@ class uart_drv_t
      * @return true if the data was consumed and the RX buffer should switch.
      */
     using rx_event_func = std::function<bool(
-        uint8_t *p, uint16_t size, BaseType_t xHigherPriorityTaskWoken)>;
+        uint8_t *p, uint16_t size, BaseType_t &xHigherPriorityTaskWoken)>;
 
     /**
      * @brief Structure to store registered RX callbacks with an owner ID.

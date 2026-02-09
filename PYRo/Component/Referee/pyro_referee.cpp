@@ -5,6 +5,8 @@
 
 #include "pyro_referee.h"
 #include "pyro_crc.h"
+#include "pyro_dwt_drv.h"
+
 #include <cstring> // for memcpy, strlen
 
 namespace pyro
@@ -29,12 +31,13 @@ void referee_system::referee_task::run_loop()
             _parent->unpack_fifo_data();
 
             // 2s timeout check
-            if (HAL_GetTick() - _parent->_last_update_tick > 2000)
+            if (dwt_drv_t::get_timeline_ms() - _parent->_last_update_time >
+                2000)
             {
                 _parent->_is_online = false;
             }
         }
-        vTaskDelay(2);
+        vTaskDelay(1);
     }
 }
 
@@ -51,7 +54,7 @@ referee_system *referee_system::get_instance()
 
 referee_system::referee_system(uart_drv_t *uart_handle)
     : _uart(uart_handle), _task(nullptr), _data{}, _unpack_obj{}, _send_seq(0),
-      _robot_id(0), _is_online(false), _last_update_tick(0)
+      _robot_id(0), _is_online(false), _last_update_time(0)
 {
     fifo_s_init(&_fifo, _fifo_buf, FIFO_BUF_LEN);
     memset(_tx_buffer, 0, MAX_TX_FRAME_LEN);
@@ -79,7 +82,8 @@ void referee_system::init(const std::initializer_list<CmdId> listening_ids)
     }
 
     _uart->add_rx_event_callback(
-        [this](uint8_t *p, const uint16_t size, const BaseType_t task_woken) -> bool
+        [this](uint8_t *p, const uint16_t size,
+               const BaseType_t task_woken) -> bool
         { return this->rx_callback(p, size, task_woken); },
         reinterpret_cast<uint32_t>(this));
     _uart->enable_rx_dma();
@@ -96,7 +100,8 @@ void referee_system::init()
     _enabled_ids.set(); // Enable all
 
     _uart->add_rx_event_callback(
-        [this](uint8_t *p, const uint16_t size, const BaseType_t task_woken) -> bool
+        [this](uint8_t *p, const uint16_t size,
+               const BaseType_t task_woken) -> bool
         { return this->rx_callback(p, size, task_woken); },
         reinterpret_cast<uint32_t>(this));
     _uart->enable_rx_dma();
@@ -114,7 +119,8 @@ uint16_t referee_system::get_client_id() const
     return _robot_id + 0x0100;
 }
 
-bool referee_system::send_packet(CmdId cmd_id, const void *data, uint16_t const len)
+bool referee_system::send_packet(CmdId cmd_id, const void *data,
+                                 uint16_t const len)
 {
     // C++ Cast: static_cast for enum to int
     const uint16_t cmd_val         = static_cast<uint16_t>(cmd_id);
@@ -150,9 +156,9 @@ bool referee_system::send_packet(CmdId cmd_id, const void *data, uint16_t const 
 }
 
 bool referee_system::_send_interaction_packet_base(const uint16_t sub_cmd_id,
-                                                  const uint16_t receiver_id,
-                                                  const void *data,
-                                                  const uint16_t len)
+                                                   const uint16_t receiver_id,
+                                                   const void *data,
+                                                   const uint16_t len)
 {
     // Payload max check: 128 - 9 (Frame overhead) - 6 (Interact Header) = 113
     // Safety buffer used: 112
@@ -176,8 +182,9 @@ bool referee_system::_send_interaction_packet_base(const uint16_t sub_cmd_id,
 }
 
 bool referee_system::send_robot_interaction(const uint16_t receiver_id,
-                                           const uint16_t sub_cmd_id,
-                                           const void *data, const uint16_t len)
+                                            const uint16_t sub_cmd_id,
+                                            const void *data,
+                                            const uint16_t len)
 {
     if (_robot_id == 0)
         return false;
@@ -191,7 +198,8 @@ bool referee_system::send_robot_interaction(const uint16_t receiver_id,
     return _send_interaction_packet_base(sub_cmd_id, receiver_id, data, len);
 }
 
-bool referee_system::send_ui_interaction(const uint16_t sub_cmd_id, const void *data, const uint16_t len)
+bool referee_system::send_ui_interaction(const uint16_t sub_cmd_id,
+                                         const void *data, const uint16_t len)
 {
     return _send_interaction_packet_base(sub_cmd_id, get_client_id(), data,
                                          len);
@@ -223,7 +231,7 @@ bool referee_system::send_custom_info(const char *message)
 // ==========================================================================
 
 bool referee_system::rx_callback(uint8_t *p, const uint16_t size,
-                                BaseType_t xHigherPriorityTaskWoken)
+                                 BaseType_t xHigherPriorityTaskWoken)
 {
     // FIFO expects char*
     fifo_s_puts(&_fifo, reinterpret_cast<char *>(p), size);
@@ -322,6 +330,10 @@ void referee_system::unpack_fifo_data()
 
 void referee_system::solve_data(const uint8_t *frame)
 {
+    auto *p_header = reinterpret_cast<const FrameHeader *>(frame);
+    const uint16_t data_length =
+        p_header->data_length; // 获取协议发来的实际长度
+
     uint16_t cmd_id_val = 0;
     uint8_t index       = HEADER_SIZE;
 
@@ -330,7 +342,7 @@ void referee_system::solve_data(const uint8_t *frame)
     index += sizeof(uint16_t);
 
     _is_online        = true;
-    _last_update_tick = HAL_GetTick();
+    _last_update_time = dwt_drv_t::get_timeline_ms();
 
     // White-list check
     if (cmd_id_val >= MAX_CMD_ID_COUNT || !_enabled_ids.test(cmd_id_val))
@@ -342,78 +354,67 @@ void referee_system::solve_data(const uint8_t *frame)
     switch (cmd)
     {
         case CmdId::GAME_STATE:
-            memcpy(&_data.game_status, frame + index, sizeof(GameStatus));
+            safe_copy(_data.game_status, frame + index, data_length);
             break;
         case CmdId::GAME_RESULT:
-            memcpy(&_data.game_result, frame + index, sizeof(GameResult));
+            safe_copy(_data.game_result, frame + index, data_length);
             break;
         case CmdId::GAME_ROBOT_HP:
-            memcpy(&_data.game_robot_hp, frame + index,
-                        sizeof(GameRobotHP));
+            safe_copy(_data.game_robot_hp, frame + index, data_length);
             break;
         case CmdId::FIELD_EVENTS:
-            memcpy(&_data.field_event, frame + index, sizeof(EventData));
+            safe_copy(_data.field_event, frame + index, data_length);
             break;
         case CmdId::REFEREE_WARNING:
-            memcpy(&_data.referee_warning, frame + index,
-                        sizeof(RefereeWarning));
+            safe_copy(_data.referee_warning, frame + index, data_length);
             break;
         case CmdId::DART_INFO:
-            memcpy(&_data.dart_info, frame + index, sizeof(DartInfo));
+            safe_copy(_data.dart_info, frame + index, data_length);
             break;
-
         case CmdId::ROBOT_STATE:
-            memcpy(&_data.robot_status, frame + index,
-                        sizeof(RobotStatus));
+            safe_copy(_data.robot_status, frame + index, data_length);
             break;
         case CmdId::POWER_HEAT_DATA:
-            memcpy(&_data.power_heat, frame + index,
-                        sizeof(PowerHeatData));
+            safe_copy(_data.power_heat, frame + index, data_length);
             break;
         case CmdId::ROBOT_POS:
-            memcpy(&_data.robot_pos, frame + index, sizeof(RobotPos));
+            safe_copy(_data.robot_pos, frame + index, data_length);
             break;
         case CmdId::BUFF_MUSK:
-            memcpy(&_data.buff, frame + index, sizeof(BuffInfo));
+            safe_copy(_data.buff, frame + index, data_length);
             break;
         case CmdId::ROBOT_HURT:
-            memcpy(&_data.hurt, frame + index, sizeof(HurtData));
+            safe_copy(_data.hurt, frame + index, data_length);
             break;
         case CmdId::SHOOT_DATA:
-            memcpy(&_data.shoot, frame + index, sizeof(ShootData));
+            safe_copy(_data.shoot, frame + index, data_length);
             break;
         case CmdId::BULLET_REMAINING:
-            memcpy(&_data.allowance, frame + index,
-                        sizeof(ProjectileAllowance));
+            safe_copy(_data.allowance, frame + index, data_length);
             break;
         case CmdId::ROBOT_RFID:
-            memcpy(&_data.rfid, frame + index, sizeof(RfidStatus));
+            safe_copy(_data.rfid, frame + index, data_length);
             break;
         case CmdId::DART_CLIENT_CMD:
-            memcpy(&_data.dart_client_cmd, frame + index,
-                        sizeof(DartClientCmd));
+            safe_copy(_data.dart_client_cmd, frame + index, data_length);
             break;
         case CmdId::GROUND_ROBOT_POS:
-            memcpy(&_data.ground_robot_pos, frame + index,
-                        sizeof(GroundRobotPosition));
+            safe_copy(_data.ground_robot_pos, frame + index, data_length);
             break;
         case CmdId::RADAR_MARK:
-            memcpy(&_data.radar_mark, frame + index,
-                        sizeof(RadarMarkData));
+            safe_copy(_data.radar_mark, frame + index, data_length);
             break;
         case CmdId::SENTRY_INFO:
-            memcpy(&_data.sentry_info, frame + index, sizeof(SentryInfo));
+            safe_copy(_data.sentry_info, frame + index, data_length);
             break;
         case CmdId::RADAR_INFO:
-            memcpy(&_data.radar_info, frame + index, sizeof(RadarInfo));
+            safe_copy(_data.radar_info, frame + index, data_length);
             break;
-
         case CmdId::TINY_MAP_INTERACT:
-            memcpy(&_data.map_command, frame + index, sizeof(MapCommand));
+            safe_copy(_data.map_command, frame + index, data_length);
             break;
         case CmdId::STUDENT_INTERACTIVE:
-            memcpy(&_data.robot_interaction, frame + index,
-                        sizeof(RobotInteractionData));
+            safe_copy(_data.robot_interaction, frame + index, data_length);
             break;
 
         default:

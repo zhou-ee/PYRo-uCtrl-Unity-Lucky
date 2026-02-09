@@ -9,9 +9,11 @@
 #include "protocol.h"
 #include "pyro_uart_drv.h"
 #include "pyro_task.h"
-#include "fifo.h"
 #include <bitset>
 #include <initializer_list>
+#include "fifo.h"
+#include <cstdint>
+
 
 namespace pyro
 {
@@ -81,7 +83,7 @@ class referee_system
 
     struct unpack_context
     {
-        unpack_step step   = unpack_step::HEADER_SOF;
+        unpack_step step  = unpack_step::HEADER_SOF;
         uint16_t index    = 0;
         uint16_t data_len = 0;
         uint8_t protocol_packet[FRAME_MAX_SIZE];
@@ -109,6 +111,16 @@ class referee_system
     bool rx_callback(uint8_t *p, uint16_t size,
                      BaseType_t xHigherPriorityTaskWoken);
     void unpack_fifo_data();
+
+    template <typename T>
+    static void safe_copy(T &target, const uint8_t *src,
+                          const uint16_t packet_data_len)
+    {
+        // Safety copy to prevent buffer overflows
+        const size_t copy_len =
+            packet_data_len < sizeof(T) ? packet_data_len : sizeof(T);
+        memcpy(&target, src, copy_len);
+    }
     void solve_data(const uint8_t *frame);
     bool _send_interaction_packet_base(uint16_t sub_cmd_id,
                                        uint16_t receiver_id, const void *data,
@@ -129,7 +141,7 @@ class referee_system
 
     std::bitset<MAX_CMD_ID_COUNT> _enabled_ids;
     bool _is_online;
-    uint32_t _last_update_tick;
+    uint32_t _last_update_time;
 };
 
 } // namespace pyro

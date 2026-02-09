@@ -101,22 +101,14 @@ struct GameResult
 // 0x0003
 struct GameRobotHP
 {
-    uint16_t red_1_robot_hp;
-    uint16_t red_2_robot_hp;
-    uint16_t red_3_robot_hp;
-    uint16_t red_4_robot_hp;
+    uint16_t robot_1_hp;
+    uint16_t robot_2_hp;
+    uint16_t robot_3_hp;
+    uint16_t robot_4_hp;
     uint16_t reserved_1;
-    uint16_t red_7_robot_hp;
-    uint16_t red_outpost_hp;
-    uint16_t red_base_hp;
-    uint16_t blue_1_robot_hp;
-    uint16_t blue_2_robot_hp;
-    uint16_t blue_3_robot_hp;
-    uint16_t blue_4_robot_hp;
-    uint16_t reserved_2;
-    uint16_t blue_7_robot_hp;
-    uint16_t blue_outpost_hp;
-    uint16_t blue_base_hp;
+    uint16_t robot_7_hp;
+    uint16_t outpost_hp;
+    uint16_t base_hp;
 };
 
 // 0x0101
@@ -172,6 +164,7 @@ struct RobotPos
     float x;
     float y;
     float angle;
+    uint32_t reserved;
 };
 
 // 0x0204
