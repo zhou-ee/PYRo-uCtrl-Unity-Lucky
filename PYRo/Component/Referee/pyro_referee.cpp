@@ -74,7 +74,7 @@ void referee_drv_t::init(const std::initializer_list<cmd_id> listening_ids)
     _enabled_ids.reset();
     for (auto id : listening_ids)
     {
-        const uint16_t id_val = static_cast<uint16_t>(id);
+        const auto id_val = static_cast<uint16_t>(id);
         if (id_val < MAX_CMD_ID_COUNT)
         {
             _enabled_ids.set(id_val);
@@ -86,7 +86,6 @@ void referee_drv_t::init(const std::initializer_list<cmd_id> listening_ids)
                const BaseType_t task_woken) -> bool
         { return this->rx_callback(p, size, task_woken); },
         reinterpret_cast<uint32_t>(this));
-    _uart->enable_rx_dma();
 
     if (_task)
         _task->start();
@@ -104,7 +103,6 @@ void referee_drv_t::init()
                const BaseType_t task_woken) -> bool
         { return this->rx_callback(p, size, task_woken); },
         reinterpret_cast<uint32_t>(this));
-    _uart->enable_rx_dma();
 
     if (_task)
         _task->start();
@@ -120,10 +118,10 @@ uint16_t referee_drv_t::get_client_id() const
 }
 
 bool referee_drv_t::send_packet(cmd_id cmd_id_val, const void *data,
-                                 uint16_t const len)
+                                uint16_t const len)
 {
     // C++ Cast: static_cast for enum to int
-    const uint16_t cmd_val         = static_cast<uint16_t>(cmd_id_val);
+    const auto cmd_val             = static_cast<uint16_t>(cmd_id_val);
 
     const uint16_t frame_total_len = HEADER_CMDID_LEN + len + CRC16_SIZE;
     if (frame_total_len > MAX_TX_FRAME_LEN)
@@ -156,9 +154,9 @@ bool referee_drv_t::send_packet(cmd_id cmd_id_val, const void *data,
 }
 
 bool referee_drv_t::_send_interaction_packet_base(const uint16_t sub_cmd_id,
-                                                   const uint16_t receiver_id,
-                                                   const void *data,
-                                                   const uint16_t len)
+                                                  const uint16_t receiver_id,
+                                                  const void *data,
+                                                  const uint16_t len)
 {
     // Payload max check: 128 - 9 (Frame overhead) - 6 (Interact Header) = 113
     // Safety buffer used: 112
@@ -182,9 +180,8 @@ bool referee_drv_t::_send_interaction_packet_base(const uint16_t sub_cmd_id,
 }
 
 bool referee_drv_t::send_robot_interaction(const uint16_t receiver_id,
-                                            const uint16_t sub_cmd_id,
-                                            const void *data,
-                                            const uint16_t len)
+                                           const uint16_t sub_cmd_id,
+                                           const void *data, const uint16_t len)
 {
     if (_robot_id == 0)
         return false;
@@ -199,8 +196,33 @@ bool referee_drv_t::send_robot_interaction(const uint16_t receiver_id,
 }
 
 bool referee_drv_t::send_ui_interaction(const uint16_t sub_cmd_id,
-                                         const void *data, const uint16_t len)
+                                        const void *data)
 {
+    static uint8_t len = 0;
+    switch (sub_cmd_id)
+    {
+        case static_cast<uint16_t>(interaction_sub_cmd::UI_CMD_DELETE):
+            len = 2;
+            break;
+        case static_cast<uint16_t>(interaction_sub_cmd::UI_CMD_DRAW_1):
+            len = 15;
+            break;
+        case static_cast<uint16_t>(interaction_sub_cmd::UI_CMD_DRAW_2):
+            len = 30;
+            break;
+        case static_cast<uint16_t>(interaction_sub_cmd::UI_CMD_DRAW_5):
+            len = 75;
+            break;
+        case static_cast<uint16_t>(interaction_sub_cmd::UI_CMD_DRAW_7):
+            len = 105;
+            break;
+        case static_cast<uint16_t>(interaction_sub_cmd::UI_CMD_DRAW_CHAR):
+            len = 45;
+            break;
+        default:
+            len = 0;
+            break;
+    }
     return _send_interaction_packet_base(sub_cmd_id, get_client_id(), data,
                                          len);
 }
@@ -210,7 +232,7 @@ bool referee_drv_t::send_custom_info(const char *message)
     if (_robot_id == 0)
         return false;
 
-    custom_info_t custom_data;
+    custom_info_t custom_data{};
     custom_data.sender_id   = _robot_id;
     custom_data.receiver_id = get_client_id();
 
@@ -231,7 +253,7 @@ bool referee_drv_t::send_custom_info(const char *message)
 // ==========================================================================
 
 bool referee_drv_t::rx_callback(uint8_t *p, const uint16_t size,
-                                 BaseType_t task_woken)
+                                BaseType_t task_woken)
 {
     // FIFO expects char*
     fifo_s_puts(&_fifo, reinterpret_cast<char *>(p), size);

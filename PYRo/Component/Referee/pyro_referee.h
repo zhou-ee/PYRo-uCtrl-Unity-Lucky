@@ -65,8 +65,7 @@ class referee_drv_t
 
     bool send_robot_interaction(uint16_t receiver_id, uint16_t sub_cmd_id,
                                 const void *data, uint16_t len);
-    bool send_ui_interaction(uint16_t sub_cmd_id, const void *data,
-                             uint16_t len);
+    bool send_ui_interaction(uint16_t sub_cmd_id, const void *data);
     bool send_custom_info(const char *message);
 
   private:
@@ -129,19 +128,19 @@ class referee_drv_t
     /* Members */
     uart_drv_t *_uart;
     referee_task *_task;
-    fifo_s_t _fifo;
-    uint8_t _fifo_buf[FIFO_BUF_LEN];
+    fifo_s_t _fifo{};
+    uint8_t _fifo_buf[FIFO_BUF_LEN]{};
 
     referee_data_t _data;
     unpack_context _unpack_obj;
 
     uint8_t _send_seq;
     uint16_t _robot_id;
-    uint8_t _tx_buffer[MAX_TX_FRAME_LEN];
+    uint8_t _tx_buffer[MAX_TX_FRAME_LEN]{};
 
     std::bitset<MAX_CMD_ID_COUNT> _enabled_ids;
     bool _is_online;
-    uint32_t _last_update_time;
+    float _last_update_time;
 };
 
 } // namespace pyro

@@ -128,8 +128,6 @@ void supercap_drv_t::init_impl()
         { return this->rx_callback(p, size, task_woken); },
         reinterpret_cast<uint32_t>(this));
 
-    // 3. Enable DMA Reception
-    _uart_drv->enable_rx_dma();
 }
 
 // Called by supercap_task_t::run_loop()

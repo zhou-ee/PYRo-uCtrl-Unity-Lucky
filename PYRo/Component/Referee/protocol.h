@@ -64,12 +64,18 @@ enum class cmd_id : uint16_t
 enum class interaction_sub_cmd : uint16_t
 {
     // 客户端 UI 绘制 (Server -> Client)
-    UI_CMD_START     = 0x0100,
-    UI_CMD_END       = 0x01FF,
-
+    UI_CMD_DELETE    = 0x0100,
+    UI_CMD_DRAW_1    = 0x0101,
+    UI_CMD_DRAW_2    = 0x0102,
+    UI_CMD_DRAW_5    = 0x0103,
+    UI_CMD_DRAW_7    = 0x0104,
+    UI_CMD_DRAW_CHAR = 0x0105,
     // 机器人间通信 (Robot -> Robot)
     ROBOT_COMM_START = 0x0200,
     ROBOT_COMM_END   = 0x02FF,
+    // 自主决策指令
+    SENTRY_CMD       = 0x0120,
+    RADAR_CMD        = 0x0121,
 };
 
 // 帧头结构
