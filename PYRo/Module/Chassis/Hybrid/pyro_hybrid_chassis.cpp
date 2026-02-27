@@ -1,6 +1,7 @@
 #include "pyro_hybrid_chassis.h"
 #include "pyro_algo_common.h"
 #include <arm_math.h> // 引入 CMSIS-DSP 库
+#include "pyro_dji_motor_drv.h"
 
 namespace pyro
 {
@@ -54,7 +55,8 @@ void hybrid_chassis_t::_update_feedback()
 
     for (int i = 0; i < 4; i++)
         _ctx.data.current_wheel_rpm[i] =
-            radps_to_rpm(_ctx.motor.mecanum[i]->get_current_rotate());
+            radps_to_rpm(_ctx.motor.mecanum[i]->get_current_rotate() *
+                      dji_m3508_motor_drv_t::reciprocal_reduction_ratio);
 
     for (int i = 0; i < 2; i++)
         _ctx.data.current_track_rpm[i] =
@@ -224,7 +226,8 @@ void hybrid_chassis_t::_leg_control()
         }
 
         // 8. 输出并再次针对右腿作符号映射
-        _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
+        _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_gravity;
+        // _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
     }
 }
 
@@ -235,6 +238,10 @@ void hybrid_chassis_t::_mecanum_control()
         _ctx.data.out_mecanum_torque[i] = _ctx.pid.mecanum_pid[i]->calculate(
             _ctx.data.target_wheel_rpm[i], _ctx.data.current_wheel_rpm[i]);
     }
+    // _ctx.data.out_mecanum_torque[0] = 0;
+    //  _ctx.data.out_mecanum_torque[1] = 0;
+    //  // _ctx.data.out_mecanum_torque[2] = 0;
+    //  _ctx.data.out_mecanum_torque[3] = 0;
 }
 
 void hybrid_chassis_t::_track_control()
@@ -251,9 +258,9 @@ void hybrid_chassis_t::_send_motor_command() const
     for (int i = 0; i < 4; i++)
         _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
     for (int i = 0; i < 2; i++)
-        _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
+        _ctx.motor.track[i]->send_torque(0);
     for (int i = 0; i < 2; i++)
-        _ctx.motor.leg[i]->send_torque(0);
+        _ctx.motor.leg[i]->send_torque(_ctx.data.out_leg_torque[i]);
 
 }
 

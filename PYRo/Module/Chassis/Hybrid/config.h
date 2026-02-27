@@ -7,7 +7,7 @@ constexpr float MEC_WHEELBASE         = 0.421f; // 麦轮轴距
 constexpr float MEC_FRONT_TRACK_WIDTH = 0.41f;  // 麦轮前轮距
 constexpr float MEC_REAR_TRACK_WIDTH  = 0.41f;  // 麦轮后轮距
 constexpr float WHEEL_RADIUS          = 0.076f; // 轮子半径 (m)
-constexpr float TRACK_RADIUS          = 0.05f;  // 履带驱动半径 (m)
+constexpr float TRACK_RADIUS          = 0.025f;  // 履带驱动半径 (m)
 constexpr float LEG_MIN_POS           = 0.15f;  // 腿部最小位置 (rad)
 constexpr float LEG_MAX_POS           = 1.65f;  // 腿部最大位置
 constexpr float LEG_POS_BUFFER_RAD    = 0.1f;   // 腿部位置缓冲 (rad)
@@ -30,11 +30,11 @@ constexpr float XB_POLY_COEF[XB_POLY_DEGREE + 1] = {
     -0.0154, -0.0062, -0.0011}; // XB多项式拟合系数，单位m
 constexpr float YB_POLY_COEF[YB_POLY_DEGREE + 1] = {
     -0.0056, 0.0311, -0.0793, 0.1957, 0.0745}; // YB多项式拟合系数，单位m
-constexpr float MASS         = 20.0f;          // 机器人质量 (kg)
+constexpr float MASS         = 10.0f;          // 机器人质量 (kg)
 constexpr float GRAVITY      = 9.81f;          // 重力加速度 (m/s^2)
-constexpr float DIST_FRONT   = 0.2f;           // 质心到前轴距离 (m)
-constexpr float DIST_HIP     = 0.15f;          // 质心到髋关节的水平距离
+constexpr float DIST_FRONT   = 0.2295f;           // 质心到前轴距离 (m)
+constexpr float DIST_HIP     = 0.193f;          // 质心到髋关节的水平距离
 constexpr float H_COG        = 0.15f;          // 重心垂直高度
-constexpr float H_HIP_OFFSET = 0.05f;          // 髋关节与前轮轴心的垂直落差
+constexpr float H_HIP_OFFSET = 0.074f;          // 髋关节与前轮轴心的垂直落差
 
 #endif

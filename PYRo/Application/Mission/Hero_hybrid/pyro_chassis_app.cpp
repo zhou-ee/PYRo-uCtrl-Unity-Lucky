@@ -45,8 +45,8 @@ extern "C"
         }
         else
         {
-            hybrid_cmd_ptr->vx = rc_ctrl->rc.ch_lx;
-            hybrid_cmd_ptr->vy = -rc_ctrl->rc.ch_ly ;
+            hybrid_cmd_ptr->vx = rc_ctrl->rc.ch_ly;
+            hybrid_cmd_ptr->vy = -rc_ctrl->rc.ch_lx ;
             hybrid_cmd_ptr->wz   = 0;
             hybrid_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
         }
@@ -79,13 +79,13 @@ extern "C"
             new pyro::dji_m3508_motor_drv_t(pyro::dji_motor_tx_frame_t::id_4,
                                             pyro::can_hub_t::can1); // RR Wheel
         hybrid_deps_ptr->motor_deps.track[0] =
-            new pyro::dm_motor_drv_t(0x31, 0x41, pyro::can_hub_t::can2);
-        hybrid_deps_ptr->motor_deps.track[1] =
-            new pyro::dm_motor_drv_t(0x32, 0x42, pyro::can_hub_t::can2);
-        hybrid_deps_ptr->motor_deps.leg[0] =
             new pyro::dm_motor_drv_t(0x11, 0x21, pyro::can_hub_t::can3);
-        hybrid_deps_ptr->motor_deps.leg[1] =
+        hybrid_deps_ptr->motor_deps.track[1] =
             new pyro::dm_motor_drv_t(0x12, 0x22, pyro::can_hub_t::can3);
+        hybrid_deps_ptr->motor_deps.leg[0] =
+            new pyro::dm_motor_drv_t(0x31, 0x41, pyro::can_hub_t::can2);
+        hybrid_deps_ptr->motor_deps.leg[1] =
+            new pyro::dm_motor_drv_t(0x32, 0x42, pyro::can_hub_t::can2);
 
         hybrid_deps_ptr->motor_deps.yaw = new pyro::dji_gm_6020_motor_drv_t(
             pyro::dji_motor_tx_frame_t::id_1, pyro::can_hub_t::can3);
