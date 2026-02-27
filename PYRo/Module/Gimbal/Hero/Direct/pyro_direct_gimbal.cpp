@@ -39,7 +39,7 @@ status_t direct_gimbal_t::_init()
     // Pitch 轴 (DM 电机通常响应较快，PID 参数可能需要重新整定)
     _ctx.pid.pitch_pos = new pid_t(10.0f, 0.0f, 0.0f, 0.0f, 20.0f);
     _ctx.pid.pitch_spd =
-        new pid_t(1.2f, 0.05f, 0.0f, 5.0f, 10.0f); // 输出限制匹配 DM 电机 Nm 级
+        new pid_t(1.2f, 0.05f, 0.0f, 5.0f, 22.0f); // 输出限制匹配 DM 电机 Nm 级
 
     // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
     _ctx.pid.yaw_pos = new pid_t(5.2f, 0.01f, 0.22f, 0.8f, 5.0f);
@@ -68,6 +68,10 @@ void direct_gimbal_t::_update_feedback()
                                           &_ctx.data.current_pitch_radps,
                                           &_ctx.data.current_roll_radps);
 
+    ins_drv_t::get_instance()->get_accel_b(&_ctx.data.current_x_accel,
+                                           &_ctx.data.current_y_accel,
+                                           &_ctx.data.current_z_accel);
+
     // 通常不用读取电机位置作为姿态反馈，改为使用 IMU 数据
     // // 读取 电机 数据作为反馈 (含 Offset)
     // _ctx.data.current_pitch_rad =
@@ -82,6 +86,7 @@ void direct_gimbal_t::_update_feedback()
 void direct_gimbal_t::_gimbal_control(gimbal_context_t *ctx)
 {
 
+    ctx->data.out_gravity_torque = -ctx->data.current_z_accel*12.5f*1.05f*0.0325f;
 
     // --- Pitch 串级控制 ---
     // 1. 位置环
@@ -104,7 +109,8 @@ void direct_gimbal_t::_gimbal_control(gimbal_context_t *ctx)
 
 void direct_gimbal_t::_send_motor_command(gimbal_context_t *ctx)
 {
-    ctx->motor.pitch->send_torque(ctx->data.out_pitch_torque);
+    // ctx->motor.pitch->send_torque(ctx->data.out_pitch_torque);
+    ctx->motor.pitch->send_torque(ctx->data.out_gravity_torque + ctx->data.out_pitch_torque);
     ctx->motor.yaw->send_torque(ctx->data.out_yaw_torque);
 
     // ctx->motor.pitch->send_torque(0);

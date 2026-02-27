@@ -276,3 +276,27 @@ status_t ins_drv_t::get_gyro_n(float *g_yaw, float *g_pitch, float *g_roll)
     *g_yaw   = _gyro_b[Z];
     return PYRO_OK;
 }
+
+status_t ins_drv_t::get_accel_b(float *accel_x, float *accel_y, float *accel_z)
+{
+    if (accel_x == nullptr || accel_y == nullptr || accel_z == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *accel_x = _acc_b[X];
+    *accel_y = _acc_b[Y];
+    *accel_z = _acc_b[Z];
+    return PYRO_OK;
+}
+
+status_t ins_drv_t::get_accel_n(float *accel_x, float *accel_y, float *accel_z)
+{
+    if (accel_x == nullptr || accel_y == nullptr || accel_z == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *accel_x = _acc_n[X];
+    *accel_y = _acc_n[Y];
+    *accel_z = _acc_n[Z];
+    return PYRO_OK;
+}

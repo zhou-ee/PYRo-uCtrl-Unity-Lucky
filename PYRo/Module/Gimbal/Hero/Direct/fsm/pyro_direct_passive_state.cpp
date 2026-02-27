@@ -24,7 +24,8 @@ void direct_gimbal_t::state_passive_t::execute(owner *owner)
     owner->_ctx.data.target_pitch_rad = owner->_ctx.data.current_pitch_rad;
     owner->_ctx.data.target_yaw_rad   = owner->_ctx.data.current_yaw_rad;
 
-    _send_motor_command(&owner->_ctx);
+    owner->_ctx.motor.pitch->send_torque(0);
+    owner->_ctx.motor.yaw->send_torque(0);
 }
 
 void direct_gimbal_t::state_passive_t::exit(owner *owner)

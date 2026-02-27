@@ -20,7 +20,11 @@ status_t hybrid_chassis_t::_init()
     _ctx.pid    = _module_deps.pid_deps;
 
     // 使用 config.h 中的参数初始化运动学模型
-    _kinematics = new hybrid_kin_t(0.648f, MEC_WHEELBASE, MEC_TRACK_WIDTH);
+    _kinematics = new hybrid_kin_t(TRACK_SPACING,
+                                   (MEC_FRONT_TRACK_WIDTH + MEC_WHEELBASE) / 2,
+                                   (MEC_FRONT_TRACK_WIDTH + MEC_WHEELBASE) / 2,
+                                   (MEC_REAR_TRACK_WIDTH + MEC_WHEELBASE) / 2,
+                                   (MEC_REAR_TRACK_WIDTH + MEC_WHEELBASE) / 2);
 
     return PYRO_OK;
 }
@@ -82,7 +86,19 @@ void hybrid_chassis_t::_kinematics_solve()
 
     // -------------------------------------------------------------
     // 2. 矢量旋转 (将云台坐标系速度转换到底盘坐标系)
-    const float theta       = _ctx.data.current_yaw_error;
+    // const float theta       = _ctx.data.current_yaw_error;
+    //
+    // const float c_theta     = arm_cos_f32(theta);
+    // const float s_theta     = arm_sin_f32(theta);
+    //
+    // // 旋转矩阵公式 (逆时针旋转 theta)
+    // const float vx_chassis  = _ctx.cmd->vx * c_theta + _ctx.cmd->vy * s_theta;
+    // const float vy_chassis  = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
+    //
+    // const auto wheel_speeds = _kinematics->solve(vx_chassis, vy_chassis,
+    //                                              final_wz, _ctx.cmd->track_en);
+
+    const float theta       = 0;
 
     const float c_theta     = arm_cos_f32(theta);
     const float s_theta     = arm_sin_f32(theta);
@@ -92,7 +108,7 @@ void hybrid_chassis_t::_kinematics_solve()
     const float vy_chassis  = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
 
     const auto wheel_speeds = _kinematics->solve(vx_chassis, vy_chassis,
-                                                 final_wz, _ctx.cmd->track_en);
+                                                 0 , _ctx.cmd->track_en);
 
     // 麦轮转速分配 (右侧反转视底层驱动而定，此处按常规处理)
     _ctx.data.target_wheel_rpm[0] =
@@ -107,10 +123,10 @@ void hybrid_chassis_t::_kinematics_solve()
     // 履带分配 (差速模型)
     if (_ctx.cmd->track_en)
     {
-        _ctx.data.target_track_rpm[0] = mps_to_rpm(
-            _ctx.cmd->vx - _ctx.cmd->wz * TRACK_SPACING / 2.0f, TRACK_RADIUS);
-        _ctx.data.target_track_rpm[1] = -mps_to_rpm(
-            _ctx.cmd->vx + _ctx.cmd->wz * TRACK_SPACING / 2.0f, TRACK_RADIUS);
+        _ctx.data.target_track_rpm[0] =
+            mps_to_rpm(wheel_speeds.track_l, TRACK_RADIUS);
+        _ctx.data.target_track_rpm[1] =
+            -mps_to_rpm(wheel_speeds.track_r, TRACK_RADIUS);
     }
     else
     {
@@ -129,8 +145,9 @@ void hybrid_chassis_t::_leg_control()
     const float sin_pitch = arm_sin_f32(pitch);
 
     // 1. 计算姿态维稳所需的宏观虚拟力
-    const float f_pitch   = _ctx.pid.pitch_pid->calculate(_ctx.data.target_pitch_rad, pitch);
-    const float f_roll    = _ctx.pid.roll_pid->calculate(0.0f, roll);
+    const float f_pitch =
+        _ctx.pid.pitch_pid->calculate(_ctx.data.target_pitch_rad, pitch);
+    const float f_roll = _ctx.pid.roll_pid->calculate(0.0f, roll);
 
     for (int i = 0; i < 2; i++)
     {
@@ -236,7 +253,8 @@ void hybrid_chassis_t::_send_motor_command() const
     for (int i = 0; i < 2; i++)
         _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
     for (int i = 0; i < 2; i++)
-        _ctx.motor.leg[i]->send_torque(_ctx.data.out_leg_torque[i]);
+        _ctx.motor.leg[i]->send_torque(0);
+
 }
 
 // =========================================================

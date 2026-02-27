@@ -6,7 +6,7 @@
 
 static pyro::mec_chassis_t *mec_chassis_ptr             = nullptr;
 static pyro::mec_cmd_t *mec_cmd_ptr                     = nullptr;
-static pyro::dr16_drv_t::dr16_ctrl_t const *rc_ctrl_ptr = nullptr;
+static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
 
 extern "C"
 {
@@ -33,11 +33,34 @@ extern "C"
         mec_cmd_ptr->mode = static_cast<pyro::cmd_base_t::mode_t>(raw_data[3]);
     }
 
+    void chassis_dr162cmd(pyro::dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
+    {
+        pyro::read_scope_lock lock(
+            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
+
+        if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
+        {
+            mec_cmd_ptr->vx   = 0;
+            mec_cmd_ptr->vy   = 0;
+            mec_cmd_ptr->wz   = 0;
+            mec_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
+        }
+        else
+        {
+            mec_cmd_ptr->vx =
+                3 * static_cast<float>(rc_ctrl->rc.ch_ly) / 127.0f;
+            mec_cmd_ptr->vy =
+                3 * static_cast<float>(-rc_ctrl->rc.ch_lx) / 127.0f;
+            mec_cmd_ptr->wz   = 0;
+            mec_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
+        }
+    }
+
     void hero_chassis_thread(void *argument)
     {
         while (true)
         {
-            chassis_rxcmd(rc_ctrl_ptr);
+            chassis_rxcmd(dr16_ctrl_ptr);
             mec_chassis_ptr->set_command(*mec_cmd_ptr);
             vTaskDelay(1);
         }
@@ -48,6 +71,8 @@ extern "C"
         pyro::can_rx_drv_t::subscribe(pyro::can_hub_t::which_can::can2, 0x101);
         mec_cmd_ptr     = new pyro::mec_cmd_t();
         mec_chassis_ptr = pyro::mec_chassis_t::instance();
+        dr16_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
+            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
         mec_chassis_ptr->start();
         xTaskCreate(hero_chassis_thread, "start_app_thread", 128, nullptr,
                     configMAX_PRIORITIES - 1, nullptr);

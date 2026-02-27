@@ -79,10 +79,13 @@ class direct_gimbal_t final
         float current_pitch_radps{0};
         float current_yaw_rad{0};
         float current_yaw_radps{0};
+        float current_z_accel{0};
 
-        // 暂未使用 Roll 轴
+        // 暂未使用
         float current_roll_rad{0};
         float current_roll_radps{0};
+        float current_x_accel{0};
+        float current_y_accel{0};
 
         // 目标
         float target_pitch_rad{0};
@@ -92,6 +95,7 @@ class direct_gimbal_t final
 
         // 输出
         float out_pitch_torque{0};
+        float out_gravity_torque{0};
         float out_yaw_torque{0};
     };
 

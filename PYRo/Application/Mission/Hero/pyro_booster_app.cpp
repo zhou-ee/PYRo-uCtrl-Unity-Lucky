@@ -5,42 +5,43 @@
 #include "pyro_com_cantx.h"
 #include "pyro_quad_booster.h"
 
-static pyro::quad_booster_t *quad_booster_ptr           = nullptr;
-static pyro::quad_booster_cmd_t *quad_booster_cmd_ptr   = nullptr;
-static pyro::dr16_drv_t::dr16_ctrl_t const *rc_ctrl_ptr = nullptr;
+using namespace pyro;
+
+static pyro::quad_booster_t *quad_booster_ptr             = nullptr;
+static pyro::quad_booster_cmd_t *quad_booster_cmd_ptr     = nullptr;
+static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
+static pyro::vt03_drv_t::vt03_ctrl_t const *vt03_ctrl_ptr = nullptr;
 extern "C"
 {
-    void booster_rc2cmd(void const *rc_ctrl)
+    void booster_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
     {
         pyro::read_scope_lock lock(
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
-        static auto *p_ctrl =
-            static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);
-        if (pyro::dr16_drv_t::sw_state_t::SW_MID != p_ctrl->rc.s_r.state)
+        if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
         {
-            quad_booster_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
-            quad_booster_cmd_ptr->fric_on     = false;
-            quad_booster_cmd_ptr->fric1_mps   = 0.0f;
-            quad_booster_cmd_ptr->fric2_mps   = 0.0f;
+            quad_booster_cmd_ptr->mode      = pyro::cmd_base_t::mode_t::PASSIVE;
+            quad_booster_cmd_ptr->fric_on   = false;
+            quad_booster_cmd_ptr->fric1_mps = 0.0f;
+            quad_booster_cmd_ptr->fric2_mps = 0.0f;
             quad_booster_cmd_ptr->fire_enable = false;
             return;
         }
         quad_booster_cmd_ptr->mode      = pyro::cmd_base_t::mode_t::ACTIVE;
-        quad_booster_cmd_ptr->fric1_mps = 14.0f; // 可调节
-        quad_booster_cmd_ptr->fric2_mps = 14.0f;
+        quad_booster_cmd_ptr->fric1_mps = 15.0f; // 可调节
+        quad_booster_cmd_ptr->fric2_mps = 10.5f;
         // 摩擦轮控制
         static float sl_using_time      = 0;
-        if (pyro::dr16_drv_t::sw_ctrl_t::SW_UP_TO_MID == p_ctrl->rc.s_l.ctrl &&
-            p_ctrl->rc.s_l.change_time != sl_using_time)
+        if (pyro::dr16_drv_t::sw_ctrl_t::SW_UP_TO_MID == rc_ctrl->rc.s_l.ctrl &&
+            rc_ctrl->rc.s_l.change_time != sl_using_time)
         {
-            sl_using_time                 = p_ctrl->rc.s_l.change_time;
+            sl_using_time                 = rc_ctrl->rc.s_l.change_time;
             quad_booster_cmd_ptr->fric_on = !quad_booster_cmd_ptr->fric_on;
         }
         if (pyro::dr16_drv_t::sw_ctrl_t::SW_DOWN_TO_MID ==
-                p_ctrl->rc.s_l.ctrl &&
-            p_ctrl->rc.s_l.change_time != sl_using_time)
+                rc_ctrl->rc.s_l.ctrl &&
+            rc_ctrl->rc.s_l.change_time != sl_using_time)
         {
-            sl_using_time                     = p_ctrl->rc.s_l.change_time;
+            sl_using_time                     = rc_ctrl->rc.s_l.change_time;
             quad_booster_cmd_ptr->fire_enable = true;
         }
         else
@@ -50,12 +51,57 @@ extern "C"
         // 开火控制 (单发）
     }
 
+    void booster_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
+    {
+        pyro::read_scope_lock lock(
+            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->get_lock());
+        if (vt03_drv_t::gear_state_t::GEAR_MID != rc_ctrl->rc.gear.state)
+        {
+            quad_booster_cmd_ptr->mode      = pyro::cmd_base_t::mode_t::PASSIVE;
+            quad_booster_cmd_ptr->fric_on   = false;
+            quad_booster_cmd_ptr->fric1_mps = 0.0f;
+            quad_booster_cmd_ptr->fric2_mps = 0.0f;
+            quad_booster_cmd_ptr->fire_enable = false;
+            return;
+        }
+        quad_booster_cmd_ptr->mode      = pyro::cmd_base_t::mode_t::ACTIVE;
+        quad_booster_cmd_ptr->fric1_mps = 15.0f; // 可调节
+        quad_booster_cmd_ptr->fric2_mps = 10.5f;
+        // 摩擦轮控制
+        static float fn_l_using_time = 0;
+        if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->rc.fn_l.ctrl &&
+            rc_ctrl->rc.fn_l.change_time != fn_l_using_time)
+        {
+            fn_l_using_time                     = rc_ctrl->rc.fn_l.change_time;
+            quad_booster_cmd_ptr->fric_on = !quad_booster_cmd_ptr->fric_on;
+        }
+        // 开火控制 (单发）
+        static float trigger_using_time = 0;
+        if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->rc.trigger.ctrl &&
+            rc_ctrl->rc.trigger.change_time != trigger_using_time)
+        {
+            trigger_using_time                     = rc_ctrl->rc.trigger.change_time;
+            quad_booster_cmd_ptr->fire_enable = true;
+        }
+        else
+        {
+            quad_booster_cmd_ptr->fire_enable = false;
+        }
+    }
+
 
     void hero_booster_thread(void *argument)
     {
         while (true)
         {
-            booster_rc2cmd(rc_ctrl_ptr);
+            if (rc_hub_t::get_instance(rc_hub_t::VT03)->check_online())
+            {
+                booster_vt032cmd(vt03_ctrl_ptr);
+            }
+            else if (rc_hub_t::get_instance(rc_hub_t::DR16)->check_online())
+            {
+                booster_dr162cmd(dr16_ctrl_ptr);
+            }
             quad_booster_ptr->set_command(*quad_booster_cmd_ptr);
             vTaskDelay(1);
         }
@@ -65,8 +111,10 @@ extern "C"
     {
         quad_booster_ptr     = pyro::quad_booster_t::instance();
         quad_booster_cmd_ptr = new pyro::quad_booster_cmd_t();
-        rc_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
+        dr16_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
+        vt03_ctrl_ptr = static_cast<pyro::vt03_drv_t::vt03_ctrl_t const *>(
+            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->read());
         quad_booster_ptr->start();
         xTaskCreate(hero_booster_thread, "start_app_thread", 128, nullptr,
                     configMAX_PRIORITIES - 1, nullptr);

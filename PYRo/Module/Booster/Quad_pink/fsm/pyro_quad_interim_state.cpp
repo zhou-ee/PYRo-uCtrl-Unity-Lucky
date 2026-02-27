@@ -18,7 +18,8 @@ void quad_booster_t::fsm_active_t::state_interim_t::execute(owner *owner)
         abs(owner->_ctx.data.current_fric_mps[2] -
             owner->_ctx.data.target_fric_mps[2]) < 0.5f &&
         abs(owner->_ctx.data.current_fric_mps[3] -
-            owner->_ctx.data.target_fric_mps[3]) < 0.5f)
+            owner->_ctx.data.target_fric_mps[3]) < 0.5f &&
+            owner->_ctx.cmd->fric_on)
     {
         request_switch(&owner->_state_active._ready_state);
     }

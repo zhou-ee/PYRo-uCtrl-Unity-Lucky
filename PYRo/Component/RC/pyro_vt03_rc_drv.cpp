@@ -251,9 +251,9 @@ void vt03_drv_t::unpack(const vt03_buf_t *vt03_buf)
             static_cast<float>(vt03_buf->ch0 - VT03_CH_VALUE_OFFSET) / 660.0f;
         _vt03_ctrl.rc.ch_ry =
             static_cast<float>(vt03_buf->ch1 - VT03_CH_VALUE_OFFSET) / 660.0f;
-        _vt03_ctrl.rc.ch_lx =
-            static_cast<float>(vt03_buf->ch2 - VT03_CH_VALUE_OFFSET) / 660.0f;
         _vt03_ctrl.rc.ch_ly =
+            static_cast<float>(vt03_buf->ch2 - VT03_CH_VALUE_OFFSET) / 660.0f;
+        _vt03_ctrl.rc.ch_lx =
             static_cast<float>(vt03_buf->ch3 - VT03_CH_VALUE_OFFSET) / 660.0f;
         _vt03_ctrl.rc.wheel =
             static_cast<float>(vt03_buf->wheel - VT03_CH_VALUE_OFFSET) / 660.0f;
