@@ -6,128 +6,17 @@
 #include "pyro_com_cantx.h"
 
 using namespace pyro;
-static pyro::direct_gimbal_t *direct_gimbal_ptr         = nullptr;
-static pyro::direct_gimbal_cmd_t *direct_gimbal_cmd_ptr = nullptr;
+static pyro::direct_gimbal_t *direct_gimbal_ptr           = nullptr;
+static pyro::direct_gimbal_cmd_t *direct_gimbal_cmd_ptr   = nullptr;
 static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
 static pyro::vt03_drv_t::vt03_ctrl_t const *vt03_ctrl_ptr = nullptr;
-
+static void gimbal_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl);
+static void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl);
+static void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl);
+static void chassis_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl);
 
 extern "C"
 {
-    void gimbal_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
-    {
-        pyro::read_scope_lock lock(
-            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
-
-        if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
-        {
-            direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
-            direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
-            direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
-            return;
-        }
-        direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-        // direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
-        // direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
-        direct_gimbal_cmd_ptr->pitch_delta_angle = -rc_ctrl->rc.ch_ry * 0.0035f;
-        direct_gimbal_cmd_ptr->yaw_delta_angle   = -rc_ctrl->rc.ch_rx * 0.0035f;
-    }
-    void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
-    {
-        pyro::read_scope_lock lock(
-            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->get_lock());
-        if (vt03_drv_t::gear_state_t::GEAR_MID != rc_ctrl->rc.gear.state)
-        {
-            direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
-            direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
-            direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
-            return;
-        }
-        direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-        // direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
-        // direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
-        direct_gimbal_cmd_ptr->pitch_delta_angle = -rc_ctrl->rc.ch_ry * 0.0035f;
-        direct_gimbal_cmd_ptr->yaw_delta_angle   = -rc_ctrl->rc.ch_rx * 0.0035f;
-    }
-
-    void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
-    {
-        pyro::read_scope_lock lock(
-            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
-
-        static int8_t vx      = 0;
-        static int8_t vy      = 0;
-        static int8_t wz      = 0;
-        static uint8_t active = 0;
-
-        pyro::can_tx_drv_t::clear(0x101);
-
-        if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
-        {
-            vx     = 0;
-            vy     = 0;
-            wz     = 0;
-            active = 0;
-            pyro::can_tx_drv_t::add_data(0x101, 8, vx);
-            pyro::can_tx_drv_t::add_data(0x101, 8, vy);
-            pyro::can_tx_drv_t::add_data(0x101, 8, wz);
-            pyro::can_tx_drv_t::add_data(0x101, 1, active);
-            pyro::can_tx_drv_t::send(
-                0x101, pyro::can_hub_t::get_instance()->hub_get_can_obj(
-                           pyro::can_hub_t::which_can::can3));
-            return;
-        }
-        vx     = static_cast<int8_t>(rc_ctrl->rc.ch_ly * 127);
-        vy     = static_cast<int8_t>(-rc_ctrl->rc.ch_lx * 127);
-        wz     = 0;
-        active = 1;
-        pyro::can_tx_drv_t::add_data(0x101, 8, vx);
-        pyro::can_tx_drv_t::add_data(0x101, 8, vy);
-        pyro::can_tx_drv_t::add_data(0x101, 8, wz);
-        pyro::can_tx_drv_t::add_data(0x101, 1, active);
-        pyro::can_tx_drv_t::send(
-            0x101, pyro::can_hub_t::get_instance()->hub_get_can_obj(
-                       pyro::can_hub_t::which_can::can3));
-    }
-
-    void chassis_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
-    {
-        pyro::read_scope_lock lock(
-            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->get_lock());
-        static int8_t vx      = 0;
-        static int8_t vy      = 0;
-        static int8_t wz      = 0;
-        static uint8_t active = 0;
-
-        pyro::can_tx_drv_t::clear(0x101);
-        if (vt03_drv_t::gear_state_t::GEAR_MID != rc_ctrl->rc.gear.state)
-        {
-            vx     = 0;
-            vy     = 0;
-            wz     = 0;
-            active = 0;
-            pyro::can_tx_drv_t::add_data(0x101, 8, vx);
-            pyro::can_tx_drv_t::add_data(0x101, 8, vy);
-            pyro::can_tx_drv_t::add_data(0x101, 8, wz);
-            pyro::can_tx_drv_t::add_data(0x101, 1, active);
-            pyro::can_tx_drv_t::send(
-                0x101, pyro::can_hub_t::get_instance()->hub_get_can_obj(
-                           pyro::can_hub_t::which_can::can3));
-            return;
-        }
-        vx     = static_cast<int8_t>(rc_ctrl->rc.ch_ly * 127);
-        vy     = static_cast<int8_t>(-rc_ctrl->rc.ch_lx * 127);
-        wz     = 0;
-        active = 1;
-        pyro::can_tx_drv_t::add_data(0x101, 8, vx);
-        pyro::can_tx_drv_t::add_data(0x101, 8, vy);
-        pyro::can_tx_drv_t::add_data(0x101, 8, wz);
-        pyro::can_tx_drv_t::add_data(0x101, 1, active);
-        pyro::can_tx_drv_t::send(
-            0x101, pyro::can_hub_t::get_instance()->hub_get_can_obj(
-                       pyro::can_hub_t::which_can::can3));
-    }
-
     void hero_gimbal_thread(void *argument)
     {
         while (true)
@@ -160,4 +49,122 @@ extern "C"
                     configMAX_PRIORITIES - 1, nullptr);
         vTaskDelete(nullptr);
     }
+}
+
+
+void gimbal_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
+{
+    pyro::read_scope_lock lock(
+        pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
+
+    if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
+    {
+        direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
+        direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
+        direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
+        return;
+    }
+    direct_gimbal_cmd_ptr->mode              = pyro::cmd_base_t::mode_t::ACTIVE;
+
+    direct_gimbal_cmd_ptr->pitch_delta_angle = -rc_ctrl->rc.ch_ry * 0.0035f;
+    direct_gimbal_cmd_ptr->yaw_delta_angle   = -rc_ctrl->rc.ch_rx * 0.0035f;
+}
+void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
+{
+    pyro::read_scope_lock lock(
+        pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->get_lock());
+    if (vt03_drv_t::gear_state_t::GEAR_MID != rc_ctrl->rc.gear.state)
+    {
+        direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
+        direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
+        direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
+        return;
+    }
+    direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
+    direct_gimbal_cmd_ptr->pitch_delta_angle =
+        -rc_ctrl->rc.ch_ry * 0.0035f - rc_ctrl->mouse.y * 0.1f;
+    direct_gimbal_cmd_ptr->yaw_delta_angle =
+        -rc_ctrl->rc.ch_rx * 0.0035f - rc_ctrl->mouse.x * 0.1f;
+}
+
+void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
+{
+    pyro::read_scope_lock lock(
+        pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
+
+    static int8_t vx      = 0;
+    static int8_t vy      = 0;
+    static int8_t wz      = 0;
+    static uint8_t active = 0;
+
+    pyro::can_tx_drv_t::clear(0x101);
+
+    if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
+    {
+        vx     = 0;
+        vy     = 0;
+        wz     = 0;
+        active = 0;
+        pyro::can_tx_drv_t::add_data(0x101, 8, vx);
+        pyro::can_tx_drv_t::add_data(0x101, 8, vy);
+        pyro::can_tx_drv_t::add_data(0x101, 8, wz);
+        pyro::can_tx_drv_t::add_data(0x101, 1, active);
+        pyro::can_tx_drv_t::send(
+            0x101, pyro::can_hub_t::get_instance()->hub_get_can_obj(
+                       pyro::can_hub_t::which_can::can3));
+        return;
+    }
+    vx     = static_cast<int8_t>(rc_ctrl->rc.ch_ly * 127);
+    vy     = static_cast<int8_t>(-rc_ctrl->rc.ch_lx * 127);
+    wz     = 0;
+    active = 1;
+    pyro::can_tx_drv_t::add_data(0x101, 8, vx);
+    pyro::can_tx_drv_t::add_data(0x101, 8, vy);
+    pyro::can_tx_drv_t::add_data(0x101, 8, wz);
+    pyro::can_tx_drv_t::add_data(0x101, 1, active);
+    pyro::can_tx_drv_t::send(0x101,
+                             pyro::can_hub_t::get_instance()->hub_get_can_obj(
+                                 pyro::can_hub_t::which_can::can3));
+}
+
+void chassis_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
+{
+    pyro::read_scope_lock lock(
+        pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->get_lock());
+    static int8_t vx      = 0;
+    static int8_t vy      = 0;
+    static int8_t wz      = 0;
+    static uint8_t active = 0;
+
+    pyro::can_tx_drv_t::clear(0x101);
+    if (vt03_drv_t::gear_state_t::GEAR_MID != rc_ctrl->rc.gear.state)
+    {
+        vx     = 0;
+        vy     = 0;
+        wz     = 0;
+        active = 0;
+        pyro::can_tx_drv_t::add_data(0x101, 8, vx);
+        pyro::can_tx_drv_t::add_data(0x101, 8, vy);
+        pyro::can_tx_drv_t::add_data(0x101, 8, wz);
+        pyro::can_tx_drv_t::add_data(0x101, 1, active);
+        pyro::can_tx_drv_t::send(
+            0x101, pyro::can_hub_t::get_instance()->hub_get_can_obj(
+                       pyro::can_hub_t::which_can::can3));
+        return;
+    }
+    vx     = static_cast<int8_t>(rc_ctrl->key.w.state   ? 127
+                                 : rc_ctrl->key.s.state ? -127
+                                                        : rc_ctrl->rc.ch_ly * 127);
+    vy     = static_cast<int8_t>(rc_ctrl->key.a.state   ? 127
+                                 : rc_ctrl->key.d.state ? -127
+                                                        : -rc_ctrl->rc.ch_lx * 127);
+    wz     = static_cast<int8_t>(rc_ctrl->rc.wheel * 127);
+    active = 1;
+    pyro::can_tx_drv_t::add_data(0x101, 8, vx);
+    pyro::can_tx_drv_t::add_data(0x101, 8, vy);
+    pyro::can_tx_drv_t::add_data(0x101, 8, wz);
+    pyro::can_tx_drv_t::add_data(0x101, 1, active);
+    pyro::can_tx_drv_t::send(0x101,
+                             pyro::can_hub_t::get_instance()->hub_get_can_obj(
+                                 pyro::can_hub_t::which_can::can3));
 }

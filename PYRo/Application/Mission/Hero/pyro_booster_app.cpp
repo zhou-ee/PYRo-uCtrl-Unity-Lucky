@@ -68,19 +68,34 @@ extern "C"
         quad_booster_cmd_ptr->fric1_mps = 15.0f; // 可调节
         quad_booster_cmd_ptr->fric2_mps = 10.5f;
         // 摩擦轮控制
-        static float fn_l_using_time = 0;
+        static float fn_l_using_time    = 0;
         if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->rc.fn_l.ctrl &&
             rc_ctrl->rc.fn_l.change_time != fn_l_using_time)
         {
-            fn_l_using_time                     = rc_ctrl->rc.fn_l.change_time;
+            fn_l_using_time               = rc_ctrl->rc.fn_l.change_time;
+            quad_booster_cmd_ptr->fric_on = !quad_booster_cmd_ptr->fric_on;
+        }
+        static float q_using_time = 0;
+        if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.q.ctrl &&
+            rc_ctrl->key.q.change_time != q_using_time)
+        {
+            q_using_time                  = rc_ctrl->key.q.change_time;
             quad_booster_cmd_ptr->fric_on = !quad_booster_cmd_ptr->fric_on;
         }
         // 开火控制 (单发）
-        static float trigger_using_time = 0;
+        static float trigger_using_time    = 0;
+        static float mouse_left_using_time = 0;
         if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->rc.trigger.ctrl &&
             rc_ctrl->rc.trigger.change_time != trigger_using_time)
         {
-            trigger_using_time                     = rc_ctrl->rc.trigger.change_time;
+            trigger_using_time                = rc_ctrl->rc.trigger.change_time;
+            quad_booster_cmd_ptr->fire_enable = true;
+        }
+        else if (vt03_drv_t::key_ctrl_t::KEY_PRESSED ==
+                     rc_ctrl->mouse.press_l.ctrl &&
+                 rc_ctrl->mouse.press_l.change_time != mouse_left_using_time)
+        {
+            mouse_left_using_time = rc_ctrl->mouse.press_l.change_time;
             quad_booster_cmd_ptr->fire_enable = true;
         }
         else

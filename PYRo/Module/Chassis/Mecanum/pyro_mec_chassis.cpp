@@ -189,7 +189,11 @@ void mec_chassis_t::_kinematics_solve()
         _ctx.pid.follow_pid->calculate(_ctx.data.current_yaw_error, 0.0f);
 
     // 最终角速度 = 跟随产生的角速度 + 选手手动输入的角速度(小陀螺/微调)
-    float final_wz   = follow_wz + _ctx.cmd->wz;
+    float final_wz   = follow_wz;
+    // if (_ctx.cmd->wz != 0.0f)
+    // {
+    //     final_wz = _ctx.cmd->wz;
+    // }
 
     // -------------------------------------------------------------
     // 2. 矢量旋转 (将云台坐标系速度转换到底盘坐标系)

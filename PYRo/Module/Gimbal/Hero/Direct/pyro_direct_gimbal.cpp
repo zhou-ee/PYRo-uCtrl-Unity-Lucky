@@ -37,9 +37,9 @@ status_t direct_gimbal_t::_init()
 
     // 3. 初始化串级 PID
     // Pitch 轴 (DM 电机通常响应较快，PID 参数可能需要重新整定)
-    _ctx.pid.pitch_pos = new pid_t(10.0f, 0.0f, 0.0f, 0.0f, 20.0f);
+    _ctx.pid.pitch_pos = new pid_t(25.5f, 0.4f, 0.85f, 0.0f, 20.0f);
     _ctx.pid.pitch_spd =
-        new pid_t(1.2f, 0.05f, 0.0f, 5.0f, 22.0f); // 输出限制匹配 DM 电机 Nm 级
+        new pid_t(1.5f, 0.05f, 0.05f, 5.0f, 22.0f); // 输出限制匹配 DM 电机 Nm 级
 
     // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
     _ctx.pid.yaw_pos = new pid_t(5.2f, 0.01f, 0.22f, 0.8f, 5.0f);
@@ -132,9 +132,5 @@ void direct_gimbal_t::_fsm_execute()
 
     _main_fsm.execute(this);
 }
-
-
-
-
 
 } // namespace pyro

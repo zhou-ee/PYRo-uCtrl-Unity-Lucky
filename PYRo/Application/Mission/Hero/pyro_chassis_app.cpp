@@ -33,29 +33,6 @@ extern "C"
         mec_cmd_ptr->mode = static_cast<pyro::cmd_base_t::mode_t>(raw_data[3]);
     }
 
-    void chassis_dr162cmd(pyro::dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
-    {
-        pyro::read_scope_lock lock(
-            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
-
-        if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
-        {
-            mec_cmd_ptr->vx   = 0;
-            mec_cmd_ptr->vy   = 0;
-            mec_cmd_ptr->wz   = 0;
-            mec_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
-        }
-        else
-        {
-            mec_cmd_ptr->vx =
-                3 * static_cast<float>(rc_ctrl->rc.ch_ly) / 127.0f;
-            mec_cmd_ptr->vy =
-                3 * static_cast<float>(-rc_ctrl->rc.ch_lx) / 127.0f;
-            mec_cmd_ptr->wz   = 0;
-            mec_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-        }
-    }
-
     void hero_chassis_thread(void *argument)
     {
         while (true)
