@@ -12,12 +12,14 @@ void quad_booster_t::fsm_active_t::on_enter(owner *owner)
 void quad_booster_t::fsm_active_t::on_execute(owner *owner)
 {
     // 1. 摩擦轮控制
+    owner->_speed_contorl();
+
     if (owner->_ctx.cmd->fric_on)
     {
-        owner->_ctx.data.target_fric_mps[0] = owner->_ctx.cmd->fric2_mps;
-        owner->_ctx.data.target_fric_mps[2] = -owner->_ctx.cmd->fric2_mps;
-        owner->_ctx.data.target_fric_mps[1] = owner->_ctx.cmd->fric1_mps;
-        owner->_ctx.data.target_fric_mps[3] = -owner->_ctx.cmd->fric1_mps;
+        owner->_ctx.data.target_fric_mps[0] = owner->_ctx.shoot_data.fric2_mps;
+        owner->_ctx.data.target_fric_mps[2] = -owner->_ctx.shoot_data.fric2_mps;
+        owner->_ctx.data.target_fric_mps[1] = owner->_ctx.shoot_data.fric1_mps;
+        owner->_ctx.data.target_fric_mps[3] = -owner->_ctx.shoot_data.fric1_mps;
 
         // owner->_ctx.data.target_fric_mps[0] = 0;
         // owner->_ctx.data.target_fric_mps[2] = 0;

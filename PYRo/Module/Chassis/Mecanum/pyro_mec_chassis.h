@@ -7,6 +7,7 @@
 #include "pyro_motor_base.h"
 #include "pyro_supercap_drv.h"
 #include "pyro_power_control_drv.h"
+#include "pyro_powermeter.h"
 
 namespace pyro
 {
@@ -92,11 +93,14 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t,mec_cf
         motor_ctx_t motor;
         pid_ctx_t pid;
         data_ctx_t data;
-        mec_cmd_t *cmd;
-        supercap_drv_t::chassis_cmd_t supercap_cmd;
-        supercap_drv_t::cap_feedback_t cap_feedback;
-        power_control_drv_t::motor_data_t power_motor_data[4];
+        mec_cmd_t *cmd{};
+        supercap_drv_t::chassis_cmd_t supercap_cmd{};
+        supercap_drv_t::cap_feedback_t cap_feedback{};
+        powermeter_drv_t *powermeter{nullptr};
+        powermeter_data powermeter_feedback{};
+        power_control_drv_t::motor_data_t power_motor_data[4]{};
     };
+    float buffer_engy;
 
     mec_context_t _ctx;
 
@@ -127,7 +131,7 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t,mec_cf
     // 物理参数常量
     // =====================================================
     static constexpr float WHEEL_RADIUS = 0.076f; // m
-    static constexpr float WHEELBASE    = 0.375f; // m
+    static constexpr float WHEELBASE    = 0.380f; // m
     static constexpr float TRACK_WIDTH  = 0.380f; // m
 
     static constexpr float YAW_OFFSET_RAD = 0.796136022f; // 云台归中时的机械偏移量

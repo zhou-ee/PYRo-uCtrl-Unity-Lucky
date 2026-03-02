@@ -1,5 +1,7 @@
 #include "pyro_quad_booster.h"
 #include "pyro_algo_common.h"
+#include "pyro_com_canrx.h"
+
 #include <cmath>
 
 namespace pyro
@@ -36,13 +38,18 @@ status_t quad_booster_t::_init()
 
     // 拨弹 PID
     _ctx.pid.trigger_pos_pid =
-        new pid_t(10.2f, 0.03f, 0.005f, 1.0f, 10.0f, 200, 100, 4);
+        new pid_t(10.2f, 0.03f, 0.005f, 1.0f, 15.0f, 200, 100, 4);
     _ctx.pid.trigger_spd_pid =
         new pid_t(3.6f, 0.02f, 0.005f, 2.0f, 20.0f, 200, 100, 4);
-//14
-    // 重置数据
+    // 14
+    //  重置数据
     _ctx.data.last_rotor_rad = 0.0f; // 默认从0开始比较
     _ctx.data.total_trig_rad = 0.0f;
+
+    // 3. 弹速控制初始化
+    can_rx_drv_t::subscribe(can_hub_t::can3, 0x102);
+    _ctx.pid.ball_speed_pid =
+        new pid_t(0.25f, 0.0f, 0.005f, 0.0f, 2.0f);
 
     return PYRO_OK;
 }
@@ -83,10 +90,11 @@ void quad_booster_t::_update_feedback()
 
     // --- C. 位置反馈 (移除首帧检查) ---
     // 获取当前转子角度 (范围 -PI 到 PI)
-    const float now_rotor_rad = _ctx.motor.trigger_wheel->get_current_position();
+    const float now_rotor_rad =
+        _ctx.motor.trigger_wheel->get_current_position();
 
     // 计算转子角度差值 (当前 - 上一次)
-    float delta_rotor   = now_rotor_rad - _ctx.data.last_rotor_rad;
+    float delta_rotor = now_rotor_rad - _ctx.data.last_rotor_rad;
 
     // 处理过零点问题 (最短路径原则)
     if (delta_rotor > PI)
@@ -118,6 +126,73 @@ void quad_booster_t::_fsm_execute()
         _main_fsm.change_state(&_state_passive);
 
     _main_fsm.execute(this);
+}
+
+void quad_booster_t::_speed_contorl()
+{
+    std::array<uint8_t, 8> raw_data{};
+
+    // 仅在成功接收到新弹速的这一帧，才进行闭环计算
+    if (can_rx_drv_t::get_data(pyro::can_hub_t::can3, 0x102, raw_data))
+    {
+        // 1. 更新弹速历史数据
+        _ctx.shoot_data.ball_speed[2] = _ctx.shoot_data.ball_speed[1];
+        _ctx.shoot_data.ball_speed[1] = _ctx.shoot_data.ball_speed[0];
+        _ctx.shoot_data.ball_speed[0] =
+            *reinterpret_cast<float *>(raw_data.data());
+
+        for (int i = 0; i < 3; i++)
+        {
+            if (_ctx.shoot_data.ball_speed[i] == 0.0f)
+            {
+                _ctx.shoot_data.ball_speed[i] = _ctx.cmd->target_speed;
+            }
+        }
+
+        // 2. 确保目标弹速有效，避免启动时出现误动作
+        if (_ctx.cmd->target_speed > 7.5f)
+        {
+            // --- A. 定义近期弹速的权重 ---
+            // 越新的弹速参考价值越大
+            constexpr float w0 = 0.72f; // 最新一发
+            constexpr float w1 = 0.21f; // 上一发
+            constexpr float w2 = 0.07f; // 上上发
+
+            // --- B. 计算带符号的均方误差 ---
+            float e0 = _ctx.shoot_data.ball_speed[0] - _ctx.cmd->target_speed;
+            float e1 = _ctx.shoot_data.ball_speed[1] - _ctx.cmd->target_speed;
+            float e2 = _ctx.shoot_data.ball_speed[2] - _ctx.cmd->target_speed;
+
+            // 采用 e * |e| 保留误差方向 (加速或减速)
+            float signed_weighted_mse = (w0 * e0 * std::abs(e0)) +
+                                        (w1 * e1 * std::abs(e1)) +
+                                        (w2 * e2 * std::abs(e2));
+
+            // --- C. PID 计算速度增量 ---
+            // 由于 signed_weighted_mse 本身已经是误差值，直接将其作为
+            // target，current 设为 0
+            float speed_increment =
+                _ctx.pid.ball_speed_pid->calculate(0.0f, signed_weighted_mse);
+
+            // --- D. 累加到 fric1 的基础转速上 ---
+            _ctx.shoot_data.fric1_mps += speed_increment;
+
+            // --- E. 安全限幅 (非常重要) ---
+            // 避免闭环异常导致单侧摩擦轮转速过高或过低，导致卡弹或弹道严重偏斜
+            // 这里的限幅值请根据你实际的摩擦轮物理极限进行调整
+            constexpr float MAX_FRIC1_MPS = 16.0f;
+            constexpr float MIN_FRIC1_MPS = 9.0f;
+
+            if (_ctx.shoot_data.fric1_mps > MAX_FRIC1_MPS)
+            {
+                _ctx.shoot_data.fric1_mps = MAX_FRIC1_MPS;
+            }
+            else if (_ctx.shoot_data.fric1_mps < MIN_FRIC1_MPS)
+            {
+                _ctx.shoot_data.fric1_mps = MIN_FRIC1_MPS;
+            }
+        }
+    }
 }
 
 void quad_booster_t::_fric_control()

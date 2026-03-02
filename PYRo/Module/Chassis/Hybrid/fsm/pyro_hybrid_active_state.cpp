@@ -20,7 +20,7 @@ void hybrid_chassis_t::fsm_active_t::on_execute(owner *owner)
 {
     if (owner->_ctx.cmd->track_en)
     {
-        change_state(&climbing_state);
+        change_state(&climbing_fsm);
     }
     else
     {

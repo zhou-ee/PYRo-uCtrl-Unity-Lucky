@@ -65,13 +65,15 @@ status_t mec_chassis_t::_init()
     // 轮组 PID (速度环)
     for (auto &pid : _ctx.pid.wheel_pid)
     {
-        pid = new pid_t(0.35f, 0.0008f, 0.0f, 1.0f, 20.0f, 20, 10, 4);
+        pid = new pid_t(0.35f, 0.0003f, 0.0001f, 1.0f, 20.0f);
     }
 
     // 跟随 PID (位置环：输入弧度误差，输出 rad/s)
     // 注意：P 参数可能需要根据底盘重量调整 (3.0 ~ 8.0)
     _ctx.pid.follow_pid = new pid_t(5.0f, 0.0f, 0.1f, 0.0f, 10.0f, 10);
 
+    _ctx.powermeter     = new powermeter_drv_t(0x212, can_hub_t::can2);
+    _ctx.powermeter->init();
     // 功率控制初始化
     _power_control_init();
 
@@ -84,10 +86,14 @@ void mec_chassis_t::_power_control_init()
 
     for (auto &[k1, k2, k3, k4] : coef)
     {
-        k1 = 0.0160f;
-        k2 = 0.0250f;
-        k3 = 0.1742f;
-        k4 = 0.5815f;
+        // k1 = 0.0160f;//0.0155//0.0260
+        // k2 = 0.0250f;//1.6000//0.0460
+        // k3 = 0.1742f;//0.0010//0.1066
+        // k4 = 0.5815f;//0.7500//0.7500
+        k1 = 0.0260f;//0.0155
+        k2 = 0.0460f;//1.6000
+        k3 = 0.1100f;//0.0010
+        k4 = 0.7500f;//0.7500
     }
 
     power_control_drv_t::get_instance(4).set_motor_coefficient(1, coef[0]);
@@ -111,13 +117,18 @@ void mec_chassis_t::_power_control()
     {
         power_control_drv_t::get_instance().calculate_restricted_torques(
             _ctx.power_motor_data, 4,
-            static_cast<float>(referee_drv_t::get_instance()->get_data().robot_status.chassis_power_limit) + 100.0f);
+            static_cast<float>(referee_drv_t::get_instance()
+                                   ->get_data()
+                                   .robot_status.chassis_power_limit) +
+                100.0f);
     }
     else
     {
         power_control_drv_t::get_instance().calculate_restricted_torques(
             _ctx.power_motor_data, 4,
-            referee_drv_t::get_instance()->get_data().robot_status.chassis_power_limit);
+            referee_drv_t::get_instance()
+                ->get_data()
+                .robot_status.chassis_power_limit);
     }
     for (int i = 0; i < 4; i++)
         _ctx.data.out_wheel_torque[i] =
@@ -165,17 +176,24 @@ void mec_chassis_t::_update_feedback()
 
     // 4. 更新 cap_tx 数据
     _ctx.supercap_cmd.power_referee = 0;
-    // _ctx.supercap_cmd.power_limit_referee =
-    //     referee_data.robot_status.chassis_power_limit;
-    // _ctx.supercap_cmd.power_buffer_limit_referee = 60.0f;
-    // _ctx.supercap_cmd.power_buffer_referee =
-    //     referee_data.power_heat.buffer_energy;
+    _ctx.supercap_cmd.power_limit_referee =
+        referee_drv_t::get_instance()
+            ->get_data()
+            .robot_status.chassis_power_limit;
+    _ctx.supercap_cmd.power_buffer_limit_referee = 60.0f;
+    _ctx.supercap_cmd.power_buffer_referee =
+        referee_drv_t::get_instance()->get_data().power_heat.buffer_energy;
     _ctx.supercap_cmd.use_cap           = 1;
     _ctx.supercap_cmd.kill_chassis_user = 0;
     _ctx.supercap_cmd.speed_up_user_now = 0;
 
+    buffer_engy = referee_drv_t::get_instance()
+            ->get_data().power_heat.buffer_energy;
+
     // 5. 更新 cap_rx 数据
     _ctx.cap_feedback = supercap_drv_t::get_instance()->get_feedback();
+
+    _ctx.powermeter->get_data(_ctx.powermeter_feedback);
 }
 
 void mec_chassis_t::_kinematics_solve()
@@ -189,11 +207,11 @@ void mec_chassis_t::_kinematics_solve()
         _ctx.pid.follow_pid->calculate(_ctx.data.current_yaw_error, 0.0f);
 
     // 最终角速度 = 跟随产生的角速度 + 选手手动输入的角速度(小陀螺/微调)
-    float final_wz   = follow_wz;
-    // if (_ctx.cmd->wz != 0.0f)
-    // {
-    //     final_wz = _ctx.cmd->wz;
-    // }
+    float final_wz = follow_wz;
+    if (_ctx.cmd->wz != 0.0f)
+    {
+        final_wz = _ctx.cmd->wz;
+    }
 
     // -------------------------------------------------------------
     // 2. 矢量旋转 (将云台坐标系速度转换到底盘坐标系)
@@ -242,6 +260,10 @@ void mec_chassis_t::_chassis_control(mec_context_t *ctx)
             ctx->data.target_wheel_rpm[i], ctx->data.current_wheel_rpm[i]);
     }
     _power_control();
+    // ctx->data.out_wheel_torque[0] = 0;
+    // ctx->data.out_wheel_torque[1] = 0;
+    // ctx->data.out_wheel_torque[2] = 0;
+    // ctx->data.out_wheel_torque[3] = 0;
 }
 
 void mec_chassis_t::_send_motor_command(mec_context_t *ctx)

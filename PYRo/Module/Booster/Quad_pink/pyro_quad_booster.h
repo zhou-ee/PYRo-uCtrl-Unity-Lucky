@@ -16,11 +16,10 @@ struct quad_booster_cmd_t final : public cmd_base_t
 {
     bool fric_on;     // 摩擦轮开启
     bool fire_enable; // 拨弹开启
-    float fric1_mps;  // 第一级摩擦轮目标转速
-    float fric2_mps;  // 第二级摩擦轮目标转速
+    float target_speed;
 
     quad_booster_cmd_t()
-        : fric_on(false), fire_enable(false), fric1_mps(0), fric2_mps(0)
+        : fric_on(false), fire_enable(false), target_speed(0.0f)
     {
     }
 };
@@ -58,6 +57,7 @@ class quad_booster_t final
     void _fsm_execute() override;
 
     // --- 内部辅助 ---
+    void _speed_contorl();
     void _fric_control();
     void _trigger_position_control();
     void _trigger_speed_control();
@@ -79,6 +79,7 @@ class quad_booster_t final
         pid_t *fric_pid[4]{nullptr};
         pid_t *trigger_pos_pid{nullptr};
         pid_t *trigger_spd_pid{nullptr};
+        pid_t *ball_speed_pid{nullptr};
     };
 
     struct data_ctx_t
@@ -103,11 +104,19 @@ class quad_booster_t final
         float out_trig_torque{0};
     };
 
+    struct shoot_data_t
+    {
+        float ball_speed[3]{};
+        float fric1_mps = 12.2f;
+        float fric2_mps = 8.5f;
+    };
+
     struct booster_ctx_t
     {
         motor_ctx_t motor;
         pid_ctx_t pid;
         data_ctx_t data;
+        shoot_data_t shoot_data{};
         quad_booster_cmd_t *cmd{};
     };
 

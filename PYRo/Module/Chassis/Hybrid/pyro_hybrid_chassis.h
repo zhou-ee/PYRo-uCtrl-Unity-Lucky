@@ -20,7 +20,8 @@ struct hybrid_cmd_t : cmd_base_t
     float vy;          // 云台坐标系下的 Y 轴速度 m/s (推左)
     float wz;          // z轴角速度 rad/s (通常跟随模式下该值为0，除非做小陀螺)
     float delta_pitch; // 腿部目标位置相对于当前的增量 rad
-    bool track_en;     // 是否启用履带 (true: 履带 + 麦轮混合驱动, false: 仅麦轮)
+    bool track_en;    // 是否启用履带 (true: 履带 + 麦轮混合驱动, false: 仅麦轮)
+    bool leg_retract; // 是否进入腿部收回状态 (仅在 track_en=true 时有效)
 
     hybrid_cmd_t() : vx(0), vy(0), wz(0), delta_pitch(0), track_en(false)
     {
@@ -46,6 +47,9 @@ struct hybrid_deps_t
         pid_t *track_pid[2]{nullptr};
         pid_t *pitch_pid{nullptr};
         pid_t *roll_pid{nullptr};
+
+        pid_t *leg_pos_pid[2]{nullptr}; // 腿部位置控制 PID
+        pid_t *leg_vel_pid[2]{nullptr}; // 腿部速度控制 PID
     };
 
     motor_deps_t motor_deps{};
@@ -82,7 +86,8 @@ class hybrid_chassis_t final
     void _kinematics_solve();
     void _mecanum_control();
     void _track_control();
-    void _leg_control();
+    void _leg_vmc();
+    void _leg_direct_control();
     void _send_motor_command() const;
     hybrid_kin_t *_kinematics{nullptr};
 
@@ -130,35 +135,54 @@ class hybrid_chassis_t final
     // =====================================================
     using owner = hybrid_chassis_t;
 
-    struct state_passive_t : public state_t<owner>
+    struct state_passive_t final : public state_t<owner>
     {
         void enter(owner *owner) override;
         void execute(owner *owner) override;
         void exit(owner *owner) override;
     };
 
-    struct fsm_active_t : public fsm_t<owner>
+    struct fsm_active_t final : public fsm_t<owner>
     {
-        struct cruising_state_t : public state_t<owner>
+        struct cruising_state_t final : public state_t<owner>
         {
             void enter(owner *owner) override;
             void execute(owner *owner) override;
             void exit(owner *owner) override;
         };
-        struct climbing_state_t : public state_t<owner>
+        struct climbing_fsm_t final : public fsm_t<owner>
         {
-            void enter(owner *owner) override;
-            void execute(owner *owner) override;
-            void exit(owner *owner) override;
+            struct track_climbing_state_t final : public state_t<owner>
+            {
+                void enter(owner *owner) override;
+                void execute(owner *owner) override;
+                void exit(owner *owner) override;
+            };
+
+            struct leg_retraction_state_t final : public state_t<owner>
+            {
+                void enter(owner *owner) override;
+                void execute(owner *owner) override;
+                void exit(owner *owner) override;
+            };
+
+            void on_enter(owner *owner) override;
+            void on_execute(owner *owner) override;
+            void on_exit(owner *owner) override;
+
+          private:
+            track_climbing_state_t track_climbing_state;
+            leg_retraction_state_t leg_retraction_state;
         };
 
         // FSM Hooks
         void on_enter(owner *owner) override;
         void on_execute(owner *owner) override;
         void on_exit(owner *owner) override;
-    private:
+
+      private:
         cruising_state_t cruising_state;
-        climbing_state_t climbing_state;
+        climbing_fsm_t climbing_fsm;
     };
 
     // 状态实例

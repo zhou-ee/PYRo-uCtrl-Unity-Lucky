@@ -150,8 +150,8 @@ void vt03_drv_t::check_ctrl(key_t &key, const uint8_t raw_state)
 
     const float now                  = pyro::dwt_drv_t::get_timeline_ms();
     constexpr float DEBOUNCE_MS      = 10.0f;
-    constexpr float HOLD_TRIGGER_MS  = 200.0f;
-    constexpr float REPEAT_WINDOW_MS = 220.0f;
+    constexpr float HOLD_TRIGGER_MS  = 160.0f;
+    constexpr float REPEAT_WINDOW_MS = 180.0f;
 
     bool rising_edge                 = false;
     bool falling_edge                = false;

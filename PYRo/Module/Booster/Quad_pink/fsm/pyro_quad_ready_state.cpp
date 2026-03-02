@@ -18,6 +18,14 @@ void quad_booster_t::fsm_active_t::state_ready_t::execute(owner *owner)
     }
 
     // @TODO: 循环判断摩擦轮转速，不符合要求则退回interim状态
+    for (int i = 0; i < 4; i++)
+    {
+        if (owner->_ctx.data.current_fric_mps[i] - owner->_ctx.data.target_fric_mps[i] > 0.5f)
+        {
+            request_switch(&owner->_state_active._interim_state);
+            break;
+        }
+    }
 
     owner->_trigger_position_control();
     owner->_send_trigger_command();

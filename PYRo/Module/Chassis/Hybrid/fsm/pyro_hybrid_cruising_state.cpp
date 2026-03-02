@@ -21,7 +21,7 @@ void hybrid_chassis_t::fsm_active_t::cruising_state_t::enter(owner *owner)
 void hybrid_chassis_t::fsm_active_t::cruising_state_t::execute(owner *owner)
 {
     // 1. 轮腿 VMC 姿态维稳控制 (维持 pitch/roll 平衡)
-    owner->_leg_control();
+    owner->_leg_vmc();
 
     // 2. 麦轮速度环控制 (提供平面移动的主动力)
     owner->_mecanum_control();

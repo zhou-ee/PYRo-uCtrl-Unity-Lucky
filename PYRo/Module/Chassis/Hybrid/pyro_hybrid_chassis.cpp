@@ -56,16 +56,18 @@ void hybrid_chassis_t::_update_feedback()
     for (int i = 0; i < 4; i++)
         _ctx.data.current_wheel_rpm[i] =
             radps_to_rpm(_ctx.motor.mecanum[i]->get_current_rotate() *
-                      dji_m3508_motor_drv_t::reciprocal_reduction_ratio);
+                         dji_m3508_motor_drv_t::reciprocal_reduction_ratio);
 
     for (int i = 0; i < 2; i++)
         _ctx.data.current_track_rpm[i] =
             radps_to_rpm(_ctx.motor.track[i]->get_current_rotate());
 
     // 左右腿对称性修正：对右腿(leg[1])的读取数据取反，抹平机械差异
-    _ctx.data.current_leg_rad[0]   = _ctx.motor.leg[0]->get_current_position();
+    _ctx.data.current_leg_rad[0] =
+        _ctx.motor.leg[0]->get_current_position() - LEFT_LEG_OFFSET_RAD;
     _ctx.data.current_leg_radps[0] = _ctx.motor.leg[0]->get_current_rotate();
-    _ctx.data.current_leg_rad[1]   = -_ctx.motor.leg[1]->get_current_position();
+    _ctx.data.current_leg_rad[1] =
+        -_ctx.motor.leg[1]->get_current_position() - RIGHT_LEG_OFFSET_RAD;
     _ctx.data.current_leg_radps[1] = -_ctx.motor.leg[1]->get_current_rotate();
 }
 
@@ -84,7 +86,8 @@ void hybrid_chassis_t::_kinematics_solve()
         _ctx.pid.follow_yaw_pid->calculate(0.0f, _ctx.data.current_yaw_error);
 
     // 最终角速度 = 跟随产生的角速度 + 选手手动输入的角速度(小陀螺/微调)
-    const float final_wz    = follow_wz + _ctx.cmd->wz;
+    float final_wz          = follow_wz + _ctx.cmd->wz;
+    final_wz                = _ctx.cmd->wz;
 
     // -------------------------------------------------------------
     // 2. 矢量旋转 (将云台坐标系速度转换到底盘坐标系)
@@ -94,11 +97,13 @@ void hybrid_chassis_t::_kinematics_solve()
     // const float s_theta     = arm_sin_f32(theta);
     //
     // // 旋转矩阵公式 (逆时针旋转 theta)
-    // const float vx_chassis  = _ctx.cmd->vx * c_theta + _ctx.cmd->vy * s_theta;
-    // const float vy_chassis  = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
+    // const float vx_chassis  = _ctx.cmd->vx * c_theta + _ctx.cmd->vy *
+    // s_theta; const float vy_chassis  = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy
+    // * c_theta;
     //
     // const auto wheel_speeds = _kinematics->solve(vx_chassis, vy_chassis,
-    //                                              final_wz, _ctx.cmd->track_en);
+    //                                              final_wz,
+    //                                              _ctx.cmd->track_en);
 
     const float theta       = 0;
 
@@ -110,7 +115,7 @@ void hybrid_chassis_t::_kinematics_solve()
     const float vy_chassis  = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
 
     const auto wheel_speeds = _kinematics->solve(vx_chassis, vy_chassis,
-                                                 0 , _ctx.cmd->track_en);
+                                                 final_wz, _ctx.cmd->track_en);
 
     // 麦轮转速分配 (右侧反转视底层驱动而定，此处按常规处理)
     _ctx.data.target_wheel_rpm[0] =
@@ -135,9 +140,11 @@ void hybrid_chassis_t::_kinematics_solve()
         _ctx.data.target_track_rpm[0] = 0.0f;
         _ctx.data.target_track_rpm[1] = 0.0f;
     }
+
+    _ctx.data.target_pitch_rad += _ctx.cmd->delta_pitch;
 }
 
-void hybrid_chassis_t::_leg_control()
+void hybrid_chassis_t::_leg_vmc()
 {
     const float pitch     = _ctx.data.current_pitch_rad;
     const float roll      = _ctx.data.current_roll_rad;
@@ -226,10 +233,32 @@ void hybrid_chassis_t::_leg_control()
         }
 
         // 8. 输出并再次针对右腿作符号映射
-        _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_gravity;
-        // _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
+        // _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_gravity;
+        _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
     }
 }
+
+void hybrid_chassis_t::_leg_direct_control()
+{
+    for (int i = 0; i < 2; i++)
+    {
+        if (_ctx.data.target_leg_rad[i] > LEG_MAX_POS)
+        {
+            _ctx.data.target_leg_rad[i] = LEG_MAX_POS;
+        }
+        else if (_ctx.data.target_leg_rad[i] < LEG_MIN_POS)
+        {
+            _ctx.data.target_leg_rad[i] = LEG_MIN_POS;
+        }
+        _ctx.data.target_leg_radps[i] = _ctx.pid.leg_pos_pid[i]->calculate(
+            _ctx.data.target_leg_rad[i], _ctx.data.current_leg_rad[i]);
+        _ctx.data.out_leg_torque[i] =
+            (i == 0 ? 1.0f : -1.0f) *
+            _ctx.pid.leg_vel_pid[i]->calculate(_ctx.data.target_leg_radps[i],
+                                               _ctx.data.current_leg_radps[i]);
+    }
+}
+
 
 void hybrid_chassis_t::_mecanum_control()
 {
@@ -251,6 +280,8 @@ void hybrid_chassis_t::_track_control()
         _ctx.data.out_track_torque[i] = _ctx.pid.track_pid[i]->calculate(
             _ctx.data.target_track_rpm[i], _ctx.data.current_track_rpm[i]);
     }
+    // _ctx.data.out_track_torque[0] = 0;
+    // _ctx.data.out_track_torque[1] = 0;
 }
 
 void hybrid_chassis_t::_send_motor_command() const
@@ -258,10 +289,9 @@ void hybrid_chassis_t::_send_motor_command() const
     for (int i = 0; i < 4; i++)
         _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
     for (int i = 0; i < 2; i++)
-        _ctx.motor.track[i]->send_torque(0);
+        _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
     for (int i = 0; i < 2; i++)
         _ctx.motor.leg[i]->send_torque(_ctx.data.out_leg_torque[i]);
-
 }
 
 // =========================================================

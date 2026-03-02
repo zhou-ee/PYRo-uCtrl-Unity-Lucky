@@ -3,7 +3,7 @@
 namespace pyro
 {
 
-void hybrid_chassis_t::fsm_active_t::climbing_state_t::enter(owner *owner)
+void hybrid_chassis_t::fsm_active_t::climbing_fsm_t::on_enter(owner *owner)
 {
     // 进入爬坡模式，重新初始化所有驱动机构的 PID
     for (auto *pid : owner->_ctx.pid.mecanum_pid)
@@ -16,22 +16,32 @@ void hybrid_chassis_t::fsm_active_t::climbing_state_t::enter(owner *owner)
     }
 }
 
-void hybrid_chassis_t::fsm_active_t::climbing_state_t::execute(owner *owner)
+void hybrid_chassis_t::fsm_active_t::climbing_fsm_t::on_execute(owner *owner)
 {
-    // 1. 轮腿 VMC 控制 (爬坡时维持车身不后倾翻车，甚至可根据 delta_pitch 压车头)
-    owner->_leg_control();
+    // 1. VMC 控制逻辑
+    owner->_leg_vmc();
 
-    // 2. 麦轮速度环控制 (提供前轮牵引力)
+    // 1. 麦轮速度环控制 (提供前轮牵引力)
     owner->_mecanum_control();
 
-    // 3. 履带速度环控制 (履带正式介入，提供主要越障/爬坡推进力)
+    // 2. 履带速度环控制 (履带正式介入，提供主要越障/爬坡推进力)
     owner->_track_control();
 
-    // 4. 统一发送所有电机指令
+
+    // 2. 统一发送所有电机指令
     owner->_send_motor_command();
+
+    // if (owner->_ctx.cmd->leg_retract)
+    // {
+    //     change_state(&leg_retraction_state);
+    // }
+    // else
+    // {
+    //     change_state(&track_climbing_state);
+    // }
 }
 
-void hybrid_chassis_t::fsm_active_t::climbing_state_t::exit(owner *owner)
+void hybrid_chassis_t::fsm_active_t::climbing_fsm_t::on_exit(owner *owner)
 {
     // 退出爬坡模式时的清理工作（当前可留空）
 }

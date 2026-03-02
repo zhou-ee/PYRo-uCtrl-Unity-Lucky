@@ -198,6 +198,8 @@ elseif (ROBOT_ID EQUAL SUB_HERO_ID)
             PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_passive_state.cpp
             PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_cruising_state.cpp
             PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_climbing_state.cpp
+            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_track_climbing_state.cpp
+            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_leg_retraction_state.cpp
     )
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
             PYRo/Module/Booster/Quad_tango

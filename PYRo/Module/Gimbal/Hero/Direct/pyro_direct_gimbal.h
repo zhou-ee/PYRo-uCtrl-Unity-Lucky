@@ -139,8 +139,8 @@ class direct_gimbal_t final
     static constexpr float PITCH_OFFSET_RAD = 0.0f;
     static constexpr float YAW_OFFSET_RAD   = 0.0f;
 
-    static constexpr float PITCH_MAX_RAD = 0.1f; // 57.3 deg
-    static constexpr float PITCH_MIN_RAD = -0.73f; // -57.
+    static constexpr float PITCH_MAX_RAD = 0.2f; // 57.3 deg
+    static constexpr float PITCH_MIN_RAD = -0.6f; // -57.
 
 };
 

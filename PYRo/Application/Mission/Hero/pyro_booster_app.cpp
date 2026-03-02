@@ -4,6 +4,7 @@
 #include "pyro_direct_gimbal.h"
 #include "pyro_com_cantx.h"
 #include "pyro_quad_booster.h"
+#include "pyro_com_canrx.h"
 
 using namespace pyro;
 
@@ -19,18 +20,15 @@ extern "C"
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
         if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
         {
-            quad_booster_cmd_ptr->mode      = pyro::cmd_base_t::mode_t::PASSIVE;
-            quad_booster_cmd_ptr->fric_on   = false;
-            quad_booster_cmd_ptr->fric1_mps = 0.0f;
-            quad_booster_cmd_ptr->fric2_mps = 0.0f;
+            quad_booster_cmd_ptr->mode    = pyro::cmd_base_t::mode_t::PASSIVE;
+            quad_booster_cmd_ptr->fric_on = false;
             quad_booster_cmd_ptr->fire_enable = false;
             return;
         }
-        quad_booster_cmd_ptr->mode      = pyro::cmd_base_t::mode_t::ACTIVE;
-        quad_booster_cmd_ptr->fric1_mps = 15.0f; // 可调节
-        quad_booster_cmd_ptr->fric2_mps = 10.5f;
+        quad_booster_cmd_ptr->mode         = pyro::cmd_base_t::mode_t::ACTIVE;
+        quad_booster_cmd_ptr->target_speed = 11.5f; // 可调节
         // 摩擦轮控制
-        static float sl_using_time      = 0;
+        static float sl_using_time         = 0;
         if (pyro::dr16_drv_t::sw_ctrl_t::SW_UP_TO_MID == rc_ctrl->rc.s_l.ctrl &&
             rc_ctrl->rc.s_l.change_time != sl_using_time)
         {
@@ -57,18 +55,15 @@ extern "C"
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->get_lock());
         if (vt03_drv_t::gear_state_t::GEAR_MID != rc_ctrl->rc.gear.state)
         {
-            quad_booster_cmd_ptr->mode      = pyro::cmd_base_t::mode_t::PASSIVE;
-            quad_booster_cmd_ptr->fric_on   = false;
-            quad_booster_cmd_ptr->fric1_mps = 0.0f;
-            quad_booster_cmd_ptr->fric2_mps = 0.0f;
+            quad_booster_cmd_ptr->mode    = pyro::cmd_base_t::mode_t::PASSIVE;
+            quad_booster_cmd_ptr->fric_on = false;
             quad_booster_cmd_ptr->fire_enable = false;
             return;
         }
-        quad_booster_cmd_ptr->mode      = pyro::cmd_base_t::mode_t::ACTIVE;
-        quad_booster_cmd_ptr->fric1_mps = 15.0f; // 可调节
-        quad_booster_cmd_ptr->fric2_mps = 10.5f;
+        quad_booster_cmd_ptr->mode         = pyro::cmd_base_t::mode_t::ACTIVE;
+        quad_booster_cmd_ptr->target_speed = 11.5f; // 可调节
         // 摩擦轮控制
-        static float fn_l_using_time    = 0;
+        static float fn_l_using_time       = 0;
         if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->rc.fn_l.ctrl &&
             rc_ctrl->rc.fn_l.change_time != fn_l_using_time)
         {
