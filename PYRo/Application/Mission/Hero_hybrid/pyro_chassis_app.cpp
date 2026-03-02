@@ -46,8 +46,8 @@ extern "C"
         }
         else
         {
-            hybrid_cmd_ptr->vx = rc_ctrl->rc.ch_ly;
-            hybrid_cmd_ptr->vy = -rc_ctrl->rc.ch_lx ;
+            hybrid_cmd_ptr->vx = 2 * rc_ctrl->rc.ch_ly;
+            hybrid_cmd_ptr->vy = -2 * rc_ctrl->rc.ch_lx ;
             hybrid_cmd_ptr->delta_pitch = 0.002f * rc_ctrl->rc.ch_ry;
             hybrid_cmd_ptr->wz   = -rc_ctrl->rc.ch_rx ;
             hybrid_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
@@ -114,9 +114,9 @@ extern "C"
         static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[1])
             ->set_position_range(-PI, PI);
         static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[0])
-            ->set_rotate_range(-20.96f, 20.96f);
+            ->set_rotate_range(-30.0f, 30.0f);
         static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[1])
-            ->set_rotate_range(-20.96f, 20.96f);
+            ->set_rotate_range(-30.0f, 30.0f);
         static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[0])
             ->set_torque_range(-11.0f, 11.0f);
         static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[1])
@@ -159,13 +159,13 @@ extern "C"
             new pid_t(300.0f, 0.00f, 40.0f, 0.1f, 50.0f, 200, 100, 4);
 
         hybrid_deps_ptr->pid_deps.leg_pos_pid[0] =
-            new pid_t(10.0f, 0.005f, 0.008f, 0.5f, 20.0f, 20, 10, 4);
+            new pid_t(5.0f, 0.005f, 0.008f, 0.5f, 3.0f, 20, 10, 4);
         hybrid_deps_ptr->pid_deps.leg_pos_pid[1] =
-            new pid_t(10.0f, 0.005f, 0.008f, 0.5f, 20.0f, 20, 10, 4);
+            new pid_t(5.0f, 0.005f, 0.008f, 0.5f, 3.0f, 20, 10, 4);
         hybrid_deps_ptr->pid_deps.leg_vel_pid[0] =
-            new pid_t(10.0f, 0.005f, 0.008f, 0.5f, 20.0f, 20, 10, 4);
+            new pid_t(3.0f, 0.005f, 0.008f, 0.5f, 10.0f, 20, 10, 4);
         hybrid_deps_ptr->pid_deps.leg_vel_pid[1] =
-            new pid_t(10.0f, 0.005f, 0.008f, 0.5f, 20.0f, 20, 10, 4);
+            new pid_t(3.0f, 0.005f, 0.008f, 0.5f, 10.0f, 20, 10, 4);
 
     }
 

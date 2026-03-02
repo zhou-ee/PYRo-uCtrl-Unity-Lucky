@@ -80,7 +80,7 @@ hybrid_kin_t::solve(const float vx, const float vy, const float wz, const bool t
         // 1. Force Vy to 0.
         // Physics constraint: Tracks have immense friction sideways. Attempting to strafe will stall motors.
         // 物理限制：履带横向摩擦力极大，履带接地时强行横移会导致电机堵转，因此强制 Vy = 0。
-        constexpr float effective_vy = 0.0f;
+        // constexpr float effective_vy = 0.0f;
 
         // 2. Tracks Logic (Differential Drive)
         // 履带差速逻辑：只提供前进和基于左右间距的旋转差速
@@ -90,10 +90,14 @@ hybrid_kin_t::solve(const float vx, const float vy, const float wz, const bool t
 
         // 3. Mecanum Logic (Assisting Differential Drive)
         // 麦轮辅助逻辑：即使无横移，麦轮仍需输出准确的旋转速度以配合履带，防止产生拖拽阻力
-        ws.mec_fl = vx - effective_vy - v_rot_fl;
-        ws.mec_fr = vx + effective_vy + v_rot_fr;
-        ws.mec_bl = vx + effective_vy - v_rot_bl;
-        ws.mec_br = vx - effective_vy + v_rot_br;
+        // ws.mec_fl = vx - effective_vy - v_rot_fl;
+        // ws.mec_fr = vx + effective_vy + v_rot_fr;
+        // ws.mec_bl = vx + effective_vy - v_rot_bl;
+        // ws.mec_br = vx - effective_vy + v_rot_br;
+        ws.mec_fl = vx - vy - v_rot_fl;
+        ws.mec_fr = vx + vy + v_rot_fr;
+        ws.mec_bl = vx + vy - v_rot_bl;
+        ws.mec_br = vx - vy + v_rot_br;
     }
 
     return ws;

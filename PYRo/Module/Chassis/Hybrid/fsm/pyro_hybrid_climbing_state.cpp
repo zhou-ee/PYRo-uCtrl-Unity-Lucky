@@ -18,8 +18,7 @@ void hybrid_chassis_t::fsm_active_t::climbing_fsm_t::on_enter(owner *owner)
 
 void hybrid_chassis_t::fsm_active_t::climbing_fsm_t::on_execute(owner *owner)
 {
-    // 1. VMC 控制逻辑
-    owner->_leg_vmc();
+
 
     // 1. 麦轮速度环控制 (提供前轮牵引力)
     owner->_mecanum_control();
@@ -28,17 +27,14 @@ void hybrid_chassis_t::fsm_active_t::climbing_fsm_t::on_execute(owner *owner)
     owner->_track_control();
 
 
-    // 2. 统一发送所有电机指令
-    owner->_send_motor_command();
-
-    // if (owner->_ctx.cmd->leg_retract)
-    // {
-    //     change_state(&leg_retraction_state);
-    // }
-    // else
-    // {
-    //     change_state(&track_climbing_state);
-    // }
+    if (owner->_ctx.cmd->leg_retract)
+    {
+        change_state(&leg_retraction_state);
+    }
+    else
+    {
+        change_state(&track_climbing_state);
+    }
 }
 
 void hybrid_chassis_t::fsm_active_t::climbing_fsm_t::on_exit(owner *owner)

@@ -2,26 +2,45 @@
 
 namespace pyro
 {
+bool flag;
 void hybrid_chassis_t::fsm_active_t::climbing_fsm_t::leg_retraction_state_t::
     enter(owner *owner)
 {
+    owner->_ctx.data.target_pitch_rad = -0.1f; // 设定一个略微向前倾的目标姿态，帮助腿部收回时保持稳定
+    flag = false;
 }
 
 void hybrid_chassis_t::fsm_active_t::climbing_fsm_t::leg_retraction_state_t::
     execute(owner *owner)
 {
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     owner->_ctx.data.target_leg_rad[i] = LEG_MIN_POS;
-    // }
-    //
-    // owner->_leg_direct_control();
-    // owner->_send_motor_command();
+
+    if (flag)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            owner->_ctx.data.target_leg_rad[i] = 0.0f;
+        }
+
+        owner->_leg_direct_control();
+        owner->_send_motor_command();
+    }
+    else
+    {
+        owner->_leg_vmc();
+        owner->_send_motor_command();
+    }
+
+    if (owner->_ctx.data.current_pitch_rad < -0.08f) // 当检测到机器人已经有明显的前倾时，开始收腿
+    {
+        flag = true;
+    }
+
 }
 
 void hybrid_chassis_t::fsm_active_t::climbing_fsm_t::leg_retraction_state_t::
     exit(owner *owner)
 {
+    owner->_ctx.data.target_pitch_rad = 0.04f; // 退出收腿状态后恢复正常的目标姿态
 }
 
 

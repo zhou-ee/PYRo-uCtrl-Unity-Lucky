@@ -63,11 +63,14 @@ void hybrid_chassis_t::_update_feedback()
             radps_to_rpm(_ctx.motor.track[i]->get_current_rotate());
 
     // 左右腿对称性修正：对右腿(leg[1])的读取数据取反，抹平机械差异
-    _ctx.data.current_leg_rad[0] =
-        _ctx.motor.leg[0]->get_current_position() - LEFT_LEG_OFFSET_RAD;
+    // 左右腿对称性修正与机械零点 Offset 处理
+    float left_leg_raw = _ctx.motor.leg[0]->get_current_position() - LEFT_LEG_OFFSET_RAD;
+    _ctx.data.current_leg_rad[0] = loop_fp32_constrain(left_leg_raw, -PI, PI);
     _ctx.data.current_leg_radps[0] = _ctx.motor.leg[0]->get_current_rotate();
-    _ctx.data.current_leg_rad[1] =
-        -_ctx.motor.leg[1]->get_current_position() - RIGHT_LEG_OFFSET_RAD;
+
+    // 对右腿(leg[1])的读取数据取反抹平机械差异，同样进行 Offset 和跳变处理
+    float right_leg_raw = -_ctx.motor.leg[1]->get_current_position() - RIGHT_LEG_OFFSET_RAD;
+    _ctx.data.current_leg_rad[1] = loop_fp32_constrain(right_leg_raw, -PI, PI);
     _ctx.data.current_leg_radps[1] = -_ctx.motor.leg[1]->get_current_rotate();
 }
 
@@ -242,14 +245,14 @@ void hybrid_chassis_t::_leg_direct_control()
 {
     for (int i = 0; i < 2; i++)
     {
-        if (_ctx.data.target_leg_rad[i] > LEG_MAX_POS)
-        {
-            _ctx.data.target_leg_rad[i] = LEG_MAX_POS;
-        }
-        else if (_ctx.data.target_leg_rad[i] < LEG_MIN_POS)
-        {
-            _ctx.data.target_leg_rad[i] = LEG_MIN_POS;
-        }
+        // if (_ctx.data.target_leg_rad[i] > LEG_MAX_POS)
+        // {
+        //     _ctx.data.target_leg_rad[i] = LEG_MAX_POS;
+        // }
+        // else if (_ctx.data.target_leg_rad[i] < LEG_MIN_POS)
+        // {
+        //     _ctx.data.target_leg_rad[i] = LEG_MIN_POS;
+        // }
         _ctx.data.target_leg_radps[i] = _ctx.pid.leg_pos_pid[i]->calculate(
             _ctx.data.target_leg_rad[i], _ctx.data.current_leg_rad[i]);
         _ctx.data.out_leg_torque[i] =
