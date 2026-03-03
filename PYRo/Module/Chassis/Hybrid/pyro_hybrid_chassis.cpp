@@ -64,12 +64,14 @@ void hybrid_chassis_t::_update_feedback()
 
     // 左右腿对称性修正：对右腿(leg[1])的读取数据取反，抹平机械差异
     // 左右腿对称性修正与机械零点 Offset 处理
-    float left_leg_raw = _ctx.motor.leg[0]->get_current_position() - LEFT_LEG_OFFSET_RAD;
-    _ctx.data.current_leg_rad[0] = loop_fp32_constrain(left_leg_raw, -PI, PI);
+    float left_leg_raw =
+        _ctx.motor.leg[0]->get_current_position() - LEFT_LEG_OFFSET_RAD;
+    _ctx.data.current_leg_rad[0]   = loop_fp32_constrain(left_leg_raw, -PI, PI);
     _ctx.data.current_leg_radps[0] = _ctx.motor.leg[0]->get_current_rotate();
 
     // 对右腿(leg[1])的读取数据取反抹平机械差异，同样进行 Offset 和跳变处理
-    float right_leg_raw = -_ctx.motor.leg[1]->get_current_position() - RIGHT_LEG_OFFSET_RAD;
+    float right_leg_raw =
+        -_ctx.motor.leg[1]->get_current_position() - RIGHT_LEG_OFFSET_RAD;
     _ctx.data.current_leg_rad[1] = loop_fp32_constrain(right_leg_raw, -PI, PI);
     _ctx.data.current_leg_radps[1] = -_ctx.motor.leg[1]->get_current_rotate();
 }
@@ -85,12 +87,25 @@ void hybrid_chassis_t::_kinematics_solve()
     // -------------------------------------------------------------
     // Calculate(measurement, target) 或 (error, 0)
     // 假设 pid_t::calculate(target, current)，我们将 error 作为 P项输入
-    const float follow_wz =
-        _ctx.pid.follow_yaw_pid->calculate(0.0f, _ctx.data.current_yaw_error);
+    _ctx.data.target_yaw_rad += _ctx.cmd->delta_yaw; // 允许通过命令微调目标角度
+    float yaw_err = _ctx.data.target_yaw_rad - _ctx.data.current_yaw_rad;
+    if (yaw_err < -PI)
+    {
+        _ctx.data.target_yaw_rad += 2 * PI;
+    }
+    else if (yaw_err > PI)
+    {
+        _ctx.data.target_yaw_rad -= 2 * PI;
+    }
+    const float follow_wz = _ctx.pid.follow_yaw_pid->calculate(
+        _ctx.data.target_yaw_rad, _ctx.data.current_yaw_rad);
+
+    // const float follow_wz =
+    //     _ctx.pid.follow_yaw_pid->calculate(0.0f,
+    //     _ctx.data.current_yaw_error);
 
     // 最终角速度 = 跟随产生的角速度 + 选手手动输入的角速度(小陀螺/微调)
-    float final_wz          = follow_wz + _ctx.cmd->wz;
-    final_wz                = _ctx.cmd->wz;
+    float final_wz          = follow_wz;
 
     // -------------------------------------------------------------
     // 2. 矢量旋转 (将云台坐标系速度转换到底盘坐标系)

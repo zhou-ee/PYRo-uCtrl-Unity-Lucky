@@ -20,6 +20,7 @@ struct hybrid_cmd_t : cmd_base_t
     float vy;          // 云台坐标系下的 Y 轴速度 m/s (推左)
     float wz;          // z轴角速度 rad/s (通常跟随模式下该值为0，除非做小陀螺)
     float delta_pitch; // 腿部目标位置相对于当前的增量 rad
+    float delta_yaw;
     bool track_en;    // 是否启用履带 (true: 履带 + 麦轮混合驱动, false: 仅麦轮)
     bool leg_retract; // 是否进入腿部收回状态 (仅在 track_en=true 时有效)
 
@@ -104,6 +105,7 @@ class hybrid_chassis_t final
         float current_roll_rad{0};
         float current_yaw_rad{0};
         float target_pitch_rad{0};
+        float target_yaw_rad{0};
 
         // YAW 电机差值反馈（用于底盘跟随云台）
         float current_yaw_error{0};

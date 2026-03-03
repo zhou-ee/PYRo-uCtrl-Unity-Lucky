@@ -49,7 +49,7 @@ extern "C"
             hybrid_cmd_ptr->vx = 2 * rc_ctrl->rc.ch_ly;
             hybrid_cmd_ptr->vy = -2 * rc_ctrl->rc.ch_lx ;
             hybrid_cmd_ptr->delta_pitch = 0.002f * rc_ctrl->rc.ch_ry;
-            hybrid_cmd_ptr->wz   = -rc_ctrl->rc.ch_rx ;
+            hybrid_cmd_ptr->delta_yaw = -0.003f * rc_ctrl->rc.ch_rx;
             hybrid_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
             if (pyro::dr16_drv_t::sw_state_t::SW_DOWN != rc_ctrl->rc.s_l.state)
             {
@@ -146,7 +146,7 @@ extern "C"
             new pid_t(0.35f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
 
         hybrid_deps_ptr->pid_deps.follow_yaw_pid =
-            new pid_t(0.5f, 0.0001f, 0.00002f, 0.5f, 11.0f, 200, 100, 4);
+            new pid_t(5.0f, 0.0f, 0.1f, 0.0f, 10.0f, 200, 100, 4);
 
         hybrid_deps_ptr->pid_deps.track_pid[0] =
             new pid_t(0.02f, 0.0001f, 0.00002f, 0.5f, 11.0f, 20, 10, 4);
