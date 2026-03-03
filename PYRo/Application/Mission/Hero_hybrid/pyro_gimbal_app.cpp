@@ -1,13 +1,12 @@
 #include "pyro_module_base.h"
-#include "pyro_mec_chassis.h"
 #include "pyro_mutex.h"
 #include "pyro_rc_hub.h"
-#include "pyro_direct_gimbal.h"
+#include "pyro_screw_gimbal.h"
 #include "pyro_com_cantx.h"
 
 
-static pyro::direct_gimbal_t *direct_gimbal_ptr         = nullptr;
-static pyro::direct_gimbal_cmd_t *direct_gimbal_cmd_ptr = nullptr;
+static pyro::screw_gimbal_t *screw_gimbal_ptr         = nullptr;
+static pyro::screw_gimbal_cmd_t *screw_gimbal_cmd_ptr = nullptr;
 static pyro::dr16_drv_t::dr16_ctrl_t const *rc_ctrl_ptr = nullptr;
 
 extern "C"
@@ -21,16 +20,16 @@ extern "C"
 
         if (pyro::dr16_drv_t::sw_state_t::SW_MID != p_ctrl->rc.s_r.state)
         {
-            direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
-            direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
-            direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
+            screw_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
+            screw_gimbal_cmd_ptr->pitch_delta_angle = 0;
+            screw_gimbal_cmd_ptr->yaw_delta_angle   = 0;
             return;
         }
-        direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-        // direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
-        // direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
-        direct_gimbal_cmd_ptr->pitch_delta_angle = -p_ctrl->rc.ch_ry * 0.0035f;
-        direct_gimbal_cmd_ptr->yaw_delta_angle   = -p_ctrl->rc.ch_rx * 0.0035f;
+        screw_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
+        // screw_gimbal_cmd_ptr->pitch_delta_angle = 0;
+        // screw_gimbal_cmd_ptr->yaw_delta_angle   = 0;
+        screw_gimbal_cmd_ptr->pitch_delta_angle = -p_ctrl->rc.ch_ry * 0.0035f;
+        screw_gimbal_cmd_ptr->yaw_delta_angle   = -p_ctrl->rc.ch_rx * 0.0035f;
     }
 
     void chassis_rc2cmd(void const *rc_ctrl)
@@ -77,20 +76,20 @@ extern "C"
 
     void hero_gimbal_thread(void *argument)
     {
-        direct_gimbal_ptr->start();
+        screw_gimbal_ptr->start();
         while (true)
         {
             chassis_rc2cmd(rc_ctrl_ptr);
             gimbal_rc2cmd(rc_ctrl_ptr);
-            direct_gimbal_ptr->set_command(*direct_gimbal_cmd_ptr);
+            screw_gimbal_ptr->set_command(*screw_gimbal_cmd_ptr);
             vTaskDelay(1);
         }
     }
 
     void hero_gimbal_init(void *argument)
     {
-        direct_gimbal_cmd_ptr = new pyro::direct_gimbal_cmd_t();
-        direct_gimbal_ptr     = pyro::direct_gimbal_t::instance();
+        screw_gimbal_cmd_ptr = new pyro::screw_gimbal_cmd_t();
+        screw_gimbal_ptr     = pyro::screw_gimbal_t::instance();
         rc_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
         xTaskCreate(hero_gimbal_thread, "start_app_thread", 128, nullptr,

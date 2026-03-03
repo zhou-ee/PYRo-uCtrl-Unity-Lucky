@@ -200,10 +200,15 @@ elseif (ROBOT_ID EQUAL SUB_HERO_ID)
             PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_climbing_state.cpp
             PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_track_climbing_state.cpp
             PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_leg_retraction_state.cpp
+
+            PYRo/Module/Gimbal/Hero/Screw/pyro_screw_gimbal.cpp
+            PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_active_state.cpp
+            PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_passive_state.cpp
     )
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
             PYRo/Module/Booster/Quad_tango
             PYRo/Module/Chassis/Hybrid
+            PYRo/Module/Gimbal/Hero/Screw
     )
 endif ()
 

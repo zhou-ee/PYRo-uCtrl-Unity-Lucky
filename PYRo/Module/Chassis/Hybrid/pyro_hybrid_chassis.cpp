@@ -161,7 +161,7 @@ void hybrid_chassis_t::_kinematics_solve()
         _ctx.data.target_track_rpm[1] = 0.0f;
     }
 
-    _ctx.data.target_pitch_rad += _ctx.cmd->delta_pitch;
+    _ctx.data.target_pitch_rad = NORMAL_PITCH;
 }
 
 void hybrid_chassis_t::_leg_vmc()
@@ -366,14 +366,23 @@ void hybrid_chassis_t::_track_control()
 
 void hybrid_chassis_t::_send_motor_command() const
 {
-    for (int i = 0; i < 4; i++)
-        _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
-    for (int i = 0; i < 2; i++)
-        _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
+    // 静态分频标志位，每次调用翻转一次，实现 1/2 频率
+    static bool freq_div_flag = false;
+    freq_div_flag = !freq_div_flag;
+
+    // 麦轮和履带：仅在 flag 为 true 时发送指令
+    if (freq_div_flag)
+    {
+        for (int i = 0; i < 4; i++)
+            _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
+        for (int i = 0; i < 2; i++)
+            _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
+    }
+
+    // 腿部电机：保持原频率控制 (VMC 和腿长控制通常需要高频以维持稳定性)
     for (int i = 0; i < 2; i++)
         _ctx.motor.leg[i]->send_torque(_ctx.data.out_leg_torque[i]);
 }
-
 // =========================================================
 // 核心运行时与状态机
 // =========================================================

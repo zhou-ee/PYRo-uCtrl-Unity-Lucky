@@ -24,8 +24,6 @@ extern "C"
             3 * static_cast<float>(static_cast<int8_t>(raw_data[0])) / 127.0f;
         hybrid_cmd_ptr->vy =
             3 * static_cast<float>(static_cast<int8_t>(raw_data[1])) / 127.0f;
-        hybrid_cmd_ptr->wz =
-            3 * static_cast<float>(static_cast<int8_t>(raw_data[2])) / 127.0f;
         hybrid_cmd_ptr->mode =
             static_cast<pyro::cmd_base_t::mode_t>(raw_data[3]);
     }
@@ -97,9 +95,9 @@ extern "C"
             new pyro::dji_m3508_motor_drv_t(pyro::dji_motor_tx_frame_t::id_4,
                                             pyro::can_hub_t::can1); // RR Wheel
         hybrid_deps_ptr->motor_deps.track[0] =
-            new pyro::dm_motor_drv_t(0x11, 0x21, pyro::can_hub_t::can3);
+            new pyro::dm_motor_drv_t(0x11, 0x21, pyro::can_hub_t::can1);
         hybrid_deps_ptr->motor_deps.track[1] =
-            new pyro::dm_motor_drv_t(0x12, 0x22, pyro::can_hub_t::can3);
+            new pyro::dm_motor_drv_t(0x12, 0x22, pyro::can_hub_t::can1);
         hybrid_deps_ptr->motor_deps.leg[0] =
             new pyro::dm_motor_drv_t(0x31, 0x41, pyro::can_hub_t::can2);
         hybrid_deps_ptr->motor_deps.leg[1] =
