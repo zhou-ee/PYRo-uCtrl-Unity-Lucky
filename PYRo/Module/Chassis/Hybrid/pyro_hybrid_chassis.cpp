@@ -45,6 +45,8 @@ void hybrid_chassis_t::_update_feedback()
     ins_drv_t::get_instance()->get_rads_n(&_ctx.data.current_yaw_rad,
                                           &_ctx.data.current_pitch_rad,
                                           &_ctx.data.current_roll_rad);
+    _ctx.data.current_pitch_rad -= PITCH_OFFSET_RAD;
+    _ctx.data.current_roll_rad  -= ROLL_OFFSET_RAD;
 
     // 3. 转换并记录电机转速与位置
     float current_angle =
@@ -256,24 +258,84 @@ void hybrid_chassis_t::_leg_vmc()
     }
 }
 
-void hybrid_chassis_t::_leg_direct_control()
+void hybrid_chassis_t::_leg_length_control()
 {
+    const float pitch = _ctx.data.current_pitch_rad;
+
+    // 预计算 DSP 三角函数，用于雅可比映射与重力场旋转投影
+    const float cos_pitch = arm_cos_f32(pitch);
+    const float sin_pitch = arm_sin_f32(pitch);
+
+    // 1. 预计算收腿的目标长度 (Task Space Target)
+    // 使用专为长度控制放宽的限幅 LEG_LENGTH_MIN_POS (0.0f) 加上缓冲，
+    // 确保收腿指令能引导机构钻入最深处的物理限位
+    const float target_theta = LEG_LENGTH_MIN_POS + LEG_LENGTH_POS_BUFFER_RAD;
+    const float target_y = evaluate_polynomial(target_theta, YB_POLY_COEF, YB_POLY_DEGREE);
+
     for (int i = 0; i < 2; i++)
     {
-        // if (_ctx.data.target_leg_rad[i] > LEG_MAX_POS)
-        // {
-        //     _ctx.data.target_leg_rad[i] = LEG_MAX_POS;
-        // }
-        // else if (_ctx.data.target_leg_rad[i] < LEG_MIN_POS)
-        // {
-        //     _ctx.data.target_leg_rad[i] = LEG_MIN_POS;
-        // }
-        _ctx.data.target_leg_radps[i] = _ctx.pid.leg_pos_pid[i]->calculate(
-            _ctx.data.target_leg_rad[i], _ctx.data.current_leg_rad[i]);
-        _ctx.data.out_leg_torque[i] =
-            (i == 0 ? 1.0f : -1.0f) *
-            _ctx.pid.leg_vel_pid[i]->calculate(_ctx.data.target_leg_radps[i],
-                                               _ctx.data.current_leg_radps[i]);
+        const float theta = _ctx.data.current_leg_rad[i];
+        const float theta_dot = _ctx.data.current_leg_radps[i];
+
+        // 2. 正向运动学：计算当前真实腿长 y_b 与动态雅可比
+        const float j_x = evaluate_polynomial(theta, JX_POLY_COEF, JX_POLY_DEGREE);
+        const float j_y = evaluate_polynomial(theta, JY_POLY_COEF, JY_POLY_DEGREE);
+        const float y_b = evaluate_polynomial(theta, YB_POLY_COEF, YB_POLY_DEGREE);
+
+        // 当前腿部在 Y 轴的真实收缩线速度 (m/s)
+        const float y_dot = j_y * theta_dot;
+
+        // 3. 任务空间(腿长)串级 PID 计算期望动态拉力 f_pid (N)
+        _ctx.data.target_leg_radps[i] = _ctx.pid.leg_pos_pid[i]->calculate(target_y, y_b);
+        float f_pid = _ctx.pid.leg_vel_pid[i]->calculate(_ctx.data.target_leg_radps[i], y_dot);
+
+        // 4. 雅可比映射：将直线拉力转换为电机主动力矩 (仅为运动所需力)
+        const float j_dynamic = j_y * cos_pitch + j_x * sin_pitch;
+        float tau_pid = j_dynamic * f_pid;
+
+        // ==========================================================
+        // 5. 【核心】：非线性自重补偿 + 旋转场降维投影
+        // ==========================================================
+        // 从 SolidWorks 提取的纯粹抗重力拟合多项式
+        float tau_gravity_base = evaluate_polynomial(theta, TAU_GRAVITY_COEF, TAU_GRAVITY_DEGREE);
+
+        // 将平地重力映射乘上 cos(pitch)，衰减掉倾斜失去的垂直分量
+        // 同时引入你在 config 中预留的微调系数 K_TAU_GRAVITY
+        float tau_gravity_ff = tau_gravity_base * cos_pitch * K_TAU_GRAVITY;
+
+        // ==========================================================
+        // 6. 极软虚拟墙保护与 PID 强制剥权 (基于专用的长度限幅)
+        // ==========================================================
+        float tau_wall = 0.0f;
+
+        // 使用针对悬空状态设计的极软参数 (LEG_GRA_K_WALL / LEG_GRA_D_WALL)
+        // 限幅基准替换为 LEG_LENGTH_MAX_POS 和 LEG_LENGTH_MIN_POS
+        if (theta > LEG_LENGTH_MAX_POS - LEG_LENGTH_POS_BUFFER_RAD)
+        {
+            const float spring = -LEG_GRA_K_WALL * (theta - (LEG_LENGTH_MAX_POS - LEG_LENGTH_POS_BUFFER_RAD));
+            const float damp   = (theta_dot > 0.0f) ? (-LEG_GRA_D_WALL * theta_dot) : 0.0f;
+            tau_wall = fminf(0.0f, spring + damp);
+
+            // 剥权保护：方向错误时没收 PID 控制权
+            if (tau_pid > 0.0f) tau_pid = 0.0f;
+        }
+        else if (theta < LEG_LENGTH_MIN_POS + LEG_LENGTH_POS_BUFFER_RAD)
+        {
+            const float spring = LEG_GRA_K_WALL * ((LEG_LENGTH_MIN_POS + LEG_LENGTH_POS_BUFFER_RAD) - theta);
+            const float damp   = (theta_dot < 0.0f) ? (-LEG_GRA_D_WALL * theta_dot) : 0.0f;
+            tau_wall = fmaxf(0.0f, spring + damp);
+
+            // 剥权保护：方向错误时没收 PID 控制权
+            if (tau_pid < 0.0f) tau_pid = 0.0f;
+        }
+
+        // 7. 物理限幅与最终输出
+        float tau_total = tau_pid + tau_wall + tau_gravity_ff;
+        // float tau_total = tau_gravity_ff;
+        tau_total = fminf(fmaxf(tau_total, -LEG_MAX_TORQUE), LEG_MAX_TORQUE);
+
+        // 针对右腿作符号反转映射
+        _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
     }
 }
 

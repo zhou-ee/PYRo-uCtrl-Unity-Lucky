@@ -24,7 +24,9 @@ struct hybrid_cmd_t : cmd_base_t
     bool track_en;    // 是否启用履带 (true: 履带 + 麦轮混合驱动, false: 仅麦轮)
     bool leg_retract; // 是否进入腿部收回状态 (仅在 track_en=true 时有效)
 
-    hybrid_cmd_t() : vx(0), vy(0), wz(0), delta_pitch(0), track_en(false), leg_retract(false)
+    hybrid_cmd_t()
+        : vx(0), vy(0), wz(0), delta_pitch(0), delta_yaw(0), track_en(false),
+          leg_retract(false)
     {
     }
 };
@@ -88,7 +90,7 @@ class hybrid_chassis_t final
     void _mecanum_control();
     void _track_control();
     void _leg_vmc();
-    void _leg_direct_control();
+    void _leg_length_control();
     void _send_motor_command() const;
     hybrid_kin_t *_kinematics{nullptr};
 

@@ -159,13 +159,13 @@ extern "C"
             new pid_t(300.0f, 0.00f, 40.0f, 0.1f, 50.0f, 200, 100, 4);
 
         hybrid_deps_ptr->pid_deps.leg_pos_pid[0] =
-            new pid_t(5.0f, 0.005f, 0.008f, 0.5f, 3.0f, 20, 10, 4);
+            new pid_t(10.0f, 0.005f, 0.008f, 0.0f, 1.0f, 20, 10, 4);
         hybrid_deps_ptr->pid_deps.leg_pos_pid[1] =
-            new pid_t(5.0f, 0.005f, 0.008f, 0.5f, 3.0f, 20, 10, 4);
+            new pid_t(10.0f, 0.005f, 0.008f, 0.0f, 1.0f, 20, 10, 4);
         hybrid_deps_ptr->pid_deps.leg_vel_pid[0] =
-            new pid_t(3.0f, 0.005f, 0.008f, 0.5f, 10.0f, 20, 10, 4);
+            new pid_t(200.0f, 0.005f, 0.008f, 0.0f, 100.0f, 20, 10, 4);
         hybrid_deps_ptr->pid_deps.leg_vel_pid[1] =
-            new pid_t(3.0f, 0.005f, 0.008f, 0.5f, 10.0f, 20, 10, 4);
+            new pid_t(200.0f, 0.005f, 0.008f, 0.0f, 100.0f, 20, 10, 4);
 
     }
 
