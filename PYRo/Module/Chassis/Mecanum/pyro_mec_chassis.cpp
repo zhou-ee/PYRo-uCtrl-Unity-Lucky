@@ -65,12 +65,12 @@ status_t mec_chassis_t::_init()
     // 轮组 PID (速度环)
     for (auto &pid : _ctx.pid.wheel_pid)
     {
-        pid = new pid_t(0.35f, 0.0003f, 0.0001f, 1.0f, 20.0f);
+        pid = new pid_t(0.32f, 0.0003f, 0.0000f, 1.0f, 20.0f);
     }
 
     // 跟随 PID (位置环：输入弧度误差，输出 rad/s)
     // 注意：P 参数可能需要根据底盘重量调整 (3.0 ~ 8.0)
-    _ctx.pid.follow_pid = new pid_t(5.0f, 0.0f, 0.1f, 0.0f, 10.0f, 10);
+    _ctx.pid.follow_pid = new pid_t(8.0f, 0.0f, 0.005f, 0.0f, 10.0f);
 
     _ctx.powermeter     = new powermeter_drv_t(0x212, can_hub_t::can2);
     _ctx.powermeter->init();
@@ -126,9 +126,7 @@ void mec_chassis_t::_power_control()
     {
         power_control_drv_t::get_instance().calculate_restricted_torques(
             _ctx.power_motor_data, 4,
-            referee_drv_t::get_instance()
-                ->get_data()
-                .robot_status.chassis_power_limit);
+            240);
     }
     for (int i = 0; i < 4; i++)
         _ctx.data.out_wheel_torque[i] =

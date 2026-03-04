@@ -37,9 +37,9 @@ status_t direct_gimbal_t::_init()
 
     // 3. 初始化串级 PID
     _ctx.pid.pitch_pos =
-        new pid_t(25.5f, 0.5f, 0.9f, 2.0f, 25.0f, 20, 10,
+        new pid_t(40.0f, 0.1f, 3.4f, 2.0f, 25.0f, 20, 10,
                   4); // 位置环输出为 rad/s，限制在电机可接受范围内
-    _ctx.pid.pitch_spd = new pid_t(1.55f, 0.02f, 0.02f, 1.5f, 22.0f, 50, 20,
+    _ctx.pid.pitch_spd = new pid_t(1.4f, 0.02f, 0.025f, 1.5f, 22.0f, 40, 20,
                                    4); // 输出限制匹配 DM 电机 Nm 级
 
     // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
@@ -112,6 +112,7 @@ void direct_gimbal_t::_gimbal_control(gimbal_context_t *ctx)
 void direct_gimbal_t::_send_motor_command(gimbal_context_t *ctx)
 {
     // ctx->motor.pitch->send_torque(ctx->data.out_pitch_torque);
+    // ctx->motor.pitch->send_torque(ctx->data.out_gravity_torque);
     ctx->motor.pitch->send_torque(ctx->data.out_gravity_torque +
                                   ctx->data.out_pitch_torque);
     ctx->motor.yaw->send_torque(ctx->data.out_yaw_torque);

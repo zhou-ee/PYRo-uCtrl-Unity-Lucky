@@ -63,6 +63,7 @@ class quad_booster_t final
     void _trigger_speed_control();
     void _send_fric_command() const;
     void _send_trigger_command() const;
+    void _launch_delay_calculate();
 
     // 角度归一化辅助函数
     static float _normalize_angle(float angle);
@@ -84,6 +85,9 @@ class quad_booster_t final
 
     struct data_ctx_t
     {
+        float launch_delay_timer[3]{}; // 发射延时计时器
+        float signal_timer{0};         // 信号持续时间计时器
+        uint32_t fresh_timer{0};       // <-- 新增：发弹延迟计算的刷新计时器
         // 核心逻辑变量
         float last_rotor_rad{0};     // 上一次的转子角度
         float total_trig_rad{0};     // 累计的输出轴角度（未归一化）
@@ -99,6 +103,7 @@ class quad_booster_t final
         float target_trig_rad{0};
         float target_trig_radps{0};
 
+        float current_fric_torque[4]{};
         // 输出
         float out_fric_torque[4]{};
         float out_trig_torque{0};

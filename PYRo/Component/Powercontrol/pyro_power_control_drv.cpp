@@ -162,6 +162,11 @@ void power_control_drv_t::calculate_restricted_torques(
         total_power += motor_data[i].power_predict;
     }
 
+    for (int i = 0; i < motor_num; i++)
+    {
+        ratios[i] = motor_data[i].power_predict / total_power;
+    }
+
     // 动态调整滤波系数 alpha，用于平滑电流变化
     float alpha = 1.0f; // 默认无滤波
     const float POWER_THRESHOLD = power_limit * 1.1f; // 功率阈值，用于判断是否需要强力限制

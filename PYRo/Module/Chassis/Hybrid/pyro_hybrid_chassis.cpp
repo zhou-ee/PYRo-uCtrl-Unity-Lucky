@@ -335,6 +335,7 @@ void hybrid_chassis_t::_leg_length_control()
         tau_total = fminf(fmaxf(tau_total, -LEG_MAX_TORQUE), LEG_MAX_TORQUE);
 
         // 针对右腿作符号反转映射
+        // _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
         _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
     }
 }

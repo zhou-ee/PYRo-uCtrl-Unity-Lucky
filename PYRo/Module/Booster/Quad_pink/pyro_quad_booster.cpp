@@ -1,6 +1,7 @@
 #include "pyro_quad_booster.h"
 #include "pyro_algo_common.h"
 #include "pyro_com_canrx.h"
+#include "pyro_dwt_drv.h"
 
 #include <cmath>
 
@@ -25,12 +26,12 @@ status_t quad_booster_t::_init()
         new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_4, can_hub_t::can2);
 
     // 摩擦轮 PID
-    _ctx.pid.fric_pid[0] = new pid_t(6.40f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
+    _ctx.pid.fric_pid[0] = new pid_t(6.40f, 0.02f, 0.02f, 2.5f, 20, 270, 80, 4);
     _ctx.pid.fric_pid[1] =
         new pid_t(6.968f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
-    _ctx.pid.fric_pid[2] =
-        new pid_t(6.968f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
-    _ctx.pid.fric_pid[3] = new pid_t(6.4f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
+    _ctx.pid.fric_pid[2] = new pid_t(6.40f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
+    _ctx.pid.fric_pid[3] =
+        new pid_t(6.968f, 0.02f, 0.02f, 2.5f, 20, 270, 80, 4);
 
     // 2. 拨弹电机初始化
     _ctx.motor.trigger_wheel =
@@ -48,8 +49,7 @@ status_t quad_booster_t::_init()
 
     // 3. 弹速控制初始化
     can_rx_drv_t::subscribe(can_hub_t::can3, 0x102);
-    _ctx.pid.ball_speed_pid =
-        new pid_t(0.25f, 0.0f, 0.005f, 0.0f, 2.0f);
+    _ctx.pid.ball_speed_pid = new pid_t(0.25f, 0.0f, 0.005f, 0.0f, 2.0f);
 
     return PYRO_OK;
 }
@@ -72,6 +72,8 @@ void quad_booster_t::_update_feedback()
         _ctx.motor.fric_wheels[i]->update_feedback();
         _ctx.data.current_fric_mps[i] =
             _ctx.motor.fric_wheels[i]->get_current_rotate() * FRIC1_RADIUS;
+        _ctx.data.current_fric_torque[i] =
+            _ctx.motor.fric_wheels[i]->get_current_torque();
     }
 
     // 2. 拨弹反馈
@@ -192,6 +194,27 @@ void quad_booster_t::_speed_contorl()
                 _ctx.shoot_data.fric1_mps = MIN_FRIC1_MPS;
             }
         }
+    }
+}
+
+void quad_booster_t::_launch_delay_calculate()
+{
+    // 2. 发弹延迟计算
+    // 通过外级摩擦轮转速和扭矩判断是否发弹
+    // 计算信号发生时间（在ready状态中获取）到当前时间的差值
+
+    _ctx.data.fresh_timer++;
+
+    if (_ctx.shoot_data.fric1_mps - std::abs(_ctx.data.current_fric_mps[1]) > 1.15f &&
+        _ctx.shoot_data.fric1_mps - std::abs(_ctx.data.current_fric_mps[3]) > 1.15f &&
+        std::abs(_ctx.data.current_fric_torque[1]) > 5.5f &&
+        std::abs(_ctx.data.current_fric_torque[2]) > 5.5f &&
+        _ctx.data.fresh_timer > 1000)
+    {
+        _ctx.data.launch_delay_timer[2] = _ctx.data.launch_delay_timer[1];
+        _ctx.data.launch_delay_timer[1] = _ctx.data.launch_delay_timer[0];
+        _ctx.data.launch_delay_timer[0] = dwt_drv_t::get_timeline_ms() - _ctx.data.signal_timer + 16;
+        _ctx.data.fresh_timer = 0;
     }
 }
 

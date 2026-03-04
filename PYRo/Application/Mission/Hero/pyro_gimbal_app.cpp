@@ -66,7 +66,7 @@ void gimbal_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
     }
     direct_gimbal_cmd_ptr->mode              = pyro::cmd_base_t::mode_t::ACTIVE;
 
-    direct_gimbal_cmd_ptr->pitch_delta_angle = -rc_ctrl->rc.ch_ry * 0.0035f;
+    direct_gimbal_cmd_ptr->pitch_delta_angle = -rc_ctrl->rc.ch_ry * 0.002f;
     direct_gimbal_cmd_ptr->yaw_delta_angle   = -rc_ctrl->rc.ch_rx * 0.0035f;
 }
 void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)

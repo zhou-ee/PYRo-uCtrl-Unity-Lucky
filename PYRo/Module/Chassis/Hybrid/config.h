@@ -46,15 +46,15 @@ constexpr float YB_POLY_COEF[YB_POLY_DEGREE + 1] = {
 constexpr float TAU_GRAVITY_COEF[TAU_GRAVITY_DEGREE + 1] = {
     -1.4132, 4.2032, -5.0430, 3.7907, -3.3777};
 constexpr float K_TAU_GRAVITY = 1.0f;    // 自重补偿系数
-constexpr float MASS          = 15.2f;   // 机器人质量 (kg)
+constexpr float MASS          = 19.6f;   // 机器人质量 (kg)
 constexpr float GRAVITY       = gNORM;   // 重力加速度 (m/s^2)
 constexpr float DIST_FRONT    = 0.2295f; // 质心到前轴距离 (m)
 constexpr float DIST_HIP      = 0.193f;  // 质心到髋关节的水平距离
 constexpr float H_COG         = 0.15f;   // 重心垂直高度
 constexpr float H_HIP_OFFSET  = 0.074f;  // 髋关节与前轮轴心的垂直落差
 inline float LEFT_LEG_OFFSET_RAD =
-    -2.5798595f; // 左腿位置偏移 (rad)，正值表示向前偏移
+    -2.61169004f; // 左腿位置偏移 (rad)，正值表示向前偏移
 inline float RIGHT_LEG_OFFSET_RAD =
-    0.972223043f; // 右腿位置偏移 (rad)，正值表示向前偏移
+    0.964073896f; // 右腿位置偏移 (rad)，正值表示向前偏移
 
 #endif

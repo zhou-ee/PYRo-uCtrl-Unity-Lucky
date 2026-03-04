@@ -8,6 +8,7 @@ namespace pyro
 
 void direct_gimbal_t::state_active_t::enter(owner *owner)
 {
+    static_cast<dm_motor_drv_t*>(owner->_ctx.motor.pitch)->clear_error();
     owner->_ctx.motor.pitch->enable();
 }
 
