@@ -184,6 +184,7 @@ elseif (ROBOT_ID EQUAL SUB_HERO_ID)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
             PYRo/Application/Mission/Hero_hybrid/pyro_chassis_app.cpp
             PYRo/Application/Mission/Hero_hybrid/pyro_booster_app.cpp
+            PYRo/Application/Mission/Hero_hybrid/pyro_gimbal_app.cpp
 
             PYRo/Module/Booster/Quad_tango/pyro_quad_booster.cpp
             PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_passive_state.cpp

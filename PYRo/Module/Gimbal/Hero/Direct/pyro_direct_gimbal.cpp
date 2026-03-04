@@ -15,36 +15,7 @@ direct_gimbal_t::direct_gimbal_t() : module_base_t("direct_gimbal")
 
 status_t direct_gimbal_t::_init()
 {
-    // 1. 初始化电机
 
-    // Pitch: 使用 DM 电机 (示例 ID: Master 0x11, Slave 0x21, CAN1)
-    // 根据 hybrid 中的用法进行配置
-    _ctx.motor.pitch = new dm_motor_drv_t(0x33, 0x43, can_hub_t::can2);
-
-    // Yaw: 使用 DJI GM6020 (ID 2, CAN1)
-    _ctx.motor.yaw   = new dji_gm_6020_motor_drv_t(dji_motor_tx_frame_t::id_2,
-                                                   can_hub_t::can3);
-
-    // 2. 配置 DM 电机范围 (DJI 电机无需配置)
-    // NOLINTBEGIN(cppcoreguidelines-pro-type-static-cast-downcast)
-    static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
-        ->set_position_range(-PI, PI);
-    static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
-        ->set_rotate_range(-2.72, 2.72); // rad/s
-    static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
-        ->set_torque_range(-27, 27); // Nm (DM单位通常为Nm)
-    // NOLINTEND(cppcoreguidelines-pro-type-static-cast-downcast)
-
-    // 3. 初始化串级 PID
-    _ctx.pid.pitch_pos =
-        new pid_t(40.0f, 0.1f, 3.4f, 2.0f, 25.0f, 20, 10,
-                  4); // 位置环输出为 rad/s，限制在电机可接受范围内
-    _ctx.pid.pitch_spd = new pid_t(1.4f, 0.02f, 0.025f, 1.5f, 22.0f, 40, 20,
-                                   4); // 输出限制匹配 DM 电机 Nm 级
-
-    // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
-    _ctx.pid.yaw_pos   = new pid_t(5.2f, 0.01f, 0.22f, 0.8f, 5.0f);
-    _ctx.pid.yaw_spd   = new pid_t(3.0f, 0.0003f, 0.0001f, 0.2f, 3.0f);
 
     return PYRO_OK;
 }

@@ -18,19 +18,39 @@ struct screw_gimbal_cmd_t final : public cmd_base_t
     float pitch_delta_angle; // 目标 Pitch 角度 (rad)
     float yaw_delta_angle;   // 目标 Yaw 角度 (rad)
 
-    screw_gimbal_cmd_t() : pitch_delta_angle(0.0f), yaw_delta_angle(0.0f) {}
+    screw_gimbal_cmd_t() : pitch_delta_angle(0.0f), yaw_delta_angle(0.0f)
+    {
+    }
 };
 
-struct screw_gimbal_config_t
+struct screw_gimbal_deps_t
 {
+    // 电机句柄
+    struct motor_deps_t
+    {
+        motor_base_t *pitch{nullptr};
+        motor_base_t *yaw{nullptr};
+    };
 
+    // 算法对象 (串级 PID)
+    struct pid_deps_t
+    {
+        pid_t *pitch_pos{nullptr};
+        pid_t *pitch_spd{nullptr};
+        pid_t *yaw_pos{nullptr};
+        pid_t *yaw_spd{nullptr};
+    };
+
+    motor_deps_t motor_deps{};
+    pid_deps_t pid_deps{};
 };
 
 // =========================================================
 // 2. 云台类
 // =========================================================
 class screw_gimbal_t final
-    : public module_base_t<screw_gimbal_t, screw_gimbal_cmd_t, screw_gimbal_config_t>
+    : public module_base_t<screw_gimbal_t, screw_gimbal_cmd_t,
+                           screw_gimbal_deps_t>
 {
     friend class module_base_t;
 
@@ -55,21 +75,7 @@ class screw_gimbal_t final
 
     // --- 成员变量 ---
 
-    // 电机句柄
-    struct motor_ctx_t
-    {
-        motor_base_t *pitch{nullptr};
-        motor_base_t *yaw{nullptr};
-    };
 
-    // 算法对象 (串级 PID)
-    struct pid_ctx_t
-    {
-        pid_t *pitch_pos{nullptr};
-        pid_t *pitch_spd{nullptr};
-        pid_t *yaw_pos{nullptr};
-        pid_t *yaw_spd{nullptr};
-    };
 
     // 运行时数据
     struct data_ctx_t
@@ -102,10 +108,10 @@ class screw_gimbal_t final
     // 总 Context
     struct gimbal_context_t
     {
-        motor_ctx_t motor;
-        pid_ctx_t pid;
+        screw_gimbal_deps_t::motor_deps_t motor;
+        screw_gimbal_deps_t::pid_deps_t pid;
         data_ctx_t data;
-        screw_gimbal_cmd_t *cmd;
+        screw_gimbal_cmd_t *cmd{};
     };
 
     gimbal_context_t _ctx;
@@ -139,9 +145,8 @@ class screw_gimbal_t final
     static constexpr float PITCH_OFFSET_RAD = 0.0f;
     static constexpr float YAW_OFFSET_RAD   = 0.0f;
 
-    static constexpr float PITCH_MAX_RAD = 0.2f; // 57.3 deg
-    static constexpr float PITCH_MIN_RAD = -0.6f; // -57.
-
+    static constexpr float PITCH_MAX_RAD    = 0.2f;  // 57.3 deg
+    static constexpr float PITCH_MIN_RAD    = -0.6f; // -57.
 };
 
 } // namespace pyro
