@@ -1,4 +1,5 @@
 #include "pyro_screw_gimbal.h"
+#include "screw_config.h"
 
 namespace pyro
 {
@@ -16,14 +17,20 @@ void screw_gimbal_t::state_active_t::execute(owner *owner)
     owner->_ctx.data.target_pitch_rad += owner->_ctx.cmd->pitch_delta_angle;
     owner->_ctx.data.target_yaw_rad += owner->_ctx.cmd->yaw_delta_angle;
 
-    // 限幅
-    if (owner->_ctx.data.target_pitch_rad > PITCH_MAX_RAD)
+    owner->_communicate_chassis();
+
+    // 动态计算基于底盘倾角的限幅
+    const float dynamic_pitch_max = PITCH_MAX_RAD + owner->_ctx.data.current_chassis_pitch_rad;
+    const float dynamic_pitch_min = PITCH_MIN_RAD + owner->_ctx.data.current_chassis_pitch_rad;
+
+    // 执行动态限幅
+    if (owner->_ctx.data.target_pitch_rad > dynamic_pitch_max)
     {
-        owner->_ctx.data.target_pitch_rad = PITCH_MAX_RAD;
+        owner->_ctx.data.target_pitch_rad = dynamic_pitch_max;
     }
-    else if (owner->_ctx.data.target_pitch_rad < PITCH_MIN_RAD)
+    else if (owner->_ctx.data.target_pitch_rad < dynamic_pitch_min)
     {
-        owner->_ctx.data.target_pitch_rad = PITCH_MIN_RAD;
+        owner->_ctx.data.target_pitch_rad = dynamic_pitch_min;
     }
 
     // 处理 Yaw 轴过零点

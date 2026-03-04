@@ -21,7 +21,11 @@ using namespace pyro;
 #elif ROBOT_ID == HERO_ID
 #define IMU_DIRECT IMU_DIRECT_4
 #elif ROBOT_ID == SUB_HERO_ID
+#if BOARD_ID == CHASSIS_ID
 #define IMU_DIRECT IMU_DIRECT_2
+#elif BOARD_ID == GIMBAL_ID
+#define IMU_DIRECT IMU_DIRECT_4
+#endif
 #elif ROBOT_ID == ENGINEER_ID
 #define IMU_DIRECT IMU_DIRECT_1
 #elif ROBOT_ID == SUB_ENGINEER_ID

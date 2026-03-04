@@ -7,6 +7,7 @@
 #include "pyro_module_base.h"
 #include "pyro_motor_base.h"
 
+
 namespace pyro
 {
 
@@ -72,6 +73,7 @@ class screw_gimbal_t final
     // --- 私有辅助方法 ---
     static void _gimbal_control(gimbal_context_t *ctx);
     static void _send_motor_command(gimbal_context_t *ctx);
+    void _communicate_chassis();
 
     // --- 成员变量 ---
 
@@ -81,6 +83,7 @@ class screw_gimbal_t final
     struct data_ctx_t
     {
         // 反馈 (含 Offset)
+        float current_chassis_pitch_rad{0};
         float current_pitch_rad{0};
         float current_pitch_radps{0};
         float current_yaw_rad{0};
@@ -101,7 +104,6 @@ class screw_gimbal_t final
 
         // 输出
         float out_pitch_torque{0};
-        float out_gravity_torque{0};
         float out_yaw_torque{0};
     };
 
@@ -145,8 +147,6 @@ class screw_gimbal_t final
     static constexpr float PITCH_OFFSET_RAD = 0.0f;
     static constexpr float YAW_OFFSET_RAD   = 0.0f;
 
-    static constexpr float PITCH_MAX_RAD    = 0.2f;  // 57.3 deg
-    static constexpr float PITCH_MIN_RAD    = -0.6f; // -57.
 };
 
 } // namespace pyro

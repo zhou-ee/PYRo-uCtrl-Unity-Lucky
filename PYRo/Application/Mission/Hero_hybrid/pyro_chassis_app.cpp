@@ -12,167 +12,30 @@ static pyro::hybrid_chassis_t *hybrid_chassis_ptr       = nullptr;
 static pyro::hybrid_cmd_t *hybrid_cmd_ptr               = nullptr;
 static pyro::dr16_drv_t::dr16_ctrl_t const *rc_ctrl_ptr = nullptr;
 static pyro::hybrid_deps_t *hybrid_deps_ptr             = nullptr;
+static void chassis_rxcmd(void const *rc_ctrl);
+static void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl);
+static void deps_init();
 
 extern "C"
 {
-    void chassis_rxcmd(void const *rc_ctrl)
-    {
-        std::array<uint8_t, 8> raw_data{};
-        pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can2, 0x101,
-                                     raw_data);
-        hybrid_cmd_ptr->vx =
-            3 * static_cast<float>(static_cast<int8_t>(raw_data[0])) / 127.0f;
-        hybrid_cmd_ptr->vy =
-            3 * static_cast<float>(static_cast<int8_t>(raw_data[1])) / 127.0f;
-        hybrid_cmd_ptr->mode =
-            static_cast<pyro::cmd_base_t::mode_t>(raw_data[3]);
-    }
 
-
-    void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
-    {
-        pyro::read_scope_lock lock(
-            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
-
-        if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
-        {
-            hybrid_cmd_ptr->vx   = 0;
-            hybrid_cmd_ptr->vy   = 0;
-            hybrid_cmd_ptr->wz   = 0;
-            hybrid_cmd_ptr->delta_pitch = 0;
-            hybrid_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
-        }
-        else
-        {
-            hybrid_cmd_ptr->vx = 2 * rc_ctrl->rc.ch_ly;
-            hybrid_cmd_ptr->vy = -2 * rc_ctrl->rc.ch_lx ;
-            hybrid_cmd_ptr->delta_pitch = 0.002f * rc_ctrl->rc.ch_ry;
-            hybrid_cmd_ptr->delta_yaw = -0.003f * rc_ctrl->rc.ch_rx;
-            hybrid_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-            if (pyro::dr16_drv_t::sw_state_t::SW_DOWN != rc_ctrl->rc.s_l.state)
-            {
-                hybrid_cmd_ptr->track_en = true;
-                if (pyro::dr16_drv_t::sw_state_t::SW_MID == rc_ctrl->rc.s_l.state)
-                {
-                    hybrid_cmd_ptr->leg_retract = true;
-                }
-                else
-                {
-                    hybrid_cmd_ptr->leg_retract = false;
-                }
-            }
-            else
-            {
-                hybrid_cmd_ptr->track_en = false;
-            }
-        }
-    }
 
     void hero_chassis_thread(void *argument)
     {
         while (true)
         {
-            // chassis_rxcmd(rc_ctrl_ptr);
-            chassis_dr162cmd(rc_ctrl_ptr);
+            chassis_rxcmd(rc_ctrl_ptr);
+            // chassis_dr162cmd(rc_ctrl_ptr);
             hybrid_chassis_ptr->set_command(*hybrid_cmd_ptr);
             vTaskDelay(1);
         }
     }
-
-    static void deps_init()
-    {
-        hybrid_deps_ptr = new pyro::hybrid_deps_t();
-        hybrid_deps_ptr->motor_deps.mecanum[0] =
-            new pyro::dji_m3508_motor_drv_t(pyro::dji_motor_tx_frame_t::id_1,
-                                            pyro::can_hub_t::can1); // FL Wheel
-        hybrid_deps_ptr->motor_deps.mecanum[1] =
-            new pyro::dji_m3508_motor_drv_t(pyro::dji_motor_tx_frame_t::id_2,
-                                            pyro::can_hub_t::can1); // FR Wheel
-        hybrid_deps_ptr->motor_deps.mecanum[2] =
-            new pyro::dji_m3508_motor_drv_t(pyro::dji_motor_tx_frame_t::id_3,
-                                            pyro::can_hub_t::can1); // RL Wheel
-        hybrid_deps_ptr->motor_deps.mecanum[3] =
-            new pyro::dji_m3508_motor_drv_t(pyro::dji_motor_tx_frame_t::id_4,
-                                            pyro::can_hub_t::can1); // RR Wheel
-        hybrid_deps_ptr->motor_deps.track[0] =
-            new pyro::dm_motor_drv_t(0x11, 0x21, pyro::can_hub_t::can1);
-        hybrid_deps_ptr->motor_deps.track[1] =
-            new pyro::dm_motor_drv_t(0x12, 0x22, pyro::can_hub_t::can1);
-        hybrid_deps_ptr->motor_deps.leg[0] =
-            new pyro::dm_motor_drv_t(0x31, 0x41, pyro::can_hub_t::can2);
-        hybrid_deps_ptr->motor_deps.leg[1] =
-            new pyro::dm_motor_drv_t(0x32, 0x42, pyro::can_hub_t::can2);
-
-        hybrid_deps_ptr->motor_deps.yaw = new pyro::dji_gm_6020_motor_drv_t(
-            pyro::dji_motor_tx_frame_t::id_1, pyro::can_hub_t::can3);
-
-        // NOLINTBEGIN(cppcoreguidelines-pro-type-static-cast-downcast)
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[0])
-            ->set_position_range(-PI, PI);
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[1])
-            ->set_position_range(-PI, PI);
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[0])
-            ->set_rotate_range(-30.0f, 30.0f);
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[1])
-            ->set_rotate_range(-30.0f, 30.0f);
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[0])
-            ->set_torque_range(-11.0f, 11.0f);
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[1])
-            ->set_torque_range(-11.0f, 11.0f);
-
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[0])
-            ->set_position_range(-PI, PI);
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[1])
-            ->set_position_range(-PI, PI);
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[0])
-            ->set_rotate_range(-5.655f, 5.655f);
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[1])
-            ->set_rotate_range(-5.655f, 5.655f);
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[0])
-            ->set_torque_range(-27.0f, 27.0f);
-        static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[1])
-            ->set_torque_range(-27.0f, 27.0f);
-        // NOLINTEND(cppcoreguidelines-pro-type-static-cast-downcast)
-
-        hybrid_deps_ptr->pid_deps.mecanum_pid[0] =
-            new pid_t(0.35f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
-        hybrid_deps_ptr->pid_deps.mecanum_pid[1] =
-            new pid_t(0.35f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
-        hybrid_deps_ptr->pid_deps.mecanum_pid[2] =
-            new pid_t(0.35f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
-        hybrid_deps_ptr->pid_deps.mecanum_pid[3] =
-            new pid_t(0.35f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
-
-        hybrid_deps_ptr->pid_deps.follow_yaw_pid =
-            new pid_t(5.0f, 0.0f, 0.1f, 0.0f, 10.0f, 200, 100, 4);
-
-        hybrid_deps_ptr->pid_deps.track_pid[0] =
-            new pid_t(0.02f, 0.0001f, 0.00002f, 0.5f, 11.0f, 20, 10, 4);
-        hybrid_deps_ptr->pid_deps.track_pid[1] =
-            new pid_t(0.02f, 0.0001f, 0.00002f, 0.5f, 11.0f, 20, 10, 4);
-
-        hybrid_deps_ptr->pid_deps.pitch_pid =
-            new pid_t(550.0f, 0.00f, 30.0f, 0.1f, 200.0f, 200, 100, 4);
-        hybrid_deps_ptr->pid_deps.roll_pid =
-            new pid_t(300.0f, 0.00f, 40.0f, 0.1f, 50.0f, 200, 100, 4);
-
-        hybrid_deps_ptr->pid_deps.leg_pos_pid[0] =
-            new pid_t(10.0f, 0.005f, 0.008f, 0.0f, 1.0f, 20, 10, 4);
-        hybrid_deps_ptr->pid_deps.leg_pos_pid[1] =
-            new pid_t(10.0f, 0.005f, 0.008f, 0.0f, 1.0f, 20, 10, 4);
-        hybrid_deps_ptr->pid_deps.leg_vel_pid[0] =
-            new pid_t(200.0f, 0.005f, 0.008f, 0.0f, 100.0f, 20, 10, 4);
-        hybrid_deps_ptr->pid_deps.leg_vel_pid[1] =
-            new pid_t(200.0f, 0.005f, 0.008f, 0.0f, 100.0f, 20, 10, 4);
-
-    }
-
     void hero_chassis_init(void *argument)
     {
-        pyro::can_rx_drv_t::subscribe(pyro::can_hub_t::which_can::can2, 0x101);
+        pyro::can_rx_drv_t::subscribe(pyro::can_hub_t::which_can::can1, 0x101);
         hybrid_cmd_ptr     = new pyro::hybrid_cmd_t();
         hybrid_chassis_ptr = pyro::hybrid_chassis_t::instance();
-        rc_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
+        rc_ctrl_ptr        = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
         deps_init();
         hybrid_chassis_ptr->configure(*hybrid_deps_ptr);
@@ -181,4 +44,144 @@ extern "C"
                     nullptr, configMAX_PRIORITIES - 1, nullptr);
         vTaskDelete(nullptr);
     }
+}
+void chassis_rxcmd(void const *rc_ctrl)
+{
+    std::array<uint8_t, 8> raw_data{};
+    pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x101,
+                                 raw_data);
+    hybrid_cmd_ptr->vx =
+        3.0f * static_cast<float>(static_cast<int8_t>(raw_data[0])) / 127.0f;
+    hybrid_cmd_ptr->vy =
+        3.0f * static_cast<float>(static_cast<int8_t>(raw_data[1])) / 127.0f;
+    hybrid_cmd_ptr->mode = static_cast<pyro::cmd_base_t::mode_t>(raw_data[3] & 0x01);
+    hybrid_cmd_ptr->track_en = (raw_data[3] & 0x02) != 0;
+    hybrid_cmd_ptr->leg_retract = (raw_data[3] & 0x04) != 0;
+}
+
+
+void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
+{
+    pyro::read_scope_lock lock(
+        pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
+
+    if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
+    {
+        hybrid_cmd_ptr->vx          = 0;
+        hybrid_cmd_ptr->vy          = 0;
+        hybrid_cmd_ptr->wz          = 0;
+        hybrid_cmd_ptr->delta_pitch = 0;
+        hybrid_cmd_ptr->mode        = pyro::cmd_base_t::mode_t::PASSIVE;
+    }
+    else
+    {
+        hybrid_cmd_ptr->vx          = 2 * rc_ctrl->rc.ch_ly;
+        hybrid_cmd_ptr->vy          = -2 * rc_ctrl->rc.ch_lx;
+        hybrid_cmd_ptr->delta_pitch = 0.002f * rc_ctrl->rc.ch_ry;
+        hybrid_cmd_ptr->delta_yaw   = -0.003f * rc_ctrl->rc.ch_rx;
+        hybrid_cmd_ptr->mode        = pyro::cmd_base_t::mode_t::ACTIVE;
+        if (pyro::dr16_drv_t::sw_state_t::SW_DOWN != rc_ctrl->rc.s_l.state)
+        {
+            hybrid_cmd_ptr->track_en = true;
+            if (pyro::dr16_drv_t::sw_state_t::SW_MID == rc_ctrl->rc.s_l.state)
+            {
+                hybrid_cmd_ptr->leg_retract = true;
+            }
+            else
+            {
+                hybrid_cmd_ptr->leg_retract = false;
+            }
+        }
+        else
+        {
+            hybrid_cmd_ptr->track_en = false;
+        }
+    }
+}
+
+static void deps_init()
+{
+    hybrid_deps_ptr = new pyro::hybrid_deps_t();
+    hybrid_deps_ptr->motor_deps.mecanum[0] =
+        new pyro::dji_m3508_motor_drv_t(pyro::dji_motor_tx_frame_t::id_1,
+                                        pyro::can_hub_t::can3); // FL Wheel
+    hybrid_deps_ptr->motor_deps.mecanum[1] =
+        new pyro::dji_m3508_motor_drv_t(pyro::dji_motor_tx_frame_t::id_2,
+                                        pyro::can_hub_t::can3); // FR Wheel
+    hybrid_deps_ptr->motor_deps.mecanum[2] =
+        new pyro::dji_m3508_motor_drv_t(pyro::dji_motor_tx_frame_t::id_3,
+                                        pyro::can_hub_t::can3); // RL Wheel
+    hybrid_deps_ptr->motor_deps.mecanum[3] =
+        new pyro::dji_m3508_motor_drv_t(pyro::dji_motor_tx_frame_t::id_4,
+                                        pyro::can_hub_t::can3); // RR Wheel
+    hybrid_deps_ptr->motor_deps.track[0] =
+        new pyro::dm_motor_drv_t(0x11, 0x21, pyro::can_hub_t::can3);
+    hybrid_deps_ptr->motor_deps.track[1] =
+        new pyro::dm_motor_drv_t(0x12, 0x22, pyro::can_hub_t::can3);
+    hybrid_deps_ptr->motor_deps.leg[0] =
+        new pyro::dm_motor_drv_t(0x31, 0x41, pyro::can_hub_t::can2);
+    hybrid_deps_ptr->motor_deps.leg[1] =
+        new pyro::dm_motor_drv_t(0x32, 0x42, pyro::can_hub_t::can2);
+
+    hybrid_deps_ptr->motor_deps.yaw = new pyro::dji_gm_6020_motor_drv_t(
+        pyro::dji_motor_tx_frame_t::id_3, pyro::can_hub_t::can1);
+
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-static-cast-downcast)
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[0])
+        ->set_position_range(-PI, PI);
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[1])
+        ->set_position_range(-PI, PI);
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[0])
+        ->set_rotate_range(-30.0f, 30.0f);
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[1])
+        ->set_rotate_range(-30.0f, 30.0f);
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[0])
+        ->set_torque_range(-11.0f, 11.0f);
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.track[1])
+        ->set_torque_range(-11.0f, 11.0f);
+
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[0])
+        ->set_position_range(-PI, PI);
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[1])
+        ->set_position_range(-PI, PI);
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[0])
+        ->set_rotate_range(-5.655f, 5.655f);
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[1])
+        ->set_rotate_range(-5.655f, 5.655f);
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[0])
+        ->set_torque_range(-27.0f, 27.0f);
+    static_cast<dm_motor_drv_t *>(hybrid_deps_ptr->motor_deps.leg[1])
+        ->set_torque_range(-27.0f, 27.0f);
+    // NOLINTEND(cppcoreguidelines-pro-type-static-cast-downcast)
+
+    hybrid_deps_ptr->pid_deps.mecanum_pid[0] =
+        new pid_t(0.35f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
+    hybrid_deps_ptr->pid_deps.mecanum_pid[1] =
+        new pid_t(0.35f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
+    hybrid_deps_ptr->pid_deps.mecanum_pid[2] =
+        new pid_t(0.35f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
+    hybrid_deps_ptr->pid_deps.mecanum_pid[3] =
+        new pid_t(0.35f, 0.0008f, 0.0002f, 1.0f, 20.0f, 20, 10, 4);
+
+    hybrid_deps_ptr->pid_deps.follow_yaw_pid =
+        new pid_t(5.0f, 0.0f, 0.1f, 0.0f, 10.0f, 200, 100, 4);
+
+    hybrid_deps_ptr->pid_deps.track_pid[0] =
+        new pid_t(0.02f, 0.0001f, 0.00002f, 0.5f, 11.0f, 20, 10, 4);
+    hybrid_deps_ptr->pid_deps.track_pid[1] =
+        new pid_t(0.02f, 0.0001f, 0.00002f, 0.5f, 11.0f, 20, 10, 4);
+
+    hybrid_deps_ptr->pid_deps.pitch_pid =
+        new pid_t(550.0f, 0.00f, 30.0f, 0.1f, 200.0f, 200, 100, 4);
+    hybrid_deps_ptr->pid_deps.roll_pid =
+        new pid_t(300.0f, 0.00f, 40.0f, 0.1f, 50.0f, 200, 100, 4);
+
+    hybrid_deps_ptr->pid_deps.leg_pos_pid[0] =
+        new pid_t(10.0f, 0.005f, 0.008f, 0.0f, 1.0f, 20, 10, 4);
+    hybrid_deps_ptr->pid_deps.leg_pos_pid[1] =
+        new pid_t(10.0f, 0.005f, 0.008f, 0.0f, 1.0f, 20, 10, 4);
+    hybrid_deps_ptr->pid_deps.leg_vel_pid[0] =
+        new pid_t(200.0f, 0.005f, 0.008f, 0.0f, 100.0f, 20, 10, 4);
+    hybrid_deps_ptr->pid_deps.leg_vel_pid[1] =
+        new pid_t(200.0f, 0.005f, 0.008f, 0.0f, 100.0f, 20, 10, 4);
 }

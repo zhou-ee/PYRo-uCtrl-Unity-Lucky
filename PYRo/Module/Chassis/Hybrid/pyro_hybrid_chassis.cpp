@@ -2,6 +2,7 @@
 #include "pyro_algo_common.h"
 #include <arm_math.h> // 引入 CMSIS-DSP 库
 #include "pyro_dji_motor_drv.h"
+#include "pyro_com_cantx.h"
 
 namespace pyro
 {
@@ -46,7 +47,7 @@ void hybrid_chassis_t::_update_feedback()
                                           &_ctx.data.current_pitch_rad,
                                           &_ctx.data.current_roll_rad);
     _ctx.data.current_pitch_rad -= PITCH_OFFSET_RAD;
-    _ctx.data.current_roll_rad  -= ROLL_OFFSET_RAD;
+    _ctx.data.current_roll_rad -= ROLL_OFFSET_RAD;
 
     // 3. 转换并记录电机转速与位置
     float current_angle =
@@ -89,7 +90,6 @@ void hybrid_chassis_t::_kinematics_solve()
     // -------------------------------------------------------------
     // Calculate(measurement, target) 或 (error, 0)
     // 假设 pid_t::calculate(target, current)，我们将 error 作为 P项输入
-    _ctx.data.target_yaw_rad += _ctx.cmd->delta_yaw; // 允许通过命令微调目标角度
     float yaw_err = _ctx.data.target_yaw_rad - _ctx.data.current_yaw_rad;
     if (yaw_err < -PI)
     {
@@ -99,12 +99,11 @@ void hybrid_chassis_t::_kinematics_solve()
     {
         _ctx.data.target_yaw_rad -= 2 * PI;
     }
-    const float follow_wz = _ctx.pid.follow_yaw_pid->calculate(
-        _ctx.data.target_yaw_rad, _ctx.data.current_yaw_rad);
+    // const float follow_wz = _ctx.pid.follow_yaw_pid->calculate(
+    //     _ctx.data.target_yaw_rad, _ctx.data.current_yaw_rad);
 
-    // const float follow_wz =
-    //     _ctx.pid.follow_yaw_pid->calculate(0.0f,
-    //     _ctx.data.current_yaw_error);
+    const float follow_wz =
+        _ctx.pid.follow_yaw_pid->calculate(0.0f, _ctx.data.current_yaw_error);
 
     // 最终角速度 = 跟随产生的角速度 + 选手手动输入的角速度(小陀螺/微调)
     float final_wz          = follow_wz;
@@ -125,7 +124,7 @@ void hybrid_chassis_t::_kinematics_solve()
     //                                              final_wz,
     //                                              _ctx.cmd->track_en);
 
-    const float theta       = 0;
+    const float theta       = _ctx.data.current_yaw_error;
 
     const float c_theta     = arm_cos_f32(theta);
     const float s_theta     = arm_sin_f32(theta);
@@ -260,44 +259,51 @@ void hybrid_chassis_t::_leg_vmc()
 
 void hybrid_chassis_t::_leg_length_control()
 {
-    const float pitch = _ctx.data.current_pitch_rad;
+    const float pitch        = _ctx.data.current_pitch_rad;
 
     // 预计算 DSP 三角函数，用于雅可比映射与重力场旋转投影
-    const float cos_pitch = arm_cos_f32(pitch);
-    const float sin_pitch = arm_sin_f32(pitch);
+    const float cos_pitch    = arm_cos_f32(pitch);
+    const float sin_pitch    = arm_sin_f32(pitch);
 
     // 1. 预计算收腿的目标长度 (Task Space Target)
     // 使用专为长度控制放宽的限幅 LEG_LENGTH_MIN_POS (0.0f) 加上缓冲，
     // 确保收腿指令能引导机构钻入最深处的物理限位
     const float target_theta = LEG_LENGTH_MIN_POS + LEG_LENGTH_POS_BUFFER_RAD;
-    const float target_y = evaluate_polynomial(target_theta, YB_POLY_COEF, YB_POLY_DEGREE);
+    const float target_y =
+        evaluate_polynomial(target_theta, YB_POLY_COEF, YB_POLY_DEGREE);
 
     for (int i = 0; i < 2; i++)
     {
-        const float theta = _ctx.data.current_leg_rad[i];
+        const float theta     = _ctx.data.current_leg_rad[i];
         const float theta_dot = _ctx.data.current_leg_radps[i];
 
         // 2. 正向运动学：计算当前真实腿长 y_b 与动态雅可比
-        const float j_x = evaluate_polynomial(theta, JX_POLY_COEF, JX_POLY_DEGREE);
-        const float j_y = evaluate_polynomial(theta, JY_POLY_COEF, JY_POLY_DEGREE);
-        const float y_b = evaluate_polynomial(theta, YB_POLY_COEF, YB_POLY_DEGREE);
+        const float j_x =
+            evaluate_polynomial(theta, JX_POLY_COEF, JX_POLY_DEGREE);
+        const float j_y =
+            evaluate_polynomial(theta, JY_POLY_COEF, JY_POLY_DEGREE);
+        const float y_b =
+            evaluate_polynomial(theta, YB_POLY_COEF, YB_POLY_DEGREE);
 
         // 当前腿部在 Y 轴的真实收缩线速度 (m/s)
         const float y_dot = j_y * theta_dot;
 
         // 3. 任务空间(腿长)串级 PID 计算期望动态拉力 f_pid (N)
-        _ctx.data.target_leg_radps[i] = _ctx.pid.leg_pos_pid[i]->calculate(target_y, y_b);
-        float f_pid = _ctx.pid.leg_vel_pid[i]->calculate(_ctx.data.target_leg_radps[i], y_dot);
+        _ctx.data.target_leg_radps[i] =
+            _ctx.pid.leg_pos_pid[i]->calculate(target_y, y_b);
+        float f_pid = _ctx.pid.leg_vel_pid[i]->calculate(
+            _ctx.data.target_leg_radps[i], y_dot);
 
         // 4. 雅可比映射：将直线拉力转换为电机主动力矩 (仅为运动所需力)
         const float j_dynamic = j_y * cos_pitch + j_x * sin_pitch;
-        float tau_pid = j_dynamic * f_pid;
+        float tau_pid         = j_dynamic * f_pid;
 
         // ==========================================================
         // 5. 【核心】：非线性自重补偿 + 旋转场降维投影
         // ==========================================================
         // 从 SolidWorks 提取的纯粹抗重力拟合多项式
-        float tau_gravity_base = evaluate_polynomial(theta, TAU_GRAVITY_COEF, TAU_GRAVITY_DEGREE);
+        float tau_gravity_base =
+            evaluate_polynomial(theta, TAU_GRAVITY_COEF, TAU_GRAVITY_DEGREE);
 
         // 将平地重力映射乘上 cos(pitch)，衰减掉倾斜失去的垂直分量
         // 同时引入你在 config 中预留的微调系数 K_TAU_GRAVITY
@@ -306,27 +312,35 @@ void hybrid_chassis_t::_leg_length_control()
         // ==========================================================
         // 6. 极软虚拟墙保护与 PID 强制剥权 (基于专用的长度限幅)
         // ==========================================================
-        float tau_wall = 0.0f;
+        float tau_wall       = 0.0f;
 
         // 使用针对悬空状态设计的极软参数 (LEG_GRA_K_WALL / LEG_GRA_D_WALL)
         // 限幅基准替换为 LEG_LENGTH_MAX_POS 和 LEG_LENGTH_MIN_POS
         if (theta > LEG_LENGTH_MAX_POS - LEG_LENGTH_POS_BUFFER_RAD)
         {
-            const float spring = -LEG_GRA_K_WALL * (theta - (LEG_LENGTH_MAX_POS - LEG_LENGTH_POS_BUFFER_RAD));
-            const float damp   = (theta_dot > 0.0f) ? (-LEG_GRA_D_WALL * theta_dot) : 0.0f;
+            const float spring =
+                -LEG_GRA_K_WALL *
+                (theta - (LEG_LENGTH_MAX_POS - LEG_LENGTH_POS_BUFFER_RAD));
+            const float damp =
+                (theta_dot > 0.0f) ? (-LEG_GRA_D_WALL * theta_dot) : 0.0f;
             tau_wall = fminf(0.0f, spring + damp);
 
             // 剥权保护：方向错误时没收 PID 控制权
-            if (tau_pid > 0.0f) tau_pid = 0.0f;
+            if (tau_pid > 0.0f)
+                tau_pid = 0.0f;
         }
         else if (theta < LEG_LENGTH_MIN_POS + LEG_LENGTH_POS_BUFFER_RAD)
         {
-            const float spring = LEG_GRA_K_WALL * ((LEG_LENGTH_MIN_POS + LEG_LENGTH_POS_BUFFER_RAD) - theta);
-            const float damp   = (theta_dot < 0.0f) ? (-LEG_GRA_D_WALL * theta_dot) : 0.0f;
+            const float spring =
+                LEG_GRA_K_WALL *
+                ((LEG_LENGTH_MIN_POS + LEG_LENGTH_POS_BUFFER_RAD) - theta);
+            const float damp =
+                (theta_dot < 0.0f) ? (-LEG_GRA_D_WALL * theta_dot) : 0.0f;
             tau_wall = fmaxf(0.0f, spring + damp);
 
             // 剥权保护：方向错误时没收 PID 控制权
-            if (tau_pid < 0.0f) tau_pid = 0.0f;
+            if (tau_pid < 0.0f)
+                tau_pid = 0.0f;
         }
 
         // 7. 物理限幅与最终输出
@@ -339,6 +353,15 @@ void hybrid_chassis_t::_leg_length_control()
         _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
     }
 }
+
+void hybrid_chassis_t::_communicate_gimbal() const
+{
+    pyro::can_tx_drv_t::clear(0x102);
+    pyro::can_tx_drv_t::add_data(0x102, 32, _ctx.data.current_pitch_rad);
+    pyro::can_tx_drv_t::send(
+        0x102, can_hub_t::get_instance()->hub_get_can_obj(can_hub_t::can1));
+}
+
 
 
 void hybrid_chassis_t::_mecanum_control()
@@ -369,7 +392,7 @@ void hybrid_chassis_t::_send_motor_command() const
 {
     // 静态分频标志位，每次调用翻转一次，实现 1/2 频率
     static bool freq_div_flag = false;
-    freq_div_flag = !freq_div_flag;
+    freq_div_flag             = !freq_div_flag;
 
     // 麦轮和履带：仅在 flag 为 true 时发送指令
     if (freq_div_flag)
@@ -378,6 +401,10 @@ void hybrid_chassis_t::_send_motor_command() const
             _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
         for (int i = 0; i < 2; i++)
             _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
+        // for (int i = 0; i < 4; i++)
+        //     _ctx.motor.mecanum[i]->send_torque(0);
+        // for (int i = 0; i < 2; i++)
+        //     _ctx.motor.track[i]->send_torque(0);
     }
 
     // 腿部电机：保持原频率控制 (VMC 和腿长控制通常需要高频以维持稳定性)

@@ -1,5 +1,6 @@
 #include "pyro_screw_gimbal.h"
 #include "pyro_ins.h"
+#include "pyro_com_canrx.h"
 
 namespace pyro
 {
@@ -15,37 +16,9 @@ screw_gimbal_t::screw_gimbal_t() : module_base_t("screw_gimbal")
 
 status_t screw_gimbal_t::_init()
 {
-    // 1. 初始化电机
-
-    // Pitch: 使用 DM 电机 (示例 ID: Master 0x11, Slave 0x21, CAN1)
-    // 根据 hybrid 中的用法进行配置
-    _ctx.motor.pitch = new dm_motor_drv_t(0x33, 0x43, can_hub_t::can2);
-
-    // Yaw: 使用 DJI GM6020 (ID 2, CAN1)
-    _ctx.motor.yaw   = new dji_gm_6020_motor_drv_t(dji_motor_tx_frame_t::id_2,
-                                                   can_hub_t::can3);
-
-    // 2. 配置 DM 电机范围 (DJI 电机无需配置)
-    // NOLINTBEGIN(cppcoreguidelines-pro-type-static-cast-downcast)
-    static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
-        ->set_position_range(-PI, PI);
-    static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
-        ->set_rotate_range(-2.72, 2.72); // rad/s
-    static_cast<dm_motor_drv_t *>(_ctx.motor.pitch)
-        ->set_torque_range(-27, 27); // Nm (DM单位通常为Nm)
-    // NOLINTEND(cppcoreguidelines-pro-type-static-cast-downcast)
-
-    // 3. 初始化串级 PID
-    _ctx.pid.pitch_pos =
-        new pid_t(25.5f, 0.5f, 0.9f, 2.0f, 25.0f, 20, 10,
-                  4); // 位置环输出为 rad/s，限制在电机可接受范围内
-    _ctx.pid.pitch_spd = new pid_t(1.55f, 0.02f, 0.02f, 1.5f, 22.0f, 50, 20,
-                                   4); // 输出限制匹配 DM 电机 Nm 级
-
-    // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
-    _ctx.pid.yaw_pos   = new pid_t(5.2f, 0.01f, 0.22f, 0.8f, 5.0f);
-    _ctx.pid.yaw_spd   = new pid_t(3.0f, 0.0003f, 0.0001f, 0.2f, 3.0f);
-
+    _ctx.motor = _module_deps.motor_deps;
+    _ctx.pid = _module_deps.pid_deps;
+    pyro::can_rx_drv_t::subscribe(can_hub_t::which_can::can1, 0x102);
     return PYRO_OK;
 }
 
@@ -86,10 +59,6 @@ void screw_gimbal_t::_update_feedback()
 
 void screw_gimbal_t::_gimbal_control(gimbal_context_t *ctx)
 {
-
-    ctx->data.out_gravity_torque =
-        -ctx->data.current_z_accel * 12.5f * 1.05f * 0.0325f;
-
     // --- Pitch 串级控制 ---
     // 1. 位置环
     ctx->data.target_pitch_radps = ctx->pid.pitch_pos->calculate(
@@ -107,17 +76,27 @@ void screw_gimbal_t::_gimbal_control(gimbal_context_t *ctx)
     // 2. 速度环
     ctx->data.out_yaw_torque = ctx->pid.yaw_spd->calculate(
         ctx->data.target_yaw_radps, ctx->data.current_yaw_radps);
+
+    // ctx->data.out_pitch_torque = 0.0f;
 }
 
 void screw_gimbal_t::_send_motor_command(gimbal_context_t *ctx)
 {
-    // ctx->motor.pitch->send_torque(ctx->data.out_pitch_torque);
-    ctx->motor.pitch->send_torque(ctx->data.out_gravity_torque +
-                                  ctx->data.out_pitch_torque);
+    ctx->motor.pitch->send_torque(ctx->data.out_pitch_torque);
+    // ctx->motor.pitch->send_torque(ctx->data.out_gravity_torque +
+    //                               ctx->data.out_pitch_torque);
     ctx->motor.yaw->send_torque(ctx->data.out_yaw_torque);
 
     // ctx->motor.pitch->send_torque(0);
     // ctx->motor.yaw->send_torque(0);
+}
+
+void screw_gimbal_t::_communicate_chassis()
+{
+    std::array<uint8_t, 8> raw_data{};
+    pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x102,
+                                 raw_data);
+    std::memcpy(&_ctx.data.current_chassis_pitch_rad,&raw_data,sizeof(float));
 }
 
 // =========================================================

@@ -1,5 +1,5 @@
 #include "pyro_hybrid_chassis.h"
-#include "config.h"
+#include "hybrid_config.h"
 namespace pyro
 {
 
