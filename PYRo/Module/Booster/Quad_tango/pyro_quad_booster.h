@@ -203,8 +203,6 @@ class quad_booster_t final
     fsm_active_t _state_active;
     fsm_t<owner> _main_fsm;
 
-    static constexpr float FRIC1_RADIUS = 0.03f;
-    static constexpr float FRIC2_RADIUS = 0.03f;
 };
 
 } // namespace pyro

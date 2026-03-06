@@ -107,22 +107,22 @@ void chassis_rc2cmd(void const *rc_ctrl)
     vy     = static_cast<int8_t>(-p_ctrl->rc.ch_lx * 127);
     wz     = 0;
     active = true;
-    // if (pyro::dr16_drv_t::sw_state_t::SW_DOWN != p_ctrl->rc.s_l.state)
-    // {
-    //     track_en = true;
-    //     if (pyro::dr16_drv_t::sw_state_t::SW_MID == p_ctrl->rc.s_l.state)
-    //     {
-    //         leg_retract = true;
-    //     }
-    //     else
-    //     {
-    //         leg_retract = false;
-    //     }
-    // }
-    // else
-    // {
-    //     track_en = false;
-    // }
+    if (pyro::dr16_drv_t::sw_state_t::SW_DOWN != p_ctrl->rc.s_l.state)
+    {
+        track_en = true;
+        if (pyro::dr16_drv_t::sw_state_t::SW_MID == p_ctrl->rc.s_l.state)
+        {
+            leg_retract = true;
+        }
+        else
+        {
+            leg_retract = false;
+        }
+    }
+    else
+    {
+        track_en = false;
+    }
     leg_retract = false;
     track_en = false;
     pyro::can_tx_drv_t::add_data(0x101, 8, vx);

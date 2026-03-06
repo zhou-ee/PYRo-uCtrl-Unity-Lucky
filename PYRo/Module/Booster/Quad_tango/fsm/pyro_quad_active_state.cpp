@@ -6,6 +6,7 @@ namespace pyro
 
 void quad_booster_t::fsm_active_t::on_enter(owner *owner)
 {
+    owner->_ctx.motor.trigger_wheel->enable();
     change_state(&_homing_state);
 }
 

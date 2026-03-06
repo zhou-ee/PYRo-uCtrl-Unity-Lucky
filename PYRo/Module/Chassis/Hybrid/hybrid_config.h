@@ -53,8 +53,8 @@ constexpr float DIST_HIP      = 0.193f;  // 质心到髋关节的水平距离
 constexpr float H_COG         = 0.15f;   // 重心垂直高度
 constexpr float H_HIP_OFFSET  = 0.074f;  // 髋关节与前轮轴心的垂直落差
 inline float LEFT_LEG_OFFSET_RAD =
-   -0.498407602f; // 左腿位置偏移 (rad)，正值表示向前偏移
+   -0.491504431f; // 左腿位置偏移 (rad)，正值表示向前偏移
 inline float RIGHT_LEG_OFFSET_RAD =
-    0.954581976f; // 右腿位置偏移 (rad)，正值表示向前偏移
+    0.957649946f; // 右腿位置偏移 (rad)，正值表示向前偏移
 
 #endif

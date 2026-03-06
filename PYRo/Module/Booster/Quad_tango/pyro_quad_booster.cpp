@@ -2,8 +2,8 @@
 #include "pyro_algo_common.h"
 #include "pyro_com_canrx.h"
 #include "pyro_dwt_drv.h"
-
 #include <cmath>
+#include "quad_config.h"
 
 namespace pyro
 {
@@ -41,9 +41,12 @@ void quad_booster_t::_update_feedback()
     for (int i = 0; i < 4; i++)
     {
         _ctx.motor.fric_wheels[i]->update_feedback();
-        _ctx.data.current_fric_mps[i] =
-            _ctx.motor.fric_wheels[i]->get_current_rotate() * FRIC1_RADIUS;
     }
+    _ctx.data.current_fric_mps[0] = _ctx.motor.fric_wheels[0]->get_current_rotate() * FRIC2_RADIUS;
+    _ctx.data.current_fric_mps[1] = _ctx.motor.fric_wheels[1]->get_current_rotate() * FRIC1_RADIUS;
+    _ctx.data.current_fric_mps[2] = _ctx.motor.fric_wheels[2]->get_current_rotate() * FRIC2_RADIUS;
+    _ctx.data.current_fric_mps[3] = _ctx.motor.fric_wheels[3]->get_current_rotate() * FRIC1_RADIUS;
+
 
     // 2. 拨弹反馈
     _ctx.motor.trigger_wheel->update_feedback();

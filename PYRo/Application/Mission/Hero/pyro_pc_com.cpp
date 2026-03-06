@@ -24,21 +24,21 @@ extern "C"
         {
             uart_comm_ptr->read(state_bytes, sizeof(StateBytes));
             operate_bytes.frame_header.sof = 0xA5;
-            // operate_bytes.output_data.curr_yaw = direct_gimbal_t::instance()->get_ctx().data.current_yaw_rad;   // 应该显示为 00 00 80 3F
-            // operate_bytes.output_data.curr_pitch = direct_gimbal_t::instance()->get_ctx().data.current_pitch_rad; // 应该显示为 00 00 00 40
-            // operate_bytes.output_data.state = 0x00;
-            // operate_bytes.output_data.autoaim = 0x01;
-            // operate_bytes.output_data.enemy_color = 0x0;
-            // operate_bytes.output_data.curr_speed = 0.0f;
-            // operate_bytes.output_data.shoot_delay = static_cast<uint16_t>(avg_delay);
-
-            operate_bytes.output_data.curr_yaw = 0;   // 应该显示为 00 00 80 3F
-            operate_bytes.output_data.curr_pitch = 0; // 应该显示为 00 00 00 40
+            operate_bytes.output_data.curr_yaw = direct_gimbal_t::instance()->get_ctx().data.current_yaw_rad;   // 应该显示为 00 00 80 3F
+            operate_bytes.output_data.curr_pitch = direct_gimbal_t::instance()->get_ctx().data.current_pitch_rad; // 应该显示为 00 00 00 40
             operate_bytes.output_data.state = 0x00;
-            operate_bytes.output_data.autoaim = 0x0;
+            operate_bytes.output_data.autoaim = 0x01;
             operate_bytes.output_data.enemy_color = 0x0;
             operate_bytes.output_data.curr_speed = 0.0f;
-            operate_bytes.output_data.shoot_delay = 0.0f;
+            // operate_bytes.output_data.shoot_delay = static_cast<uint16_t>(avg_delay);
+
+            // operate_bytes.output_data.curr_yaw = 0;   // 应该显示为 00 00 80 3F
+            // operate_bytes.output_data.curr_pitch = 0; // 应该显示为 00 00 00 40
+            // operate_bytes.output_data.state = 0x00;
+            // operate_bytes.output_data.autoaim = 0x0;
+            // operate_bytes.output_data.enemy_color = 0x0;
+            // operate_bytes.output_data.curr_speed = 0.0f;
+            // operate_bytes.output_data.shoot_delay = 0.0f;
             append_crc16_check_sum((uint8_t*)&operate_bytes,sizeof(OperateBytes));
             uart_drv_t::get_instance(uart_drv_t::which_uart::uart7)->write((uint8_t*)&operate_bytes, sizeof(OperateBytes));
             vTaskDelay(1);

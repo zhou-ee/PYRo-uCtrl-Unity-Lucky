@@ -7,6 +7,7 @@ void quad_booster_t::state_passive_t::enter(owner *owner)
 {
     owner->_ctx.pid.trigger_pos_pid->clear();
     owner->_ctx.pid.trigger_spd_pid->clear();
+    owner->_ctx.motor.trigger_wheel->disable();
     _trigger_stopped = false;
 }
 

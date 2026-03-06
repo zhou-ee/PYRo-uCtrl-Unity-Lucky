@@ -57,8 +57,8 @@ extern "C"
     {
         while (true)
         {
-            booster_rc2cmd(rc_ctrl_ptr);
-            quad_booster_ptr->set_command(*quad_booster_cmd_ptr);
+            // booster_rc2cmd(rc_ctrl_ptr);
+            // quad_booster_ptr->set_command(*quad_booster_cmd_ptr);
             vTaskDelay(1);
         }
     }
@@ -100,9 +100,9 @@ extern "C"
             new pid_t(6.4f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
 
         quad_deps_ptr->pid_deps.trigger_pos_pid =
-            new pid_t(20.2f, 0.03f, 0.005f, 1.0f, 10.0f, 200, 100, 4);
+            new pid_t(20.2f, 0.03f, 0.005f, 1.0f, 20.0f, 200, 100, 4);
         quad_deps_ptr->pid_deps.trigger_spd_pid =
-            new pid_t(0.8f, 0.02f, 0.005f, 2.0f, 20.0f, 200, 100, 4);
+            new pid_t(0.8f, 0.02f, 0.005f, 0.2f, 7.0f, 200, 100, 4);
     }
 
     void hero_booster_init(void *argument)

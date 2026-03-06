@@ -85,15 +85,18 @@ extern "C"
         static float trigger_using_time    = 0;
         static float mouse_left_using_time = 0;
         static bool autoaim_fire_flag = 0;
-        if (state_bytes.input_data.fire == 0)
+        if (vt03_drv_t::gear_state_t::GEAR_RIGHT == rc_ctrl->rc.gear.state)
         {
-            autoaim_fire_flag = true;
-        }
-        if (autoaim_fire_flag)
-        {
-            if (state_bytes.input_data.fire == 1)
+            if (state_bytes.input_data.fire == 0)
             {
-                quad_booster_cmd_ptr->fire_enable = true;
+                autoaim_fire_flag = true;
+            }
+            if (autoaim_fire_flag)
+            {
+                if (state_bytes.input_data.fire == 1)
+                {
+                    quad_booster_cmd_ptr->fire_enable = true;
+                }
             }
         }
         if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->rc.trigger.ctrl &&
