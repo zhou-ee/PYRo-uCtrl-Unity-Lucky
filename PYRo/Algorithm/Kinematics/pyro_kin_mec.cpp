@@ -14,24 +14,53 @@ mecanum_kin_t::mecanum_kin_t(const float wheelbase, const float track_width)
     _k_geom = (std::fabs(wheelbase) + std::fabs(track_width)) / 2.0f;
 }
 
+// ============================================================================
+// Inverse Kinematics / 逆运动学 (推力重分配容错版)
+// ============================================================================
 mecanum_kin_t::wheel_speeds_t
-mecanum_kin_t::solve(const float vx, const float vy, const float wz) const
+mecanum_kin_t::solve(const float vx, const float vy, const float wz, const missing_mec_e missing) const
 {
     wheel_speeds_t ws{}; // Zero initialization
-
-    // Tangential speed contribution from rotation
     const float v_rot = wz * _k_geom;
 
-    // Standard Inverse Kinematics formula for O-configuration Mecanum wheels
-    // FL = Vx - Vy - rot
-    // FR = Vx + Vy + rot
-    // BL = Vx + Vy - rot
-    // BR = Vx - Vy + rot
+    switch (missing)
+    {
+        case missing_mec_e::FL:
+            ws.fl = 0.0f;
+            ws.fr = vy + v_rot;
+            ws.bl = vx - v_rot;
+            ws.br = vx - vy;
+            break;
 
-    ws.fl             = vx - vy - v_rot;
-    ws.fr             = vx + vy + v_rot;
-    ws.bl             = vx + vy - v_rot;
-    ws.br             = vx - vy + v_rot;
+        case missing_mec_e::FR:
+            ws.fl = -vy - v_rot;
+            ws.fr = 0.0f;
+            ws.bl = vx + vy;
+            ws.br = vx + v_rot;
+            break;
+
+        case missing_mec_e::BL:
+            ws.fl = vx - v_rot;
+            ws.fr = vx + vy;
+            ws.bl = 0.0f;
+            ws.br = -vy + v_rot;
+            break;
+
+        case missing_mec_e::BR:
+            ws.fl = vx - vy;
+            ws.fr = vx + v_rot;
+            ws.bl = vy - v_rot;
+            ws.br = 0.0f;
+            break;
+
+        case missing_mec_e::NONE:
+        default:
+            ws.fl = vx - vy - v_rot;
+            ws.fr = vx + vy + v_rot;
+            ws.bl = vx + vy - v_rot;
+            ws.br = vx - vy + v_rot;
+            break;
+    }
 
     return ws;
 }

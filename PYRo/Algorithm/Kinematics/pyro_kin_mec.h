@@ -10,6 +10,19 @@ namespace pyro
 class mecanum_kin_t
 {
   public:
+    /**
+     * @brief Missing Mecanum Wheel Enumeration
+     * 缺失麦轮枚举类，用于容错控制
+     */
+    enum class missing_mec_e
+    {
+        NONE = 0, // 正常状态，无缺失
+        FL,       // 左前轮缺失/失效
+        FR,       // 右前轮缺失/失效
+        BL,       // 左后轮缺失/失效
+        BR        // 右后轮缺失/失效
+    };
+
     struct wheel_speeds_t
     {
         float fl; // Front Left
@@ -32,9 +45,12 @@ class mecanum_kin_t
      * @param vx  Linear velocity in X-axis (Forward +, m/s)
      * @param vy  Linear velocity in Y-axis (Left +, m/s)
      * @param wz  Angular velocity in Z-axis (Counter-Clockwise +, rad/s)
+     * @param missing 缺失/失效轮的枚举，默认无缺失
      * @return wheel_speeds_t Target linear speed for each wheel (m/s)
      */
-    [[nodiscard]] wheel_speeds_t solve(float vx, float vy, float wz) const;
+    [[nodiscard]] wheel_speeds_t
+    solve(float vx, float vy, float wz,
+          missing_mec_e missing = missing_mec_e::NONE) const;
 
     /**
      * @brief Forward Kinematics (Wheel Speeds -> Body Velocity)

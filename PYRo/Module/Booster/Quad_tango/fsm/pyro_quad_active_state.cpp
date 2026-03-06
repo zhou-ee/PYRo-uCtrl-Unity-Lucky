@@ -12,13 +12,19 @@ void quad_booster_t::fsm_active_t::on_enter(owner *owner)
 void quad_booster_t::fsm_active_t::on_execute(owner *owner)
 {
     // 1. 摩擦轮控制
+    owner->_speed_contorl();
+
     if (owner->_ctx.cmd->fric_on)
     {
-        owner->_ctx.data.target_fric_mps[0] = owner->_ctx.cmd->fric2_mps;
-        owner->_ctx.data.target_fric_mps[2] = -owner->_ctx.cmd->fric2_mps;
+        owner->_ctx.data.target_fric_mps[0] = owner->_ctx.shoot_data.fric2_mps;
+        owner->_ctx.data.target_fric_mps[2] = -owner->_ctx.shoot_data.fric2_mps;
+        owner->_ctx.data.target_fric_mps[1] = owner->_ctx.shoot_data.fric1_mps;
+        owner->_ctx.data.target_fric_mps[3] = -owner->_ctx.shoot_data.fric1_mps;
 
-        owner->_ctx.data.target_fric_mps[1] = owner->_ctx.cmd->fric1_mps;
-        owner->_ctx.data.target_fric_mps[3] = -owner->_ctx.cmd->fric1_mps;
+        // owner->_ctx.data.target_fric_mps[0] = 0;
+        // owner->_ctx.data.target_fric_mps[2] = 0;
+        // owner->_ctx.data.target_fric_mps[1] = 0;
+        // owner->_ctx.data.target_fric_mps[3] = 0;
 
         owner->_fric_control();
     }
@@ -37,7 +43,13 @@ void quad_booster_t::fsm_active_t::on_execute(owner *owner)
     }
     owner->_send_fric_command();
 
-    // 2. 拨弹盘堵转判断
+    // 2. 发弹延迟计算
+    // 通过外级摩擦轮转速和扭矩判断是否发弹
+    // 计算信号发生时间（在ready状态中获取）到当前时间的差值
+    owner->_launch_delay_calculate();
+
+
+    // 3. 拨弹盘堵转判断
     // 通过拨盘电机的速度和扭矩判断是否堵转
     constexpr float STALL_TIME_THRESHOLD   = 300.0f; // 堵转时间阈值
     constexpr float STALL_TORQUE_THRESHOLD = 2.5f;   // 堵转扭矩阈值

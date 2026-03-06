@@ -4,6 +4,7 @@
 #include "pyro_ins.h"
 #include "pyro_supercap_drv.h"
 #include "pyro_referee.h"
+#include "pyro_vl53_drv.h"
 
 namespace pyro
 {
@@ -19,7 +20,7 @@ extern "C"
     void pyro_init_thread(void *argument)
     {
         dwt_drv_t::init(480); // Initialize DWT at 480 MHz
-        
+
         uart_drv_t::get_instance(uart_drv_t::which_uart::uart1)
             ->enable_rx_dma();
         uart_drv_t::get_instance(uart_drv_t::which_uart::uart5)
@@ -50,6 +51,9 @@ extern "C"
         referee_drv->init();
 
         supercap_drv_t::get_instance()->start_rx();
+
+        // vl53_drv_t::get_instance().init(
+        //     uart_drv_t::get_instance(uart_drv_t::which_uart::uart10));
 
         vTaskDelete(nullptr);
     }

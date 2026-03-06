@@ -107,22 +107,24 @@ void chassis_rc2cmd(void const *rc_ctrl)
     vy     = static_cast<int8_t>(-p_ctrl->rc.ch_lx * 127);
     wz     = 0;
     active = true;
-    if (pyro::dr16_drv_t::sw_state_t::SW_DOWN != p_ctrl->rc.s_l.state)
-    {
-        track_en = true;
-        if (pyro::dr16_drv_t::sw_state_t::SW_MID == p_ctrl->rc.s_l.state)
-        {
-            leg_retract = true;
-        }
-        else
-        {
-            leg_retract = false;
-        }
-    }
-    else
-    {
-        track_en = false;
-    }
+    // if (pyro::dr16_drv_t::sw_state_t::SW_DOWN != p_ctrl->rc.s_l.state)
+    // {
+    //     track_en = true;
+    //     if (pyro::dr16_drv_t::sw_state_t::SW_MID == p_ctrl->rc.s_l.state)
+    //     {
+    //         leg_retract = true;
+    //     }
+    //     else
+    //     {
+    //         leg_retract = false;
+    //     }
+    // }
+    // else
+    // {
+    //     track_en = false;
+    // }
+    leg_retract = false;
+    track_en = false;
     pyro::can_tx_drv_t::add_data(0x101, 8, vx);
     pyro::can_tx_drv_t::add_data(0x101, 8, vy);
     pyro::can_tx_drv_t::add_data(0x101, 8, wz);
@@ -143,7 +145,7 @@ void deps_init()
     // Pitch: 使用 DM 电机 (示例 ID: Master 0x11, Slave 0x21, CAN1)
     // 根据 hybrid 中的用法进行配置
     screw_gimbal_deps->motor_deps.pitch =
-        new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_3, can_hub_t::can2);
+        new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_5, can_hub_t::can2);
 
     // Yaw: 使用 DJI GM6020 (ID 2, CAN1)
     screw_gimbal_deps->motor_deps.yaw = new dji_gm_6020_motor_drv_t(

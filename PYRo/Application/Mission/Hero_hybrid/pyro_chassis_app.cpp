@@ -174,7 +174,7 @@ static void deps_init()
     hybrid_deps_ptr->pid_deps.pitch_pid =
         new pid_t(550.0f, 0.00f, 30.0f, 0.1f, 200.0f, 200, 100, 4);
     hybrid_deps_ptr->pid_deps.roll_pid =
-        new pid_t(300.0f, 0.00f, 40.0f, 0.1f, 50.0f, 200, 100, 4);
+        new pid_t(800.0f, 0.00f, 30.0f, 0.1f, 250.0f, 200, 100, 4);
 
     hybrid_deps_ptr->pid_deps.leg_pos_pid[0] =
         new pid_t(10.0f, 0.005f, 0.008f, 0.0f, 1.0f, 20, 10, 4);

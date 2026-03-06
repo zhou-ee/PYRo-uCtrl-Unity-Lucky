@@ -32,12 +32,15 @@ class motor_base_t
     float get_current_torque(void);
 
     bool is_enable(void);
+    bool is_online(void);
 
   protected:
     can_hub_t::which_can _which_can;
     can_drv_t *_can_drv;
 
     bool _enable;
+    bool _online;
+    float _last_update_time;
     int8_t _temperature;
 
     float _current_position;

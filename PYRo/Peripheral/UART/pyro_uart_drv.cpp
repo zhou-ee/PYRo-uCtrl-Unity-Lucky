@@ -208,6 +208,8 @@ status_t uart_drv_t::disable_rx_dma() const
 status_t uart_drv_t::reset(const uint32_t BaudRate, const uint32_t WordLength,
                            const uint32_t StopBits, const uint32_t Parity)
 {
+    disable_rx_dma();
+
     _huart->Init.BaudRate   = BaudRate;
     _huart->Init.WordLength = WordLength;
     _huart->Init.StopBits   = StopBits;

@@ -1,5 +1,7 @@
 #include "pyro_dji_motor_drv.h"
 
+#include "pyro_dwt_drv.h"
+
 #include <cmath>
 #include <cstring>
 
@@ -119,7 +121,20 @@ status_t dji_motor_drv_t::disable()
 status_t dji_motor_drv_t::update_feedback()
 {
     static std::array<uint8_t, 8> data;
-    _feedback_msg->get_data(data);
+    if (!_feedback_msg)
+        return PYRO_ERROR;
+
+    if (!_feedback_msg->is_fresh())
+    {
+        _online = dwt_drv_t::get_timeline_s() - _last_update_time < 1.0f;
+        return PYRO_ERROR;
+    }
+
+    if (_feedback_msg->get_data(data))
+    {
+        _feedback_msg->mark_read();
+        _last_update_time = dwt_drv_t::get_timeline_s();
+    }
 
     _current_position = ((float)((uint16_t)((data[0] << 8) | (data[1])))) /
                         8192.0f * 2 * PI;

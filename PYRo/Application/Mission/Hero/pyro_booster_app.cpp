@@ -5,11 +5,14 @@
 #include "pyro_com_cantx.h"
 #include "pyro_quad_booster.h"
 #include "pyro_com_canrx.h"
+#include "struct.h"
 
 using namespace pyro;
 
-static pyro::quad_booster_t *quad_booster_ptr             = nullptr;
-static pyro::quad_booster_cmd_t *quad_booster_cmd_ptr     = nullptr;
+pyro::quad_booster_t *quad_booster_ptr             = nullptr;
+pyro::quad_booster_cmd_t *quad_booster_cmd_ptr     = nullptr;
+extern StateBytes *state_bytes;
+
 static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
 static pyro::vt03_drv_t::vt03_ctrl_t const *vt03_ctrl_ptr = nullptr;
 extern "C"

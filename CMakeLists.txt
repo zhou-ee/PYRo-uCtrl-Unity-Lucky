@@ -103,6 +103,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Component/Referee/pyro_referee.cpp
         PYRo/Component/INS/pyro_ins.cpp
         PYRo/Component/Supercap/pyro_supercap_drv.cpp
+        PYRo/Component/VL53/pyro_vl53_drv.cpp
 
         # --- Module ---
 #        PYRo/Module/Chassis/Rudder/pyro_rud_chassis.cpp
@@ -144,6 +145,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         # --- Device ---
         PYRo/Device/BMI088/BMI088_driver.cpp
         PYRo/Device/BMI088/BMI088_middleware.cpp
+
 #        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_moving_state.cpp
 #        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_braking_state.cpp
 #        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_turning_state.cpp
@@ -174,6 +176,7 @@ if (ROBOT_ID EQUAL HERO_ID)
             PYRo/Application/Mission/Hero/pyro_chassis_app.cpp
             PYRo/Application/Mission/Hero/pyro_gimbal_app.cpp
             PYRo/Application/Mission/Hero/pyro_booster_app.cpp
+            PYRo/Application/Mission/Hero/pyro_pc_com.cpp
     )
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
             PYRo/Module/Booster/Quad_pink
@@ -236,6 +239,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 
         # --- Device ---
         PYRo/Device/BMI088
+        PYRo/Device/VL53
 
         # --- Algorithm ---
         PYRo/Algorithm/Common
@@ -256,6 +260,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Component/Referee
         PYRo/Component/Shoot
         PYRo/Component/Supercap
+        PYRo/Component/VL53
 
         # --- Module ---
         PYRo/Module

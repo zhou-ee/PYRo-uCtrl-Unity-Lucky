@@ -65,12 +65,14 @@ status_t mec_chassis_t::_init()
     // 轮组 PID (速度环)
     for (auto &pid : _ctx.pid.wheel_pid)
     {
-        pid = new pid_t(0.32f, 0.0003f, 0.0000f, 1.0f, 20.0f);
+        // pid = new pid_t(0.32f, 0.0003f, 0.0000f, 1.0f, 20.0f);
+        pid = new pid_t(0.2f, 0.00f, 0.0000f, 1.0f, 20.0f);
+
     }
 
     // 跟随 PID (位置环：输入弧度误差，输出 rad/s)
     // 注意：P 参数可能需要根据底盘重量调整 (3.0 ~ 8.0)
-    _ctx.pid.follow_pid = new pid_t(8.0f, 0.0f, 0.005f, 0.0f, 10.0f);
+    _ctx.pid.follow_pid = new pid_t(5.0f, 0.0f, 0.002f, 0.0f, 6.0f, 10, 10, 4);
 
     _ctx.powermeter     = new powermeter_drv_t(0x212, can_hub_t::can2);
     _ctx.powermeter->init();
@@ -90,10 +92,10 @@ void mec_chassis_t::_power_control_init()
         // k2 = 0.0250f;//1.6000//0.0460
         // k3 = 0.1742f;//0.0010//0.1066
         // k4 = 0.5815f;//0.7500//0.7500
-        k1 = 0.0260f;//0.0155
-        k2 = 0.0460f;//1.6000
-        k3 = 0.1100f;//0.0010
-        k4 = 0.7500f;//0.7500
+        k1 = 0.0260f; // 0.0155
+        k2 = 0.0460f; // 1.6000
+        k3 = 0.1100f; // 0.0010
+        k4 = 0.7500f; // 0.7500
     }
 
     power_control_drv_t::get_instance(4).set_motor_coefficient(1, coef[0]);
@@ -125,8 +127,7 @@ void mec_chassis_t::_power_control()
     else
     {
         power_control_drv_t::get_instance().calculate_restricted_torques(
-            _ctx.power_motor_data, 4,
-            240);
+            _ctx.power_motor_data, 4, 240);
     }
     for (int i = 0; i < 4; i++)
         _ctx.data.out_wheel_torque[i] =
@@ -153,6 +154,7 @@ void mec_chassis_t::_update_feedback()
         _ctx.data.current_wheel_rpm[i] =
             _radps_to_rpm(_ctx.motor.wheels[i]->get_current_rotate() *
                           dji_m3508_motor_drv_t::reciprocal_reduction_ratio);
+        _ctx.data.wheel_online[i] = _ctx.motor.wheels[i]->is_online();
     }
 
     // 3. 计算 Yaw 轴跟随误差 (关键修改)
@@ -185,8 +187,8 @@ void mec_chassis_t::_update_feedback()
     _ctx.supercap_cmd.kill_chassis_user = 0;
     _ctx.supercap_cmd.speed_up_user_now = 0;
 
-    buffer_engy = referee_drv_t::get_instance()
-            ->get_data().power_heat.buffer_energy;
+    buffer_engy =
+        referee_drv_t::get_instance()->get_data().power_heat.buffer_energy;
 
     // 5. 更新 cap_rx 数据
     _ctx.cap_feedback = supercap_drv_t::get_instance()->get_feedback();
@@ -217,10 +219,10 @@ void mec_chassis_t::_kinematics_solve()
     // 我们需要知道底盘相对于云台的角度。
     // current_yaw_error = 0 - current_angle => current_angle =
     // -current_yaw_error 设 theta 为底盘相对于云台的偏角
-    float theta      = -_ctx.data.current_yaw_error;
+    float theta        = -_ctx.data.current_yaw_error;
 
-    float c_theta    = cos(theta);
-    float s_theta    = sin(theta);
+    float c_theta      = cos(theta);
+    float s_theta      = sin(theta);
 
     // 旋转矩阵公式 (逆时针旋转 theta)
     // V_chassis = RotationMatrix(-theta) * V_gimbal ?
@@ -228,14 +230,48 @@ void mec_chassis_t::_kinematics_solve()
     // 如果云台不动，底盘左转了 90度 (theta=90)，向前推杆
     // (vx=1)，底盘应该向右平移 (y=-1)。 vx_c = 1 * cos(90) + 0 = 0 vy_c = -1 *
     // sin(90) + 0 = -1 (符合)
-    float vx_chassis = _ctx.cmd->vx * c_theta + _ctx.cmd->vy * s_theta;
-    float vy_chassis = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
+    float vx_chassis   = _ctx.cmd->vx * c_theta + _ctx.cmd->vy * s_theta;
+    float vy_chassis   = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
+
+    int offline_count  = 0;
+    auto missing_wheel = mecanum_kin_t::missing_mec_e::NONE;
+
+    // 根据数组索引对应找出具体离线的轮子 (0:FL, 1:FR, 2:BL, 3:BR)
+    if (!_ctx.data.wheel_online[0])
+    {
+        offline_count++;
+        missing_wheel = mecanum_kin_t::missing_mec_e::FL;
+    }
+    if (!_ctx.data.wheel_online[1])
+    {
+        offline_count++;
+        missing_wheel = mecanum_kin_t::missing_mec_e::FR;
+    }
+    if (!_ctx.data.wheel_online[2])
+    {
+        offline_count++;
+        missing_wheel = mecanum_kin_t::missing_mec_e::BL;
+    }
+    if (!_ctx.data.wheel_online[3])
+    {
+        offline_count++;
+        missing_wheel = mecanum_kin_t::missing_mec_e::BR;
+    }
+
+    // 如果有两个或以上的轮子离线，失去冗余控制能力，强制速度全为 0
+    if (offline_count >= 2)
+    {
+        vx_chassis    = 0.0f;
+        vy_chassis    = 0.0f;
+        final_wz      = 0.0f;
+        missing_wheel = mecanum_kin_t::missing_mec_e::NONE; // 速度全为0
+    }
 
     // -------------------------------------------------------------
-    // 3. 麦轮解算
+    // 4. 运动学解算 (带入缺失轮枚举)
     // -------------------------------------------------------------
-    auto wheel_speeds_mps =
-        _kinematics->solve(vx_chassis, vy_chassis, final_wz);
+    const auto wheel_speeds_mps =
+        _kinematics->solve(vx_chassis, vy_chassis, final_wz, missing_wheel);
 
     // 4. 转 RPM 并分配给电机
     // 注意：右侧电机通常需要反转，取决于具体安装和电机库定义
@@ -256,8 +292,12 @@ void mec_chassis_t::_chassis_control(mec_context_t *ctx)
     {
         ctx->data.out_wheel_torque[i] = ctx->pid.wheel_pid[i]->calculate(
             ctx->data.target_wheel_rpm[i], ctx->data.current_wheel_rpm[i]);
+        // if (ctx->data.target_wheel_rpm[i] < 0.001f)
+        // {
+        //     ctx->data.out_wheel_torque[i] = 0.0f;
+        // }
     }
-    _power_control();
+    // _power_control();
     // ctx->data.out_wheel_torque[0] = 0;
     // ctx->data.out_wheel_torque[1] = 0;
     // ctx->data.out_wheel_torque[2] = 0;

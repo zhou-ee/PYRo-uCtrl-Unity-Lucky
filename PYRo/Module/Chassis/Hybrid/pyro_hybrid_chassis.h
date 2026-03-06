@@ -98,6 +98,7 @@ class hybrid_chassis_t final
     // 运行时数据
     struct data_ctx_t
     {
+        bool wheel_online[4]{};
         float current_wheel_rpm[4]{};
         float current_track_rpm[2]{};
         float current_leg_rad[2]{};
@@ -110,9 +111,11 @@ class hybrid_chassis_t final
         float target_pitch_rad{0};
         float target_yaw_rad{0};
 
+        // 测距模块反馈
+        uint16_t distance_mm{0};
+
         // YAW 电机差值反馈（用于底盘跟随云台）
         float current_yaw_error{0};
-
         float target_wheel_rpm[4]{};
         float target_track_rpm[2]{};
         float target_leg_rad[2]{};

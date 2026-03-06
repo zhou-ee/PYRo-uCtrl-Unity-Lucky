@@ -66,13 +66,13 @@ void chassis_rxcmd(void const *rc_ctrl)
     pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can2, 0x101,
                                  raw_data);
     mec_cmd_ptr->vx =
-        2.8f * static_cast<float>(static_cast<int8_t>(raw_data[0])) / 127.0f;
+        2.5f * static_cast<float>(static_cast<int8_t>(raw_data[0])) / 127.0f;
     if (abs(mec_cmd_ptr->vx) < 0.1f)
     {
         mec_cmd_ptr->vx = 0;
     }
     mec_cmd_ptr->vy =
-        2.8f * static_cast<float>(static_cast<int8_t>(raw_data[1])) / 127.0f;
+        2.5f * static_cast<float>(static_cast<int8_t>(raw_data[1])) / 127.0f;
     if (abs(mec_cmd_ptr->vy) < 0.1f)
     {
         mec_cmd_ptr->vy = 0;

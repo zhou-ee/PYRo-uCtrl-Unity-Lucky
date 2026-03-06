@@ -83,6 +83,7 @@ class mec_chassis_t final : public module_base_t<mec_chassis_t, mec_cmd_t,mec_cf
     {
         float current_yaw_error{0}; // 归一化后的偏航误差 (-PI ~ PI)
 
+        bool wheel_online[4]{};
         float current_wheel_rpm[4]{};
         float target_wheel_rpm[4]{};
         float out_wheel_torque[4]{};

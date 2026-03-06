@@ -4,10 +4,14 @@
 #include "pyro_rc_hub.h"
 #include "pyro_direct_gimbal.h"
 #include "pyro_com_cantx.h"
+#include "pyro_uart_comm.h"
+#include "struct.h"
 
 using namespace pyro;
-static pyro::direct_gimbal_t *direct_gimbal_ptr           = nullptr;
-static pyro::direct_gimbal_cmd_t *direct_gimbal_cmd_ptr   = nullptr;
+pyro::direct_gimbal_t *direct_gimbal_ptr           = nullptr;
+pyro::direct_gimbal_cmd_t *direct_gimbal_cmd_ptr   = nullptr;
+extern pyro::uart_comm_t *uart_comm_ptr;
+extern StateBytes *state_bytes;
 static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
 static pyro::vt03_drv_t::vt03_ctrl_t const *vt03_ctrl_ptr = nullptr;
 static void gimbal_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl);

@@ -3,6 +3,8 @@
 #include <arm_math.h> // 引入 CMSIS-DSP 库
 #include "pyro_dji_motor_drv.h"
 #include "pyro_com_cantx.h"
+#include "pyro_kin_mec.h"
+#include "pyro_vl53_drv.h"
 
 namespace pyro
 {
@@ -57,9 +59,12 @@ void hybrid_chassis_t::_update_feedback()
         loop_fp32_constrain(0 - current_angle, -PI, PI);
 
     for (int i = 0; i < 4; i++)
+    {
         _ctx.data.current_wheel_rpm[i] =
             radps_to_rpm(_ctx.motor.mecanum[i]->get_current_rotate() *
                          dji_m3508_motor_drv_t::reciprocal_reduction_ratio);
+        _ctx.data.wheel_online[i] = _ctx.motor.mecanum[i]->is_online();
+    }
 
     for (int i = 0; i < 2; i++)
         _ctx.data.current_track_rpm[i] =
@@ -77,6 +82,11 @@ void hybrid_chassis_t::_update_feedback()
         -_ctx.motor.leg[1]->get_current_position() - RIGHT_LEG_OFFSET_RAD;
     _ctx.data.current_leg_rad[1] = loop_fp32_constrain(right_leg_raw, -PI, PI);
     _ctx.data.current_leg_radps[1] = -_ctx.motor.leg[1]->get_current_rotate();
+
+    if (vl53_drv_t::get_instance().is_data_fresh())
+    {
+        _ctx.data.distance_mm = vl53_drv_t::get_instance().get_distance();
+    }
 }
 
 // =========================================================
@@ -106,7 +116,7 @@ void hybrid_chassis_t::_kinematics_solve()
         _ctx.pid.follow_yaw_pid->calculate(0.0f, _ctx.data.current_yaw_error);
 
     // 最终角速度 = 跟随产生的角速度 + 选手手动输入的角速度(小陀螺/微调)
-    float final_wz          = follow_wz;
+    float final_wz      = follow_wz;
 
     // -------------------------------------------------------------
     // 2. 矢量旋转 (将云台坐标系速度转换到底盘坐标系)
@@ -124,17 +134,56 @@ void hybrid_chassis_t::_kinematics_solve()
     //                                              final_wz,
     //                                              _ctx.cmd->track_en);
 
-    const float theta       = _ctx.data.current_yaw_error;
+    const float theta   = _ctx.data.current_yaw_error;
 
-    const float c_theta     = arm_cos_f32(theta);
-    const float s_theta     = arm_sin_f32(theta);
+    const float c_theta = arm_cos_f32(theta);
+    const float s_theta = arm_sin_f32(theta);
 
     // 旋转矩阵公式 (逆时针旋转 theta)
-    const float vx_chassis  = _ctx.cmd->vx * c_theta + _ctx.cmd->vy * s_theta;
-    const float vy_chassis  = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
+    float vx_chassis    = _ctx.cmd->vx * c_theta + _ctx.cmd->vy * s_theta;
+    float vy_chassis    = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
 
-    const auto wheel_speeds = _kinematics->solve(vx_chassis, vy_chassis,
-                                                 final_wz, _ctx.cmd->track_en);
+
+
+    int offline_count   = 0;
+    auto missing_wheel  = hybrid_kin_t::missing_mec_e::NONE;
+
+    // 根据数组索引对应找出具体离线的轮子 (0:FL, 1:FR, 2:BL, 3:BR)
+    if (!_ctx.data.wheel_online[0])
+    {
+        offline_count++;
+        missing_wheel = hybrid_kin_t::missing_mec_e::FL;
+    }
+    if (!_ctx.data.wheel_online[1])
+    {
+        offline_count++;
+        missing_wheel = hybrid_kin_t::missing_mec_e::FR;
+    }
+    if (!_ctx.data.wheel_online[2])
+    {
+        offline_count++;
+        missing_wheel = hybrid_kin_t::missing_mec_e::BL;
+    }
+    if (!_ctx.data.wheel_online[3])
+    {
+        offline_count++;
+        missing_wheel = hybrid_kin_t::missing_mec_e::BR;
+    }
+
+    // 如果有两个或以上的轮子离线，失去冗余控制能力，强制速度全为 0
+    if (offline_count >= 2)
+    {
+        vx_chassis    = 0.0f;
+        vy_chassis    = 0.0f;
+        final_wz      = 0.0f;
+        missing_wheel = hybrid_kin_t::missing_mec_e::NONE; // 速度全为0
+    }
+
+    // -------------------------------------------------------------
+    // 4. 运动学解算 (带入缺失轮枚举)
+    // -------------------------------------------------------------
+    const auto wheel_speeds = _kinematics->solve(
+        vx_chassis, vy_chassis, final_wz, _ctx.cmd->track_en, missing_wheel);
 
     // 麦轮转速分配 (右侧反转视底层驱动而定，此处按常规处理)
     _ctx.data.target_wheel_rpm[0] =
@@ -175,7 +224,7 @@ void hybrid_chassis_t::_leg_vmc()
     // 1. 计算姿态维稳所需的宏观虚拟力
     const float f_pitch =
         _ctx.pid.pitch_pid->calculate(_ctx.data.target_pitch_rad, pitch);
-    const float f_roll = _ctx.pid.roll_pid->calculate(0.0f, roll);
+    const float f_roll = _ctx.pid.roll_pid->calculate(0,roll);
 
     for (int i = 0; i < 2; i++)
     {

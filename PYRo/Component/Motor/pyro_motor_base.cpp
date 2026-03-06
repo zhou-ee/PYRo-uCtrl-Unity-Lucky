@@ -38,5 +38,9 @@ bool motor_base_t::is_enable(void)
     return _enable;
 }
 
+bool motor_base_t::is_online(void)
+{
+    return _online;
+}
 
 } // namespace pyro

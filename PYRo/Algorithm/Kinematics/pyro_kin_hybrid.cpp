@@ -48,56 +48,69 @@ hybrid_kin_t::hybrid_kin_t(const float track_spacing,
 // Kinematics Solver / 运动学解算器
 // ============================================================================
 hybrid_kin_t::hybrid_speeds_t
-hybrid_kin_t::solve(const float vx, const float vy, const float wz, const bool track_en) const
+hybrid_kin_t::solve(const float vx, const float vy, const float wz, const bool track_en, const missing_mec_e missing) const
 {
-    hybrid_speeds_t ws{}; // Zero initialize / 初始化为零
+    hybrid_speeds_t ws{}; // 初始化为零
 
-    // Pre-calculate rotational velocity components for each independent wheel
-    // 根据各自的K值，预计算每个轮子因旋转产生的切向速度分量 (v = wz * K)
     const float v_rot_fl = wz * _k_fl;
     const float v_rot_fr = wz * _k_fr;
     const float v_rot_bl = wz * _k_bl;
     const float v_rot_br = wz * _k_br;
 
-    if (!track_en)
+    // --- 1. Mecanum Control Allocation / 麦轮推力重分配逻辑 ---
+    switch (missing)
     {
-        // --- Mode: CRUISING / 巡航模式 ---
-        // Tracks are lifted or idle. Only Mecanum handles full Omni-directional movement.
-        // 履带悬空或怠速。纯麦轮提供全向移动能力。
-        ws.track_l = 0.0f;
-        ws.track_r = 0.0f;
+        case missing_mec_e::FL:
+            ws.mec_fl = 0.0f;
+            ws.mec_fr = vy + v_rot_fr;     // 去除 vx
+            ws.mec_bl = vx - v_rot_bl;     // 去除 vy
+            ws.mec_br = vx - vy;           // 去除 wz
+            break;
 
-        // Apply independent rotation components
-        // 麦轮公式：代入各自独立的旋转分量
-        ws.mec_fl = vx - vy - v_rot_fl;
-        ws.mec_fr = vx + vy + v_rot_fr;
-        ws.mec_bl = vx + vy - v_rot_bl;
-        ws.mec_br = vx - vy + v_rot_br;
+        case missing_mec_e::FR:
+            ws.mec_fl = -vy - v_rot_fl;    // 去除 vx
+            ws.mec_fr = 0.0f;
+            ws.mec_bl = vx + vy;           // 去除 wz
+            ws.mec_br = vx + v_rot_br;     // 去除 vy
+            break;
+
+        case missing_mec_e::BL:
+            ws.mec_fl = vx - v_rot_fl;     // 去除 vy
+            ws.mec_fr = vx + vy;           // 去除 wz
+            ws.mec_bl = 0.0f;
+            ws.mec_br = -vy + v_rot_br;    // 去除 vx
+            break;
+
+        case missing_mec_e::BR:
+            ws.mec_fl = vx - vy;           // 去除 wz
+            ws.mec_fr = vx + v_rot_fr;     // 去除 vy
+            ws.mec_bl = vy - v_rot_bl;     // 去除 vx
+            ws.mec_br = 0.0f;
+            break;
+
+        case missing_mec_e::NONE:
+        default:
+            // 标准 4 轮全向解算
+            ws.mec_fl = vx - vy - v_rot_fl;
+            ws.mec_fr = vx + vy + v_rot_fr;
+            ws.mec_bl = vx + vy - v_rot_bl;
+            ws.mec_br = vx - vy + v_rot_br;
+            break;
     }
-    else
-    {
-        // --- Mode: CLIMBING (OBSTACLE) / 爬坡(越障)模式 ---
-        // 1. Force Vy to 0.
-        // Physics constraint: Tracks have immense friction sideways. Attempting to strafe will stall motors.
-        // 物理限制：履带横向摩擦力极大，履带接地时强行横移会导致电机堵转，因此强制 Vy = 0。
-        // constexpr float effective_vy = 0.0f;
 
-        // 2. Tracks Logic (Differential Drive)
-        // 履带差速逻辑：只提供前进和基于左右间距的旋转差速
+    // --- 2. Track Logic / 履带逻辑 ---
+    if (track_en)
+    {
+        // 爬坡模式：履带提供前后和旋转差速
         const float v_rot_track = wz * _k_track;
         ws.track_l = vx - v_rot_track;
         ws.track_r = vx + v_rot_track;
-
-        // 3. Mecanum Logic (Assisting Differential Drive)
-        // 麦轮辅助逻辑：即使无横移，麦轮仍需输出准确的旋转速度以配合履带，防止产生拖拽阻力
-        // ws.mec_fl = vx - effective_vy - v_rot_fl;
-        // ws.mec_fr = vx + effective_vy + v_rot_fr;
-        // ws.mec_bl = vx + effective_vy - v_rot_bl;
-        // ws.mec_br = vx - effective_vy + v_rot_br;
-        ws.mec_fl = vx - vy - v_rot_fl;
-        ws.mec_fr = vx + vy + v_rot_fr;
-        ws.mec_bl = vx + vy - v_rot_bl;
-        ws.mec_br = vx - vy + v_rot_br;
+    }
+    else
+    {
+        // 巡航模式：履带悬空或怠速
+        ws.track_l = 0.0f;
+        ws.track_r = 0.0f;
     }
 
     return ws;
