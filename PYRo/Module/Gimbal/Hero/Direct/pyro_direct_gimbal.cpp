@@ -85,6 +85,12 @@ void direct_gimbal_t::_update_feedback()
     // _ctx.data.current_yaw_radps = _ctx.motor.yaw->get_current_rotate();
 }
 
+direct_gimbal_t::gimbal_context_t direct_gimbal_t::get_ctx() const
+{
+    return _ctx;
+}
+
+
 void direct_gimbal_t::_gimbal_control(gimbal_context_t *ctx)
 {
 
@@ -121,6 +127,7 @@ void direct_gimbal_t::_send_motor_command(gimbal_context_t *ctx)
     // ctx->motor.pitch->send_torque(0);
     // ctx->motor.yaw->send_torque(0);
 }
+
 
 // =========================================================
 // 状态机逻辑

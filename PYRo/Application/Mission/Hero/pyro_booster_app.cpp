@@ -9,10 +9,11 @@
 
 using namespace pyro;
 
-pyro::quad_booster_t *quad_booster_ptr             = nullptr;
-pyro::quad_booster_cmd_t *quad_booster_cmd_ptr     = nullptr;
-extern StateBytes *state_bytes;
+extern StateBytes state_bytes;
+extern float read_time;
 
+static pyro::quad_booster_t *quad_booster_ptr             = nullptr;
+static pyro::quad_booster_cmd_t *quad_booster_cmd_ptr     = nullptr;
 static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
 static pyro::vt03_drv_t::vt03_ctrl_t const *vt03_ctrl_ptr = nullptr;
 extern "C"
@@ -56,7 +57,7 @@ extern "C"
     {
         pyro::read_scope_lock lock(
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->get_lock());
-        if (vt03_drv_t::gear_state_t::GEAR_MID != rc_ctrl->rc.gear.state)
+        if (vt03_drv_t::gear_state_t::GEAR_LEFT == rc_ctrl->rc.gear.state)
         {
             quad_booster_cmd_ptr->mode    = pyro::cmd_base_t::mode_t::PASSIVE;
             quad_booster_cmd_ptr->fric_on = false;
@@ -83,6 +84,18 @@ extern "C"
         // 开火控制 (单发）
         static float trigger_using_time    = 0;
         static float mouse_left_using_time = 0;
+        static bool autoaim_fire_flag = 0;
+        if (state_bytes.input_data.fire == 0)
+        {
+            autoaim_fire_flag = true;
+        }
+        if (autoaim_fire_flag)
+        {
+            if (state_bytes.input_data.fire == 1)
+            {
+                quad_booster_cmd_ptr->fire_enable = true;
+            }
+        }
         if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->rc.trigger.ctrl &&
             rc_ctrl->rc.trigger.change_time != trigger_using_time)
         {

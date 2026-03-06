@@ -4,16 +4,15 @@
 #include "pyro_quad_booster.h"
 #include "struct.h"
 #include "pyro_crc.h"
+#include "pyro_dwt_drv.h"
 
 using namespace pyro;
 
 pyro::uart_comm_t *uart_comm_ptr = nullptr;
 
-extern pyro::direct_gimbal_t *direct_gimbal_ptr;
-extern pyro::quad_booster_t *quad_booster_ptr;
-
-OperateBytes *operate_bytes = nullptr;
-StateBytes *state_bytes = nullptr;
+__attribute__((section(".dma_heap"))) OperateBytes operate_bytes;
+StateBytes state_bytes;
+float read_time;
 
 extern "C"
 {
@@ -22,8 +21,18 @@ extern "C"
         while (true)
         {
             uart_comm_ptr->read(state_bytes, sizeof(StateBytes));
-            operate_bytes->frame_header.sof = 0xA5;
-            // uart_drv_t::get_instance(uart_drv_t::which_uart::uart10)->write((uint8_t*)operate_bytes, sizeof(OperateBytes),100);
+            operate_bytes.frame_header.sof = 0xA5;
+            operate_bytes.output_data.curr_yaw = direct_gimbal_t::instance()->get_ctx().data.current_yaw_rad;   // 应该显示为 00 00 80 3F
+            operate_bytes.output_data.curr_pitch = direct_gimbal_t::instance()->get_ctx().data.current_pitch_rad; // 应该显示为 00 00 00 40
+            operate_bytes.output_data.state = 0x00;
+            operate_bytes.output_data.autoaim = 0x01;
+            operate_bytes.output_data.enemy_color = 0x0;
+            operate_bytes.output_data.curr_speed = 0.0f;
+            operate_bytes.output_data.shoot_delay = (uint16_t)quad_booster_t::instance()
+                    ->get_ctx()
+                    .data.avg_launch_delay;
+            append_crc16_check_sum((uint8_t*)&operate_bytes,sizeof(OperateBytes));
+            uart_drv_t::get_instance(uart_drv_t::which_uart::uart7)->write((uint8_t*)&operate_bytes, sizeof(OperateBytes));
             vTaskDelay(1);
         }
     }
@@ -34,14 +43,10 @@ extern "C"
             new uart_comm_t(uart_drv_t::which_uart::uart7, 0x10, 256);
         uint8_t sof = 0xA5;
         uart_comm_ptr->register_msg_type(sizeof(StateBytes), &sof, 1);
-        operate_bytes = new OperateBytes();
-        operate_bytes->frame_header.sof = sof;
-        append_crc16_check_sum((uint8_t*)operate_bytes,sizeof(OperateBytes));
-        state_bytes = new StateBytes();
-        state_bytes = {};
+
         xTaskCreate(hero_pc_com_thread, "start_hero_pc_com_thread", 128,
 
-                    nullptr, configMAX_PRIORITIES - 1, nullptr);
+                    nullptr, configMAX_PRIORITIES - 4, nullptr);
         vTaskDelete(nullptr);
     }
 }

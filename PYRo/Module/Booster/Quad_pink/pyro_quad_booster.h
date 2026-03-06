@@ -26,16 +26,17 @@ struct quad_booster_cmd_t final : public cmd_base_t
 
 struct quad_booster_cfg_t
 {
-
 };
 
 // =========================================================
 // 2. 四轮发射机构类
 // =========================================================
 class quad_booster_t final
-    : public module_base_t<quad_booster_t, quad_booster_cmd_t,quad_booster_cfg_t>
+    : public module_base_t<quad_booster_t, quad_booster_cmd_t,
+                           quad_booster_cfg_t>
 {
-    friend class module_base_t<quad_booster_t, quad_booster_cmd_t,quad_booster_cfg_t>;
+    friend class module_base_t<quad_booster_t, quad_booster_cmd_t,
+                               quad_booster_cfg_t>;
     friend class jcom_drv_t;
 
     struct motor_ctx_t;
@@ -46,6 +47,7 @@ class quad_booster_t final
   public:
     quad_booster_t(const quad_booster_t &)            = delete;
     quad_booster_t &operator=(const quad_booster_t &) = delete;
+    [[nodiscard]] booster_ctx_t get_ctx() const;
 
   private:
     quad_booster_t();
@@ -86,11 +88,12 @@ class quad_booster_t final
     struct data_ctx_t
     {
         float launch_delay_timer[3]{}; // 发射延时计时器
+        float avg_launch_delay{0};       // 平均发射延时
         float signal_timer{0};         // 信号持续时间计时器
         uint32_t fresh_timer{0};       // <-- 新增：发弹延迟计算的刷新计时器
         // 核心逻辑变量
-        float last_rotor_rad{0};     // 上一次的转子角度
-        float total_trig_rad{0};     // 累计的输出轴角度（未归一化）
+        float last_rotor_rad{0}; // 上一次的转子角度
+        float total_trig_rad{0}; // 累计的输出轴角度（未归一化）
 
         // 反馈
         float current_fric_mps[4]{};
@@ -138,7 +141,7 @@ class quad_booster_t final
         void execute(owner *owner) override;
         void exit(owner *owner) override;
 
-    private:
+      private:
         bool _trigger_stopped{false}; // 用于确保拨弹盘完全停止后发0
     };
 
@@ -149,7 +152,8 @@ class quad_booster_t final
             void enter(owner *owner) override;
             void execute(owner *owner) override;
             void exit(owner *owner) override;
-        private:
+
+          private:
             float _homing_turnback_start_time{0.0f};
         };
         struct state_interim_t final : public state_t<owner>

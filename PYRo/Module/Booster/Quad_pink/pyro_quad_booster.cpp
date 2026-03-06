@@ -197,6 +197,11 @@ void quad_booster_t::_speed_contorl()
     }
 }
 
+quad_booster_t::booster_ctx_t quad_booster_t::get_ctx() const
+{
+    return _ctx;
+}
+
 void quad_booster_t::_launch_delay_calculate()
 {
     // 2. 发弹延迟计算
@@ -214,6 +219,7 @@ void quad_booster_t::_launch_delay_calculate()
         _ctx.data.launch_delay_timer[2] = _ctx.data.launch_delay_timer[1];
         _ctx.data.launch_delay_timer[1] = _ctx.data.launch_delay_timer[0];
         _ctx.data.launch_delay_timer[0] = dwt_drv_t::get_timeline_ms() - _ctx.data.signal_timer + 16;
+        _ctx.data.avg_launch_delay = 0.7f * _ctx.data.launch_delay_timer[0] + 0.2f * _ctx.data.launch_delay_timer[1] + 0.1f * _ctx.data.launch_delay_timer[2];
         _ctx.data.fresh_timer = 0;
     }
 }

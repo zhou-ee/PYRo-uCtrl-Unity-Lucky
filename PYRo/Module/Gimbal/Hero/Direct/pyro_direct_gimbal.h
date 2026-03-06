@@ -18,19 +18,26 @@ struct direct_gimbal_cmd_t final : public cmd_base_t
     float pitch_delta_angle; // 目标 Pitch 角度 (rad)
     float yaw_delta_angle;   // 目标 Yaw 角度 (rad)
 
-    direct_gimbal_cmd_t() : pitch_delta_angle(0.0f), yaw_delta_angle(0.0f) {}
+    // 自瞄数据
+    bool auto_aim;
+    float target_pitch;
+    float target_yaw;
+
+    direct_gimbal_cmd_t() : pitch_delta_angle(0.0f), yaw_delta_angle(0.0f),auto_aim(false),target_pitch(0.0f),target_yaw(0.0f)
+    {
+    }
 };
 
 struct direct_gimbal_config_t
 {
-
 };
 
 // =========================================================
 // 2. 云台类
 // =========================================================
 class direct_gimbal_t final
-    : public module_base_t<direct_gimbal_t, direct_gimbal_cmd_t, direct_gimbal_config_t>
+    : public module_base_t<direct_gimbal_t, direct_gimbal_cmd_t,
+                           direct_gimbal_config_t>
 {
     friend class module_base_t;
 
@@ -39,6 +46,8 @@ class direct_gimbal_t final
     struct data_ctx_t;
     struct gimbal_context_t;
 
+  public:
+    [[nodiscard]] gimbal_context_t get_ctx() const;
 
   private:
     direct_gimbal_t();
@@ -139,9 +148,8 @@ class direct_gimbal_t final
     static constexpr float PITCH_OFFSET_RAD = 0.0f;
     static constexpr float YAW_OFFSET_RAD   = 0.0f;
 
-    static constexpr float PITCH_MAX_RAD = 0.2f; // 57.3 deg
-    static constexpr float PITCH_MIN_RAD = -0.6f; // -57.
-
+    static constexpr float PITCH_MAX_RAD    = 0.2f;  // 57.3 deg
+    static constexpr float PITCH_MIN_RAD    = -0.6f; // -57.
 };
 
 } // namespace pyro

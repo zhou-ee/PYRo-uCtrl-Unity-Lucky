@@ -8,16 +8,16 @@
 #include "struct.h"
 
 using namespace pyro;
-pyro::direct_gimbal_t *direct_gimbal_ptr           = nullptr;
-pyro::direct_gimbal_cmd_t *direct_gimbal_cmd_ptr   = nullptr;
-extern pyro::uart_comm_t *uart_comm_ptr;
-extern StateBytes *state_bytes;
+static pyro::direct_gimbal_t *direct_gimbal_ptr           = nullptr;
+static pyro::direct_gimbal_cmd_t *direct_gimbal_cmd_ptr   = nullptr;
 static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
 static pyro::vt03_drv_t::vt03_ctrl_t const *vt03_ctrl_ptr = nullptr;
 static void gimbal_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl);
 static void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl);
 static void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl);
 static void chassis_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl);
+
+extern StateBytes state_bytes;
 
 extern "C"
 {
@@ -77,7 +77,7 @@ void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
 {
     pyro::read_scope_lock lock(
         pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->get_lock());
-    if (vt03_drv_t::gear_state_t::GEAR_MID != rc_ctrl->rc.gear.state)
+    if (vt03_drv_t::gear_state_t::GEAR_LEFT == rc_ctrl->rc.gear.state)
     {
         direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
         direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
@@ -85,10 +85,27 @@ void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
         return;
     }
     direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-    direct_gimbal_cmd_ptr->pitch_delta_angle =
-        -rc_ctrl->rc.ch_ry * 0.0035f - rc_ctrl->mouse.y * 0.1f;
-    direct_gimbal_cmd_ptr->yaw_delta_angle =
-        -rc_ctrl->rc.ch_rx * 0.0035f - rc_ctrl->mouse.x * 0.1f;
+    if (vt03_drv_t::gear_state_t::GEAR_RIGHT == rc_ctrl->rc.gear.state)
+    {
+        direct_gimbal_cmd_ptr->auto_aim = true;
+    }
+    else
+    {
+        direct_gimbal_cmd_ptr->auto_aim = false;
+    }
+    if (direct_gimbal_cmd_ptr->auto_aim)
+    {
+        direct_gimbal_cmd_ptr->target_pitch =
+            state_bytes.input_data.shoot_pitch;
+        direct_gimbal_cmd_ptr->target_yaw = state_bytes.input_data.shoot_yaw;
+    }
+    else
+    {
+        direct_gimbal_cmd_ptr->pitch_delta_angle =
+            -rc_ctrl->rc.ch_ry * 0.0035f - rc_ctrl->mouse.y * 0.1f;
+        direct_gimbal_cmd_ptr->yaw_delta_angle =
+            -rc_ctrl->rc.ch_rx * 0.0035f - rc_ctrl->mouse.x * 0.1f;
+    }
 }
 
 void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
