@@ -2,9 +2,11 @@
 #include "pyro_algo_common.h"
 #include "pyro_com_canrx.h"
 #include "pyro_dwt_drv.h"
-
+#include "E:\Develop\a_PYRo\PYRo-uCtrl-Unity-Lucky\PYRo\Application\Mission\Hero\struct.h"
 #include <cmath>
 
+float avg_delay = 0.0f;
+extern OperateBytes operate_bytes;
 namespace pyro
 {
 
@@ -220,6 +222,7 @@ void quad_booster_t::_launch_delay_calculate()
         _ctx.data.launch_delay_timer[1] = _ctx.data.launch_delay_timer[0];
         _ctx.data.launch_delay_timer[0] = dwt_drv_t::get_timeline_ms() - _ctx.data.signal_timer + 16;
         _ctx.data.avg_launch_delay = 0.7f * _ctx.data.launch_delay_timer[0] + 0.2f * _ctx.data.launch_delay_timer[1] + 0.1f * _ctx.data.launch_delay_timer[2];
+        operate_bytes.output_data.shoot_delay = static_cast<uint16_t>(_ctx.data.avg_launch_delay);
         _ctx.data.fresh_timer = 0;
     }
 }
