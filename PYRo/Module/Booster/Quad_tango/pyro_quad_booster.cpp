@@ -2,8 +2,11 @@
 #include "pyro_algo_common.h"
 #include "pyro_com_canrx.h"
 #include "pyro_dwt_drv.h"
+#include "E:\Develop\a_PYRo\PYRo-uCtrl-Unity-Lucky\PYRo\Application\Mission\Hero_hybrid\struct.h"
 #include <cmath>
 #include "quad_config.h"
+
+extern OperateBytes operate_bytes;
 
 namespace pyro
 {
@@ -159,6 +162,8 @@ void quad_booster_t::_launch_delay_calculate()
         _ctx.data.launch_delay_timer[2] = _ctx.data.launch_delay_timer[1];
         _ctx.data.launch_delay_timer[1] = _ctx.data.launch_delay_timer[0];
         _ctx.data.launch_delay_timer[0] = dwt_drv_t::get_timeline_ms() - _ctx.data.signal_timer + 16;
+        _ctx.data.avg_launch_delay = 0.7f * _ctx.data.launch_delay_timer[0] + 0.2f * _ctx.data.launch_delay_timer[1] + 0.1f * _ctx.data.launch_delay_timer[2];
+        operate_bytes.output_data.shoot_delay = static_cast<uint16_t>(_ctx.data.avg_launch_delay);
         _ctx.data.fresh_timer = 0;
     }
 }
@@ -211,6 +216,11 @@ void quad_booster_t::_send_fric_command() const
 void quad_booster_t::_send_trigger_command() const
 {
     _ctx.motor.trigger_wheel->send_torque(_ctx.data.out_trig_torque);
+}
+
+quad_booster_t::booster_ctx_t quad_booster_t::get_ctx() const
+{
+    return _ctx;
 }
 
 } // namespace pyro

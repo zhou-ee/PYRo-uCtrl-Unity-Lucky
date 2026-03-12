@@ -1,6 +1,6 @@
 #include "pyro_core_dma_heap.h"
 #include "pyro_uart_comm.h"
-#include "pyro_direct_gimbal.h"
+#include "pyro_screw_gimbal.h"
 #include "pyro_quad_booster.h"
 #include "struct.h"
 #include "pyro_crc.h"
@@ -19,13 +19,13 @@ extern "C"
 {
     void hero_pc_com_thread(void *argument)
     {
-        vTaskDelay(500);
+        vTaskDelay(1000);
         while (true)
         {
             uart_comm_ptr->read(state_bytes, sizeof(StateBytes));
             operate_bytes.frame_header.sof = 0xA5;
-            operate_bytes.output_data.curr_yaw = direct_gimbal_t::instance()->get_ctx().data.current_yaw_rad;   // 应该显示为 00 00 80 3F
-            operate_bytes.output_data.curr_pitch = direct_gimbal_t::instance()->get_ctx().data.current_pitch_rad; // 应该显示为 00 00 00 40
+            operate_bytes.output_data.curr_yaw = screw_gimbal_t::instance()->get_ctx().data.current_yaw_rad;   // 应该显示为 00 00 80 3F
+            operate_bytes.output_data.curr_pitch = screw_gimbal_t::instance()->get_ctx().data.current_pitch_rad; // 应该显示为 00 00 00 40
             operate_bytes.output_data.state = 0x00;
             operate_bytes.output_data.autoaim = 0x01;
             operate_bytes.output_data.enemy_color = 0x0;

@@ -61,6 +61,7 @@ class quad_booster_t final
     // --- 内部辅助 ---
     void _speed_contorl();
     void _fric_control();
+    bool _heat_control();
     void _trigger_position_control();
     void _trigger_speed_control();
     void _send_fric_command() const;
@@ -100,6 +101,9 @@ class quad_booster_t final
         float current_trig_radps{0};
         float current_trig_torque{0};
         float current_trig_rad{0}; // -PI ~ PI (归一化后的输出)
+
+        uint16_t current_heat{0};
+        uint16_t current_heat_limit{0};
 
         // 目标
         float target_fric_mps[4]{};

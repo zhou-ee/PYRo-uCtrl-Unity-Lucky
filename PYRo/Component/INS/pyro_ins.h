@@ -38,8 +38,7 @@ public:
     status_t get_gyro_n(float* g_yaw, float* g_pitch, float* g_roll);
     status_t get_accel_b(float* accel_x, float* accel_y, float* accel_z);
     status_t get_accel_n(float* accel_x, float* accel_y, float* accel_z);
-
-
+    status_t get_quaternion(float* q0, float* q1, float* q2, float* q3);
 };
 }
 #endif

@@ -51,6 +51,7 @@ status_t quad_booster_t::_init()
 
     // 3. 弹速控制初始化
     can_rx_drv_t::subscribe(can_hub_t::can3, 0x102);
+    can_rx_drv_t::subscribe(can_hub_t::can3, 0x103);
     _ctx.pid.ball_speed_pid = new pid_t(0.25f, 0.0f, 0.005f, 0.0f, 2.0f);
 
     return PYRO_OK;
@@ -212,17 +213,23 @@ void quad_booster_t::_launch_delay_calculate()
 
     _ctx.data.fresh_timer++;
 
-    if (_ctx.shoot_data.fric1_mps - std::abs(_ctx.data.current_fric_mps[1]) > 1.15f &&
-        _ctx.shoot_data.fric1_mps - std::abs(_ctx.data.current_fric_mps[3]) > 1.15f &&
+    if (_ctx.shoot_data.fric1_mps - std::abs(_ctx.data.current_fric_mps[1]) >
+            1.15f &&
+        _ctx.shoot_data.fric1_mps - std::abs(_ctx.data.current_fric_mps[3]) >
+            1.15f &&
         std::abs(_ctx.data.current_fric_torque[1]) > 5.5f &&
         std::abs(_ctx.data.current_fric_torque[2]) > 5.5f &&
         _ctx.data.fresh_timer > 1000)
     {
         _ctx.data.launch_delay_timer[2] = _ctx.data.launch_delay_timer[1];
         _ctx.data.launch_delay_timer[1] = _ctx.data.launch_delay_timer[0];
-        _ctx.data.launch_delay_timer[0] = dwt_drv_t::get_timeline_ms() - _ctx.data.signal_timer + 16;
-        _ctx.data.avg_launch_delay = 0.7f * _ctx.data.launch_delay_timer[0] + 0.2f * _ctx.data.launch_delay_timer[1] + 0.1f * _ctx.data.launch_delay_timer[2];
-        operate_bytes.output_data.shoot_delay = static_cast<uint16_t>(_ctx.data.avg_launch_delay);
+        _ctx.data.launch_delay_timer[0] =
+            dwt_drv_t::get_timeline_ms() - _ctx.data.signal_timer + 16;
+        _ctx.data.avg_launch_delay = 0.7f * _ctx.data.launch_delay_timer[0] +
+                                     0.2f * _ctx.data.launch_delay_timer[1] +
+                                     0.1f * _ctx.data.launch_delay_timer[2];
+        operate_bytes.output_data.shoot_delay =
+            static_cast<uint16_t>(_ctx.data.avg_launch_delay);
         _ctx.data.fresh_timer = 0;
     }
 }
@@ -235,6 +242,24 @@ void quad_booster_t::_fric_control()
             _ctx.data.target_fric_mps[i], _ctx.data.current_fric_mps[i]);
     }
 }
+
+bool quad_booster_t::_heat_control()
+{
+    std::array<uint8_t, 8> raw_data{};
+    can_rx_drv_t::get_data(pyro::can_hub_t::can3, 0x103, raw_data);
+    _ctx.data.current_heat = *reinterpret_cast<uint16_t *>(raw_data.data());
+    _ctx.data.current_heat_limit = *reinterpret_cast<uint16_t *>(raw_data.data() + 2);
+
+    if (_ctx.data.current_heat + 100 < _ctx.data.current_heat_limit)
+    {
+        return true; // 安全，继续发射
+    }
+    else
+    {
+        return false; // 过热，停止发射
+    }
+}
+
 
 void quad_booster_t::_trigger_position_control()
 {

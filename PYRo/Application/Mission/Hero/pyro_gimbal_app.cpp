@@ -61,17 +61,27 @@ void gimbal_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
     pyro::read_scope_lock lock(
         pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
 
-    if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
+    if (pyro::dr16_drv_t::sw_state_t::SW_DOWN == rc_ctrl->rc.s_r.state)
     {
         direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
         direct_gimbal_cmd_ptr->pitch_delta_angle = 0;
         direct_gimbal_cmd_ptr->yaw_delta_angle   = 0;
         return;
     }
-    direct_gimbal_cmd_ptr->mode              = pyro::cmd_base_t::mode_t::ACTIVE;
-
-    direct_gimbal_cmd_ptr->pitch_delta_angle = -rc_ctrl->rc.ch_ry * 0.002f;
-    direct_gimbal_cmd_ptr->yaw_delta_angle   = -rc_ctrl->rc.ch_rx * 0.0035f;
+    direct_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
+    if (pyro::dr16_drv_t::sw_state_t::SW_UP == rc_ctrl->rc.s_r.state)
+    {
+        direct_gimbal_cmd_ptr->auto_aim = true;
+        direct_gimbal_cmd_ptr->target_pitch =
+            state_bytes.input_data.shoot_pitch;
+        direct_gimbal_cmd_ptr->target_yaw = state_bytes.input_data.shoot_yaw;
+    }
+    else
+    {
+        direct_gimbal_cmd_ptr->auto_aim          = false;
+        direct_gimbal_cmd_ptr->pitch_delta_angle = -rc_ctrl->rc.ch_ry * 0.002f;
+        direct_gimbal_cmd_ptr->yaw_delta_angle   = -rc_ctrl->rc.ch_rx * 0.0035f;
+    }
 }
 void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
 {

@@ -304,3 +304,16 @@ status_t ins_drv_t::get_accel_n(float *accel_x, float *accel_y, float *accel_z)
     *accel_z = _acc_n[Z];
     return PYRO_OK;
 }
+
+status_t ins_drv_t::get_quaternion(float *q0, float *q1, float *q2, float *q3)
+{
+    if (q0 == nullptr || q1 == nullptr || q2 == nullptr || q3 == nullptr)
+    {
+        return PYRO_ERROR;
+    }
+    *q0 = _q[0];
+    *q1 = _q[1];
+    *q2 = _q[2];
+    *q3 = _q[3];
+    return PYRO_OK;
+}

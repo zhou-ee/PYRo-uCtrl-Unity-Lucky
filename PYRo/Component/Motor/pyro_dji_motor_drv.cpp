@@ -136,6 +136,8 @@ status_t dji_motor_drv_t::update_feedback()
         _last_update_time = dwt_drv_t::get_timeline_s();
     }
 
+    _online = true;
+
     _current_position = ((float)((uint16_t)((data[0] << 8) | (data[1])))) /
                         8192.0f * 2 * PI;
     if(_current_position > PI)

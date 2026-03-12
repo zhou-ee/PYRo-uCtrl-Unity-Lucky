@@ -2,9 +2,9 @@
 #include "pyro_rc_hub.h"
 #include "pyro_dwt_drv.h"
 #include "pyro_ins.h"
+#include "pyro_ms53l0m_drv.h"
 #include "pyro_supercap_drv.h"
 #include "pyro_referee.h"
-#include "pyro_vl53_drv.h"
 
 namespace pyro
 {
@@ -15,6 +15,7 @@ extern "C"
     can_drv_t *can3_drv;
     ins_drv_t *ins_drv;
     referee_drv_t *referee_drv;
+    ms53l0m_drv_t *ms53l0m_drv;
 
 
     void pyro_init_thread(void *argument)
@@ -52,8 +53,9 @@ extern "C"
 
         supercap_drv_t::get_instance()->start_rx();
 
-        // vl53_drv_t::get_instance().init(
-        //     uart_drv_t::get_instance(uart_drv_t::which_uart::uart10));
+        // ms53l0m_drv = ms53l0m_drv_t::get_instance();
+        // ms53l0m_drv->init();
+
 
         vTaskDelete(nullptr);
     }

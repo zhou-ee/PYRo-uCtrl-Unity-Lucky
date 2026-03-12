@@ -3,8 +3,7 @@
 #include <arm_math.h> // 引入 CMSIS-DSP 库
 #include "pyro_dji_motor_drv.h"
 #include "pyro_com_cantx.h"
-#include "pyro_kin_mec.h"
-#include "pyro_vl53_drv.h"
+#include "pyro_power_control_drv.h"
 
 namespace pyro
 {
@@ -32,6 +31,29 @@ status_t hybrid_chassis_t::_init()
 
     return PYRO_OK;
 }
+
+void hybrid_chassis_t::_power_control_init()
+{
+    power_control_drv_t::motor_coefficient_t coef[4];
+
+    for (auto &[k1, k2, k3, k4] : coef)
+    {
+        // k1 = 0.0160f;//0.0155//0.0260
+        // k2 = 0.0250f;//1.6000//0.0460
+        // k3 = 0.1742f;//0.0010//0.1066
+        // k4 = 0.5815f;//0.7500//0.7500
+        k1 = 0.0260f; // 0.0155
+        k2 = 0.0460f; // 1.6000
+        k3 = 0.1100f; // 0.0010
+        k4 = 0.7500f; // 0.7500
+    }
+
+    power_control_drv_t::get_instance(4).set_motor_coefficient(1, coef[0]);
+    power_control_drv_t::get_instance(4).set_motor_coefficient(2, coef[1]);
+    power_control_drv_t::get_instance(4).set_motor_coefficient(3, coef[2]);
+    power_control_drv_t::get_instance(4).set_motor_coefficient(4, coef[3]);
+}
+
 
 void hybrid_chassis_t::_update_feedback()
 {
@@ -82,11 +104,6 @@ void hybrid_chassis_t::_update_feedback()
         -_ctx.motor.leg[1]->get_current_position() - RIGHT_LEG_OFFSET_RAD;
     _ctx.data.current_leg_rad[1] = loop_fp32_constrain(right_leg_raw, -PI, PI);
     _ctx.data.current_leg_radps[1] = -_ctx.motor.leg[1]->get_current_rotate();
-
-    if (vl53_drv_t::get_instance().is_data_fresh())
-    {
-        _ctx.data.distance_mm = vl53_drv_t::get_instance().get_distance();
-    }
 }
 
 // =========================================================
@@ -148,36 +165,36 @@ void hybrid_chassis_t::_kinematics_solve()
     int offline_count   = 0;
     auto missing_wheel  = hybrid_kin_t::missing_mec_e::NONE;
 
-    // 根据数组索引对应找出具体离线的轮子 (0:FL, 1:FR, 2:BL, 3:BR)
-    if (!_ctx.data.wheel_online[0])
-    {
-        offline_count++;
-        missing_wheel = hybrid_kin_t::missing_mec_e::FL;
-    }
-    if (!_ctx.data.wheel_online[1])
-    {
-        offline_count++;
-        missing_wheel = hybrid_kin_t::missing_mec_e::FR;
-    }
-    if (!_ctx.data.wheel_online[2])
-    {
-        offline_count++;
-        missing_wheel = hybrid_kin_t::missing_mec_e::BL;
-    }
-    if (!_ctx.data.wheel_online[3])
-    {
-        offline_count++;
-        missing_wheel = hybrid_kin_t::missing_mec_e::BR;
-    }
-
-    // 如果有两个或以上的轮子离线，失去冗余控制能力，强制速度全为 0
-    if (offline_count >= 2)
-    {
-        vx_chassis    = 0.0f;
-        vy_chassis    = 0.0f;
-        final_wz      = 0.0f;
-        missing_wheel = hybrid_kin_t::missing_mec_e::NONE; // 速度全为0
-    }
+    // // 根据数组索引对应找出具体离线的轮子 (0:FL, 1:FR, 2:BL, 3:BR)
+    // if (!_ctx.data.wheel_online[0])
+    // {
+    //     offline_count++;
+    //     missing_wheel = hybrid_kin_t::missing_mec_e::FL;
+    // }
+    // if (!_ctx.data.wheel_online[1])
+    // {
+    //     offline_count++;
+    //     missing_wheel = hybrid_kin_t::missing_mec_e::FR;
+    // }
+    // if (!_ctx.data.wheel_online[2])
+    // {
+    //     offline_count++;
+    //     missing_wheel = hybrid_kin_t::missing_mec_e::BL;
+    // }
+    // if (!_ctx.data.wheel_online[3])
+    // {
+    //     offline_count++;
+    //     missing_wheel = hybrid_kin_t::missing_mec_e::BR;
+    // }
+    //
+    // // 如果有两个或以上的轮子离线，失去冗余控制能力，强制速度全为 0
+    // if (offline_count >= 2)
+    // {
+    //     vx_chassis    = 0.0f;
+    //     vy_chassis    = 0.0f;
+    //     final_wz      = 0.0f;
+    //     missing_wheel = hybrid_kin_t::missing_mec_e::NONE; // 速度全为0
+    // }
 
     // -------------------------------------------------------------
     // 4. 运动学解算 (带入缺失轮枚举)
@@ -212,6 +229,37 @@ void hybrid_chassis_t::_kinematics_solve()
     _ctx.data.target_pitch_rad = NORMAL_PITCH;
 }
 
+void hybrid_chassis_t::_power_control()
+{
+    for (int i = 0; i < 4; i++)
+    {
+        _ctx.power_motor_data[i].gyro       = _ctx.data.current_wheel_rpm[i];
+        _ctx.power_motor_data[i].torque_cmd = _ctx.data.out_mecanum_torque[i];
+        _ctx.power_motor_data[i].power_predict =
+            power_control_drv_t::get_instance().motor_power_predict(
+                i, _ctx.power_motor_data[i].torque_cmd,
+                _ctx.power_motor_data[i].gyro);
+    }
+    // if (_ctx.cap_feedback.vot_cap >= 1800)
+    // {
+    //     power_control_drv_t::get_instance().calculate_restricted_torques(
+    //         _ctx.power_motor_data, 4,
+    //         static_cast<float>(referee_drv_t::get_instance()
+    //                                ->get_data()
+    //                                .robot_status.chassis_power_limit) +
+    //             100.0f);
+    // }
+    // else
+    // {
+    power_control_drv_t::get_instance().calculate_restricted_torques(
+        _ctx.power_motor_data, 4, 240);
+    // }
+    for (int i = 0; i < 4; i++)
+        _ctx.data.out_mecanum_torque[i] =
+            _ctx.power_motor_data[i].restricted_torque;
+}
+
+
 void hybrid_chassis_t::_leg_vmc()
 {
     const float pitch     = _ctx.data.current_pitch_rad;
@@ -224,7 +272,7 @@ void hybrid_chassis_t::_leg_vmc()
     // 1. 计算姿态维稳所需的宏观虚拟力
     const float f_pitch =
         _ctx.pid.pitch_pid->calculate(_ctx.data.target_pitch_rad, pitch);
-    const float f_roll = _ctx.pid.roll_pid->calculate(0,roll);
+    const float f_roll = _ctx.pid.roll_pid->calculate(0, roll);
 
     for (int i = 0; i < 2; i++)
     {
@@ -420,6 +468,7 @@ void hybrid_chassis_t::_mecanum_control()
         _ctx.data.out_mecanum_torque[i] = _ctx.pid.mecanum_pid[i]->calculate(
             _ctx.data.target_wheel_rpm[i], _ctx.data.current_wheel_rpm[i]);
     }
+    _power_control();
     // _ctx.data.out_mecanum_torque[0] = 0;
     //  _ctx.data.out_mecanum_torque[1] = 0;
     //  // _ctx.data.out_mecanum_torque[2] = 0;

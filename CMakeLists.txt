@@ -103,7 +103,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Component/Referee/pyro_referee.cpp
         PYRo/Component/INS/pyro_ins.cpp
         PYRo/Component/Supercap/pyro_supercap_drv.cpp
-        PYRo/Component/VL53/pyro_vl53_drv.cpp
+        PYRo/Component/Measure/pyro_ms53l0m_drv.cpp
 
         # --- Module ---
 #        PYRo/Module/Chassis/Rudder/pyro_rud_chassis.cpp
@@ -209,11 +209,15 @@ elseif (ROBOT_ID EQUAL SUB_HERO_ID)
             PYRo/Module/Gimbal/Hero/Screw/pyro_screw_gimbal.cpp
             PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_active_state.cpp
             PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_passive_state.cpp
+
+            PYRo/Communication/Hero_hybrid/board_communicate.cpp
+            PYRo/Application/Mission/Hero_hybrid/pyro_pc_com.cpp
     )
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
             PYRo/Module/Booster/Quad_tango
             PYRo/Module/Chassis/Hybrid
             PYRo/Module/Gimbal/Hero/Screw
+            PYRo/Communication/Hero_hybrid
     )
 endif ()
 
@@ -260,7 +264,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Component/Referee
         PYRo/Component/Shoot
         PYRo/Component/Supercap
-        PYRo/Component/VL53
+        PYRo/Component/Measure
 
         # --- Module ---
         PYRo/Module

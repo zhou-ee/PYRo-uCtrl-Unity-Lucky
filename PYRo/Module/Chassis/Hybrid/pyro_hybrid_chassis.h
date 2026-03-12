@@ -7,6 +7,7 @@
 #include "pyro_motor_base.h"
 #include "pyro_ins.h" // 新增 IMU 依赖
 #include "hybrid_config.h"
+#include "pyro_power_control_drv.h"
 
 namespace pyro
 {
@@ -86,7 +87,9 @@ class hybrid_chassis_t final
     void _fsm_execute() override;
 
     // --- 派生方法 ---
+    static void _power_control_init();
     void _kinematics_solve();
+    void _power_control();
     void _mecanum_control();
     void _track_control();
     void _leg_vmc();
@@ -132,6 +135,7 @@ class hybrid_chassis_t final
         hybrid_deps_t::motor_deps_t motor;
         hybrid_deps_t::pid_deps_t pid;
         data_ctx_t data;
+        power_control_drv_t::motor_data_t power_motor_data[4]{};
         hybrid_cmd_t *cmd{};
     };
 

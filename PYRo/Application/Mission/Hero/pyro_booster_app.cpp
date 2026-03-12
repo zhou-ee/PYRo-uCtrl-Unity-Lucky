@@ -22,7 +22,7 @@ extern "C"
     {
         pyro::read_scope_lock lock(
             pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
-        if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
+        if (pyro::dr16_drv_t::sw_state_t::SW_DOWN == rc_ctrl->rc.s_r.state)
         {
             quad_booster_cmd_ptr->mode    = pyro::cmd_base_t::mode_t::PASSIVE;
             quad_booster_cmd_ptr->fric_on = false;
@@ -39,17 +39,41 @@ extern "C"
             sl_using_time                 = rc_ctrl->rc.s_l.change_time;
             quad_booster_cmd_ptr->fric_on = !quad_booster_cmd_ptr->fric_on;
         }
-        if (pyro::dr16_drv_t::sw_ctrl_t::SW_DOWN_TO_MID ==
-                rc_ctrl->rc.s_l.ctrl &&
-            rc_ctrl->rc.s_l.change_time != sl_using_time)
+
+        if (pyro::dr16_drv_t::sw_state_t::SW_MID == rc_ctrl->rc.s_r.state)
         {
-            sl_using_time                     = rc_ctrl->rc.s_l.change_time;
-            quad_booster_cmd_ptr->fire_enable = true;
+            if (pyro::dr16_drv_t::sw_ctrl_t::SW_DOWN_TO_MID ==
+                    rc_ctrl->rc.s_l.ctrl &&
+                rc_ctrl->rc.s_l.change_time != sl_using_time)
+            {
+                sl_using_time                     = rc_ctrl->rc.s_l.change_time;
+                quad_booster_cmd_ptr->fire_enable = true;
+            }
+            else
+            {
+                quad_booster_cmd_ptr->fire_enable = false;
+            }
         }
         else
         {
-            quad_booster_cmd_ptr->fire_enable = false;
+            static bool autoaim_fire_flag = false;
+            if (pyro::dr16_drv_t::sw_state_t::SW_UP == rc_ctrl->rc.s_r.state)
+            {
+                if (state_bytes.input_data.fire == 0)
+                {
+                    autoaim_fire_flag = true;
+                }
+                if (autoaim_fire_flag)
+                {
+                    if (state_bytes.input_data.fire == 1)
+                    {
+                        quad_booster_cmd_ptr->fire_enable = true;
+                    }
+                }
+            }
         }
+
+
         // 开火控制 (单发）
     }
 
@@ -84,7 +108,7 @@ extern "C"
         // 开火控制 (单发）
         static float trigger_using_time    = 0;
         static float mouse_left_using_time = 0;
-        static bool autoaim_fire_flag = 0;
+        static bool autoaim_fire_flag = false;
         if (vt03_drv_t::gear_state_t::GEAR_RIGHT == rc_ctrl->rc.gear.state)
         {
             if (state_bytes.input_data.fire == 0)

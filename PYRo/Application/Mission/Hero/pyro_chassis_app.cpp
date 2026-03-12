@@ -11,7 +11,7 @@ static pyro::mec_chassis_t *mec_chassis_ptr               = nullptr;
 static pyro::mec_cmd_t *mec_cmd_ptr                       = nullptr;
 static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
 static void chassis_rxcmd(void const *rc_ctrl);
-static void ballspeed_tx();
+static void shoot_tx();
 
 
 extern "C"
@@ -21,7 +21,7 @@ extern "C"
     {
         while (true)
         {
-            ballspeed_tx();
+            shoot_tx();
             chassis_rxcmd(dr16_ctrl_ptr);
             mec_chassis_ptr->set_command(*mec_cmd_ptr);
             vTaskDelay(1);
@@ -43,20 +43,26 @@ extern "C"
 }
 
 
-void ballspeed_tx()
+void shoot_tx()
 {
     static float last_speed = 0.0f;
     float current_speed =
         pyro::referee_drv_t::get_instance()->get_data().shoot.initial_speed;
+    pyro::can_tx_drv_t::clear(0x103);
+    uint16_t current_heat  = pyro::referee_drv_t::get_instance()->get_data().power_heat.shooter_42mm_barrel_heat;
+    uint16_t heat_limit = pyro::referee_drv_t::get_instance()->get_data().robot_status.shooter_barrel_heat_limit;
     if (last_speed != current_speed)
     {
         pyro::can_tx_drv_t::clear(0x102);
         pyro::can_tx_drv_t::add_data(0x102, 32, current_speed);
-        pyro::can_tx_drv_t::send(
-            0x102, pyro::can_hub_t::get_instance()->hub_get_can_obj(
-                       pyro::can_hub_t::which_can::can2));
         last_speed = current_speed;
     }
+
+    pyro::can_tx_drv_t::add_data(0x103, 16, current_heat);
+    pyro::can_tx_drv_t::add_data(0x103, 16, heat_limit);
+    pyro::can_tx_drv_t::send(
+    0x103, pyro::can_hub_t::get_instance()->hub_get_can_obj(
+               pyro::can_hub_t::which_can::can2));
 }
 
 

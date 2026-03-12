@@ -19,7 +19,12 @@ struct screw_gimbal_cmd_t final : public cmd_base_t
     float pitch_delta_angle; // 目标 Pitch 角度 (rad)
     float yaw_delta_angle;   // 目标 Yaw 角度 (rad)
 
-    screw_gimbal_cmd_t() : pitch_delta_angle(0.0f), yaw_delta_angle(0.0f)
+    // 自瞄数据
+    bool auto_aim;
+    float target_pitch;
+    float target_yaw;
+
+    screw_gimbal_cmd_t() : pitch_delta_angle(0.0f), yaw_delta_angle(0.0f),auto_aim(false),target_pitch(0.0f),target_yaw(0.0f)
     {
     }
 };
@@ -60,6 +65,8 @@ class screw_gimbal_t final
     struct data_ctx_t;
     struct gimbal_context_t;
 
+  public:
+    [[nodiscard]] gimbal_context_t get_ctx() const;
 
   private:
     screw_gimbal_t();
@@ -146,7 +153,6 @@ class screw_gimbal_t final
     // =====================================================
     static constexpr float PITCH_OFFSET_RAD = 0.0f;
     static constexpr float YAW_OFFSET_RAD   = 0.0f;
-
 };
 
 } // namespace pyro

@@ -61,6 +61,7 @@ class quad_booster_t final
   public:
     quad_booster_t(const quad_booster_t &)            = delete;
     quad_booster_t &operator=(const quad_booster_t &) = delete;
+    [[nodiscard]] booster_ctx_t get_ctx() const;
 
   private:
     quad_booster_t();
@@ -102,6 +103,7 @@ class quad_booster_t final
     {
         float launch_delay_timer[3]{}; // 发射延时计时器
         float signal_timer{0};         // 信号持续时间计时器
+        float avg_launch_delay{0};      // 平均发射延时
         uint32_t fresh_timer{0};       // <-- 新增：发弹延迟计算的刷新计时器
 
         // 反馈
@@ -124,7 +126,7 @@ class quad_booster_t final
     struct shoot_data_t
     {
         float ball_speed[3]{};
-        float fric1_mps = 12.2f;
+        float fric1_mps = 15.2f;
         float fric2_mps = 8.5f;
     };
 
