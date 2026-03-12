@@ -5,6 +5,7 @@
 #include "pyro_hybrid_chassis.h"
 #include "pyro_dji_motor_drv.h"
 #include "pyro_dm_motor_drv.h"
+#include "pyro_com_cantx.h"
 
 using namespace pyro;
 
@@ -15,6 +16,7 @@ static pyro::hybrid_deps_t *hybrid_deps_ptr             = nullptr;
 static void chassis_rxcmd(void const *rc_ctrl);
 static void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl);
 static void deps_init();
+static void quaternion_tx();
 
 extern "C"
 {
@@ -26,6 +28,7 @@ extern "C"
         {
             chassis_rxcmd(rc_ctrl_ptr);
             // chassis_dr162cmd(rc_ctrl_ptr);
+            quaternion_tx();
             hybrid_chassis_ptr->set_command(*hybrid_cmd_ptr);
             vTaskDelay(1);
         }
@@ -54,8 +57,9 @@ void chassis_rxcmd(void const *rc_ctrl)
         2.0f * static_cast<float>(static_cast<int8_t>(raw_data[0])) / 127.0f;
     hybrid_cmd_ptr->vy =
         2.0f * static_cast<float>(static_cast<int8_t>(raw_data[1])) / 127.0f;
-    hybrid_cmd_ptr->mode = static_cast<pyro::cmd_base_t::mode_t>(raw_data[3] & 0x01);
-    hybrid_cmd_ptr->track_en = true;
+    hybrid_cmd_ptr->mode =
+        static_cast<pyro::cmd_base_t::mode_t>(raw_data[3] & 0x01);
+    hybrid_cmd_ptr->track_en    = true;
     hybrid_cmd_ptr->leg_retract = (raw_data[3] & 0x04) != 0;
 }
 
@@ -184,4 +188,25 @@ static void deps_init()
         new pid_t(200.0f, 0.005f, 0.008f, 0.0f, 100.0f, 20, 10, 4);
     hybrid_deps_ptr->pid_deps.leg_vel_pid[1] =
         new pid_t(200.0f, 0.005f, 0.008f, 0.0f, 100.0f, 20, 10, 4);
+}
+
+void quaternion_tx()
+{
+    static float q0, q1, q2, q3;
+    ins_drv_t::get_instance()->get_quaternion(&q0, &q1, &q2, &q3);
+    // 假设你已经算出了底盘的四元数 (float 类型, 范围 [-1.0, 1.0])
+    pyro::can_tx_drv_t::clear(0x103);
+    // 缩放并转换为 int16_t
+    const auto send_q0 = static_cast<int16_t>(q0 * 32767.0f);
+    const auto send_q1 = static_cast<int16_t>(q1 * 32767.0f);
+    const auto send_q2 = static_cast<int16_t>(q2 * 32767.0f);
+    const auto send_q3 = static_cast<int16_t>(q3 * 32767.0f);
+
+    can_tx_drv_t::add_data(0x103, 16, send_q0);
+    can_tx_drv_t::add_data(0x103, 16, send_q1);
+    can_tx_drv_t::add_data(0x103, 16, send_q2);
+    can_tx_drv_t::add_data(0x103, 16, send_q3);
+
+    can_tx_drv_t::send(
+        0x103, can_hub_t::get_instance()->hub_get_can_obj(can_hub_t::can1));
 }

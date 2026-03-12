@@ -17,8 +17,9 @@ screw_gimbal_t::screw_gimbal_t() : module_base_t("screw_gimbal")
 status_t screw_gimbal_t::_init()
 {
     _ctx.motor = _module_deps.motor_deps;
-    _ctx.pid = _module_deps.pid_deps;
+    _ctx.pid   = _module_deps.pid_deps;
     pyro::can_rx_drv_t::subscribe(can_hub_t::which_can::can1, 0x102);
+    pyro::can_rx_drv_t::subscribe(can_hub_t::which_can::can1, 0x103);
     return PYRO_OK;
 }
 
@@ -101,7 +102,10 @@ void screw_gimbal_t::_communicate_chassis()
     std::array<uint8_t, 8> raw_data{};
     pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x102,
                                  raw_data);
-    std::memcpy(&_ctx.data.current_chassis_pitch_rad,&raw_data,sizeof(float));
+    std::memcpy(&_ctx.data.current_chassis_pitch_rad, &raw_data, sizeof(float));
+    pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x103,
+                                 raw_data);
+    std::memcpy(_ctx.data.chassis_q, &raw_data, 64);
 }
 
 // =========================================================

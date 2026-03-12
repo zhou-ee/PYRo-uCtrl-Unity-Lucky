@@ -103,6 +103,8 @@ class screw_gimbal_t final
         float current_x_accel{0};
         float current_y_accel{0};
 
+        float chassis_q[4];
+
         // 目标
         float target_pitch_rad{0};
         float target_pitch_radps{0};

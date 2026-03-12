@@ -348,6 +348,7 @@ void hybrid_chassis_t::_leg_vmc()
             tau_total = tau_priority + tau_pid;
         }
 
+        tau_total = tau_gravity;
         // 8. 输出并再次针对右腿作符号映射
         // _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_gravity;
         _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
@@ -496,9 +497,9 @@ void hybrid_chassis_t::_send_motor_command() const
     if (freq_div_flag)
     {
         for (int i = 0; i < 4; i++)
-            _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
+            _ctx.motor.mecanum[i]->send_torque(0);
         for (int i = 0; i < 2; i++)
-            _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
+            _ctx.motor.track[i]->send_torque(0);
         // for (int i = 0; i < 4; i++)
         //     _ctx.motor.mecanum[i]->send_torque(0);
         // for (int i = 0; i < 2; i++)
@@ -507,7 +508,7 @@ void hybrid_chassis_t::_send_motor_command() const
 
     // 腿部电机：保持原频率控制 (VMC 和腿长控制通常需要高频以维持稳定性)
     for (int i = 0; i < 2; i++)
-        _ctx.motor.leg[i]->send_torque(_ctx.data.out_leg_torque[i]);
+        _ctx.motor.leg[i]->send_torque(-_ctx.data.out_leg_torque[i]);
 }
 // =========================================================
 // 核心运行时与状态机
