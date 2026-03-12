@@ -23,7 +23,7 @@ constexpr float LEG_GRA_D_WALL            = 10.0f;
 constexpr float YAW_OFFSET_RAD            = -2.01565075f;
 // IMU 机械安装偏移补偿 (需将底盘置于绝对水平面上读取原始数据填入)
 constexpr float PITCH_OFFSET_RAD =
-    -0.0485527627f; // 示例值，正负号取决于你的 IMU 坐标系方向
+    0.0; // 示例值，正负号取决于你的 IMU 坐标系方向
 constexpr float NORMAL_PITCH =
     0.22f; // 机器人正常站立时的俯仰角 (rad)，用于自重补偿的基准点
 constexpr float ROLL_OFFSET_RAD                  = 0.0153984586f;
@@ -46,15 +46,15 @@ constexpr float YB_POLY_COEF[YB_POLY_DEGREE + 1] = {
 constexpr float TAU_GRAVITY_COEF[TAU_GRAVITY_DEGREE + 1] = {
     -1.4132, 4.2032, -5.0430, 3.7907, -3.3777};
 constexpr float K_TAU_GRAVITY = 1.0f;    // 自重补偿系数
-constexpr float MASS          = 10.0f;   // 机器人质量 (kg)
+constexpr float MASS          = 23.0f;   // 机器人质量 (kg)
 constexpr float GRAVITY       = gNORM;   // 重力加速度 (m/s^2)
 constexpr float DIST_FRONT    = 0.2295f; // 质心到前轴距离 (m)
 constexpr float DIST_HIP      = 0.193f;  // 质心到髋关节的水平距离
 constexpr float H_COG         = 0.15f;   // 重心垂直高度
 constexpr float H_HIP_OFFSET  = 0.074f;  // 髋关节与前轮轴心的垂直落差
 inline float LEFT_LEG_OFFSET_RAD =
-   -0.393711805f; // 左腿位置偏移 (rad)，正值表示向前偏移
+   -0.512117863f; // 左腿位置偏移 (rad)，正值表示向前偏移
 inline float RIGHT_LEG_OFFSET_RAD =
-  1.60509574f; // 右腿位置偏移 (rad)，正值表示向前偏移
+  -1.35284793f; // 右腿位置偏移 (rad)，正值表示向前偏移
 
 #endif

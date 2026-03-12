@@ -94,16 +94,17 @@ void hybrid_chassis_t::_update_feedback()
 
     // 左右腿对称性修正：对右腿(leg[1])的读取数据取反，抹平机械差异
     // 左右腿对称性修正与机械零点 Offset 处理
+    // 【左腿】：原本是 (pos - offset)，现在电机反转，所以整体取反变成 -(pos - offset)
     float left_leg_raw =
-        _ctx.motor.leg[0]->get_current_position() - LEFT_LEG_OFFSET_RAD;
+        -(_ctx.motor.leg[0]->get_current_position() - LEFT_LEG_OFFSET_RAD);
     _ctx.data.current_leg_rad[0]   = loop_fp32_constrain(left_leg_raw, -PI, PI);
-    _ctx.data.current_leg_radps[0] = _ctx.motor.leg[0]->get_current_rotate();
+    _ctx.data.current_leg_radps[0] = -_ctx.motor.leg[0]->get_current_rotate();
 
-    // 对右腿(leg[1])的读取数据取反抹平机械差异，同样进行 Offset 和跳变处理
+    // 【右腿】：原本就是 -(pos - offset)，现在电机也反了，负负得正变成 (pos - offset)
     float right_leg_raw =
-        -_ctx.motor.leg[1]->get_current_position() - RIGHT_LEG_OFFSET_RAD;
+        _ctx.motor.leg[1]->get_current_position() - RIGHT_LEG_OFFSET_RAD;
     _ctx.data.current_leg_rad[1] = loop_fp32_constrain(right_leg_raw, -PI, PI);
-    _ctx.data.current_leg_radps[1] = -_ctx.motor.leg[1]->get_current_rotate();
+    _ctx.data.current_leg_radps[1] = _ctx.motor.leg[1]->get_current_rotate();
 }
 
 // =========================================================
@@ -349,9 +350,16 @@ void hybrid_chassis_t::_leg_vmc()
         }
 
         tau_total = tau_gravity;
+
+        // tau_total = tau_gravity; // 重力补偿测试
+        // if (fabsf(tau_total) > LEG_MAX_TORQUE)
+        // {
+        //     tau_total =
+        //             (tau_total > 0.0f) ? LEG_MAX_TORQUE : -LEG_MAX_TORQUE;
+        // }
         // 8. 输出并再次针对右腿作符号映射
         // _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_gravity;
-        _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
+        _ctx.data.out_leg_torque[i] = (i == 0 ? -1.0f : 1.0f) * tau_total;
     }
 }
 
@@ -508,7 +516,7 @@ void hybrid_chassis_t::_send_motor_command() const
 
     // 腿部电机：保持原频率控制 (VMC 和腿长控制通常需要高频以维持稳定性)
     for (int i = 0; i < 2; i++)
-        _ctx.motor.leg[i]->send_torque(-_ctx.data.out_leg_torque[i]);
+        _ctx.motor.leg[i]->send_torque(0);
 }
 // =========================================================
 // 核心运行时与状态机
