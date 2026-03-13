@@ -47,6 +47,8 @@ void screw_gimbal_t::_update_feedback()
                                            &_ctx.data.current_y_accel,
                                            &_ctx.data.current_z_accel);
 
+    _communicate_chassis();
+
     // 通常不用读取电机位置作为姿态反馈，改为使用 IMU 数据
     // // 读取 电机 数据作为反馈 (含 Offset)
     // _ctx.data.current_pitch_rad =
@@ -99,13 +101,15 @@ void screw_gimbal_t::_send_motor_command(gimbal_context_t *ctx)
 
 void screw_gimbal_t::_communicate_chassis()
 {
-    std::array<uint8_t, 8> raw_data{};
+    std::array<uint8_t, 8> raw_data1{};
     pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x102,
-                                 raw_data);
-    std::memcpy(&_ctx.data.current_chassis_pitch_rad, &raw_data, sizeof(float));
-    pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x103,
-                                 raw_data);
-    std::memcpy(_ctx.data.chassis_q, &raw_data, 64);
+                                 raw_data1);
+    std::memcpy(&_ctx.data.current_chassis_pitch_rad, &raw_data1, sizeof(float));
+
+    // std::array<uint8_t, 8> raw_data2{};
+    // pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x103,
+    //                              raw_data2);
+    // _ctx.data.chassis_q[0] = reinterpret_cast<uint16_t *>(raw_data2.data());
 }
 
 // =========================================================

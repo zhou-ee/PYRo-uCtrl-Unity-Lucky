@@ -48,14 +48,14 @@ extern "C"
 
     void hero_pc_com_init(void *argument)
     {
-        uart_comm_ptr =
-            new uart_comm_t(uart_drv_t::which_uart::uart7, 0x10, 256);
-        uint8_t sof = 0xA5;
-        uart_comm_ptr->register_msg_type(sizeof(StateBytes), &sof, 1);
-
-        xTaskCreate(hero_pc_com_thread, "start_hero_pc_com_thread", 128,
-
-                    nullptr, configMAX_PRIORITIES - 4, nullptr);
+        // uart_comm_ptr =
+        //     new uart_comm_t(uart_drv_t::which_uart::uart7, 0x10, 256);
+        // uint8_t sof = 0xA5;
+        // uart_comm_ptr->register_msg_type(sizeof(StateBytes), &sof, 1);
+        //
+        // xTaskCreate(hero_pc_com_thread, "start_hero_pc_com_thread", 128,
+        //
+        //             nullptr, configMAX_PRIORITIES - 4, nullptr);
         vTaskDelete(nullptr);
     }
 }

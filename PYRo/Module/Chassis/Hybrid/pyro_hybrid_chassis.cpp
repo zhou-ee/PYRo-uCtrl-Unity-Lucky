@@ -28,6 +28,9 @@ status_t hybrid_chassis_t::_init()
                                    (MEC_FRONT_TRACK_WIDTH + MEC_WHEELBASE) / 2,
                                    (MEC_REAR_TRACK_WIDTH + MEC_WHEELBASE) / 2,
                                    (MEC_REAR_TRACK_WIDTH + MEC_WHEELBASE) / 2);
+    // float x = 0.15f;
+    // _kinematics = new hybrid_kin_t(TRACK_SPACING,
+    //                            0.15f + x,0.15f + x,0.66f - x, 0.66f - x);
 
     return PYRO_OK;
 }
@@ -66,12 +69,50 @@ void hybrid_chassis_t::_update_feedback()
         i->update_feedback();
     _ctx.motor.yaw->update_feedback();
 
+    // // 2. 读取 IMU 数据作为底盘姿态反馈
+    // ins_drv_t::get_instance()->get_rads_n(&_ctx.data.current_yaw_rad,
+    //                                       &_ctx.data.current_pitch_rad,
+    //                                       &_ctx.data.current_roll_rad);
+    // _ctx.data.current_pitch_rad -= PITCH_OFFSET_RAD;
+    // _ctx.data.current_roll_rad -= ROLL_OFFSET_RAD;
     // 2. 读取 IMU 数据作为底盘姿态反馈
-    ins_drv_t::get_instance()->get_rads_n(&_ctx.data.current_yaw_rad,
-                                          &_ctx.data.current_pitch_rad,
-                                          &_ctx.data.current_roll_rad);
-    _ctx.data.current_pitch_rad -= PITCH_OFFSET_RAD;
-    _ctx.data.current_roll_rad -= ROLL_OFFSET_RAD;
+    float raw_yaw, raw_pitch, raw_roll;
+    ins_drv_t::get_instance()->get_rads_n(&raw_yaw, &raw_pitch, &raw_roll);
+
+    // 减去机械安装零点偏移
+    raw_pitch -= PITCH_OFFSET_RAD;
+    raw_roll  -= ROLL_OFFSET_RAD;
+
+    // --- 一阶低通滤波 (LPF) ---
+    // 为了快速验证，这里使用 static 变量保存上一次的滤波状态
+    // 如果确认有效，建议将它们移到 _ctx.data 结构体中
+    static float filtered_pitch = 0.0f;
+    static float filtered_roll  = 0.0f;
+    static bool  is_first_run   = true;
+
+    // 滤波系数 alpha：(0, 1]
+    // alpha = 1.0 表示完全不滤波；alpha 越小，抗噪声能力越强，但相位延迟越大。
+    // 对于 500Hz~1000Hz 的控制循环，0.1f ~ 0.3f 通常是一个比较理想的甜点值。
+    const float LPF_ALPHA = 0.15f;
+
+    if (is_first_run)
+    {
+        // 第一次运行直接赋值，防止开机瞬间出现从 0 平滑过去的巨大阶跃
+        filtered_pitch = raw_pitch;
+        filtered_roll  = raw_roll;
+        is_first_run   = false;
+    }
+    else
+    {
+        // 迭代滤波公式
+        filtered_pitch = LPF_ALPHA * raw_pitch + (1.0f - LPF_ALPHA) * filtered_pitch;
+        filtered_roll  = LPF_ALPHA * raw_roll  + (1.0f - LPF_ALPHA) * filtered_roll;
+    }
+
+    // 将滤波后的平滑数据赋给上下文，供 VMC 和 PID 使用
+    _ctx.data.current_yaw_rad   = raw_yaw; // Yaw 通常不参与重力补偿，可暂不滤波
+    _ctx.data.current_pitch_rad = filtered_pitch;
+    _ctx.data.current_roll_rad  = filtered_roll;
 
     // 3. 转换并记录电机转速与位置
     float current_angle =
@@ -96,7 +137,7 @@ void hybrid_chassis_t::_update_feedback()
     // 左右腿对称性修正与机械零点 Offset 处理
     // 【左腿】：原本是 (pos - offset)，现在电机反转，所以整体取反变成 -(pos - offset)
     float left_leg_raw =
-        -(_ctx.motor.leg[0]->get_current_position() - LEFT_LEG_OFFSET_RAD);
+        -_ctx.motor.leg[0]->get_current_position() - LEFT_LEG_OFFSET_RAD;
     _ctx.data.current_leg_rad[0]   = loop_fp32_constrain(left_leg_raw, -PI, PI);
     _ctx.data.current_leg_radps[0] = -_ctx.motor.leg[0]->get_current_rotate();
 
@@ -153,6 +194,7 @@ void hybrid_chassis_t::_kinematics_solve()
     //                                              _ctx.cmd->track_en);
 
     const float theta   = _ctx.data.current_yaw_error;
+    // const float theta   = 0;
 
     const float c_theta = arm_cos_f32(theta);
     const float s_theta = arm_sin_f32(theta);
@@ -311,20 +353,20 @@ void hybrid_chassis_t::_leg_vmc()
 
         // 6. 虚拟阻尼墙限位保护
         float tau_wall = 0.0f;
-        if (theta > LEG_MAX_POS - LEG_POS_BUFFER_RAD)
-        {
-            tau_wall =
-                -LEG_K_WALL * (theta - (LEG_MAX_POS - LEG_POS_BUFFER_RAD)) -
-                LEG_D_WALL * theta_dot;
-            tau_wall = fminf(0.0f, tau_wall);
-        }
-        else if (theta < LEG_MIN_POS + LEG_POS_BUFFER_RAD)
-        {
-            tau_wall =
-                LEG_K_WALL * ((LEG_MIN_POS + LEG_POS_BUFFER_RAD) - theta) -
-                LEG_D_WALL * theta_dot;
-            tau_wall = fmaxf(0.0f, tau_wall);
-        }
+        // if (theta > LEG_MAX_POS - LEG_POS_BUFFER_RAD)
+        // {
+        //     tau_wall =
+        //         -LEG_K_WALL * (theta - (LEG_MAX_POS - LEG_POS_BUFFER_RAD)) -
+        //         LEG_D_WALL * theta_dot;
+        //     tau_wall = fminf(0.0f, tau_wall);
+        // }
+        // else if (theta < LEG_MIN_POS + LEG_POS_BUFFER_RAD)
+        // {
+        //     tau_wall =
+        //         LEG_K_WALL * ((LEG_MIN_POS + LEG_POS_BUFFER_RAD) - theta) -
+        //         LEG_D_WALL * theta_dot;
+        //     tau_wall = fmaxf(0.0f, tau_wall);
+        // }
 
         // 7. 力矩饱和安全限制 (基于优先级的削峰逻辑)
         const float tau_priority = tau_gravity + tau_wall;
@@ -349,7 +391,7 @@ void hybrid_chassis_t::_leg_vmc()
             tau_total = tau_priority + tau_pid;
         }
 
-        tau_total = tau_gravity;
+        tau_total = fminf(fmaxf(tau_total, -LEG_MAX_TORQUE), LEG_MAX_TORQUE);
 
         // tau_total = tau_gravity; // 重力补偿测试
         // if (fabsf(tau_total) > LEG_MAX_TORQUE)
@@ -456,7 +498,7 @@ void hybrid_chassis_t::_leg_length_control()
 
         // 针对右腿作符号反转映射
         // _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
-        _ctx.data.out_leg_torque[i] = (i == 0 ? 1.0f : -1.0f) * tau_total;
+        _ctx.data.out_leg_torque[i] = (i == 0 ? -1.0f : 1.0f) * tau_total;
     }
 }
 
@@ -505,18 +547,20 @@ void hybrid_chassis_t::_send_motor_command() const
     if (freq_div_flag)
     {
         for (int i = 0; i < 4; i++)
-            _ctx.motor.mecanum[i]->send_torque(0);
+            _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
+
         for (int i = 0; i < 2; i++)
-            _ctx.motor.track[i]->send_torque(0);
+            _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
         // for (int i = 0; i < 4; i++)
         //     _ctx.motor.mecanum[i]->send_torque(0);
         // for (int i = 0; i < 2; i++)
         //     _ctx.motor.track[i]->send_torque(0);
     }
-
     // 腿部电机：保持原频率控制 (VMC 和腿长控制通常需要高频以维持稳定性)
     for (int i = 0; i < 2; i++)
-        _ctx.motor.leg[i]->send_torque(0);
+        _ctx.motor.leg[i]->send_torque(_ctx.data.out_leg_torque[i]);
+
+
 }
 // =========================================================
 // 核心运行时与状态机

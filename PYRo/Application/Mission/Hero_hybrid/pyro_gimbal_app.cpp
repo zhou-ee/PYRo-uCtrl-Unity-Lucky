@@ -282,7 +282,7 @@ void deps_init()
 
     // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
     screw_gimbal_deps->pid_deps.yaw_pos =
-        new pid_t(5.2f, 0.01f, 0.22f, 0.8f, 5.0f);
+        new pid_t(8.2f, 0.1f, 0.22f, 0.8f, 10.0f);
     screw_gimbal_deps->pid_deps.yaw_spd =
         new pid_t(3.0f, 0.0003f, 0.0001f, 0.2f, 3.0f);
 }

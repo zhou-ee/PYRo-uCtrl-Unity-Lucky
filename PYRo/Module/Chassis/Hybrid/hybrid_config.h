@@ -5,8 +5,8 @@
 
 constexpr float TRACK_SPACING             = 0.456f; // 履带中心距 (m)
 constexpr float MEC_WHEELBASE             = 0.421f; // 麦轮轴距
-constexpr float MEC_FRONT_TRACK_WIDTH     = 0.41f;  // 麦轮前轮距
-constexpr float MEC_REAR_TRACK_WIDTH      = 0.41f;  // 麦轮后轮距
+constexpr float MEC_FRONT_TRACK_WIDTH     = 0.3f;  // 麦轮前轮距
+constexpr float MEC_REAR_TRACK_WIDTH      = 0.48f;  // 麦轮后轮距
 constexpr float WHEEL_RADIUS              = 0.076f; // 轮子半径 (m)
 constexpr float TRACK_RADIUS              = 0.025f; // 履带驱动半径 (m)
 constexpr float LEG_MIN_POS               = 0.15f;  // 腿部最小位置 (rad)
@@ -15,17 +15,17 @@ constexpr float LEG_LENGTH_MIN_POS        = -0.1f;  // 腿部最小伸展位置(
 constexpr float LEG_LENGTH_MAX_POS        = 1.72f;  // 腿部最大伸展位置(rad)
 constexpr float LEG_POS_BUFFER_RAD        = 0.1f;   // 腿部位置缓冲 (rad)
 constexpr float LEG_LENGTH_POS_BUFFER_RAD = 0.0f;   // 腿部长度位置缓冲 (rad)
-constexpr float LEG_MAX_TORQUE            = 15.0f;  // 腿部最大输出扭矩 (N*m)
+constexpr float LEG_MAX_TORQUE            = 25.0f;  // 腿部最大输出扭矩 (N*m)
 constexpr float LEG_K_WALL                = 300.0f; // 虚拟墙弹性系数 (N*m/rad)
 constexpr float LEG_D_WALL                = 20.0f; // 虚拟墙阻尼系数 (N*m*s/rad)
 constexpr float LEG_GRA_K_WALL            = 50.0f; // 自重补偿虚拟墙 (N*m/rad)
 constexpr float LEG_GRA_D_WALL            = 10.0f;
-constexpr float YAW_OFFSET_RAD            = -2.01565075f;
+constexpr float YAW_OFFSET_RAD            = -1.99801016f;
 // IMU 机械安装偏移补偿 (需将底盘置于绝对水平面上读取原始数据填入)
 constexpr float PITCH_OFFSET_RAD =
     0.0; // 示例值，正负号取决于你的 IMU 坐标系方向
 constexpr float NORMAL_PITCH =
-    0.22f; // 机器人正常站立时的俯仰角 (rad)，用于自重补偿的基准点
+    0.07f; // 机器人正常站立时的俯仰角 (rad)，用于自重补偿的基准点
 constexpr float ROLL_OFFSET_RAD                  = 0.0153984586f;
 constexpr uint32_t JX_POLY_DEGREE                = 7; // JX 多项式拟合阶数
 constexpr uint32_t JY_POLY_DEGREE                = 5; // JY 多项式拟合阶数
@@ -46,14 +46,14 @@ constexpr float YB_POLY_COEF[YB_POLY_DEGREE + 1] = {
 constexpr float TAU_GRAVITY_COEF[TAU_GRAVITY_DEGREE + 1] = {
     -1.4132, 4.2032, -5.0430, 3.7907, -3.3777};
 constexpr float K_TAU_GRAVITY = 1.0f;    // 自重补偿系数
-constexpr float MASS          = 23.0f;   // 机器人质量 (kg)
+constexpr float MASS          = 25.5f;   // 机器人质量 (kg)
 constexpr float GRAVITY       = gNORM;   // 重力加速度 (m/s^2)
-constexpr float DIST_FRONT    = 0.2295f; // 质心到前轴距离 (m)
-constexpr float DIST_HIP      = 0.193f;  // 质心到髋关节的水平距离
-constexpr float H_COG         = 0.15f;   // 重心垂直高度
+constexpr float DIST_FRONT    = 0.2395f; // 质心到前轴距离 (m)
+constexpr float DIST_HIP      = 0.1805f;  // 质心到髋关节的水平距离
+constexpr float H_COG         = 0.18f;   // 重心垂直高度
 constexpr float H_HIP_OFFSET  = 0.074f;  // 髋关节与前轮轴心的垂直落差
 inline float LEFT_LEG_OFFSET_RAD =
-   -0.512117863f; // 左腿位置偏移 (rad)，正值表示向前偏移
+   0.512117863f; // 左腿位置偏移 (rad)，正值表示向前偏移
 inline float RIGHT_LEG_OFFSET_RAD =
   -1.35284793f; // 右腿位置偏移 (rad)，正值表示向前偏移
 

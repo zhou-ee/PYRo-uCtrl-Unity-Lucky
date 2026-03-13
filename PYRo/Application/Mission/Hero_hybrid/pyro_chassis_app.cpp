@@ -176,14 +176,14 @@ static void deps_init()
         new pid_t(0.02f, 0.0001f, 0.00002f, 0.5f, 11.0f, 20, 10, 4);
 
     hybrid_deps_ptr->pid_deps.pitch_pid =
-        new pid_t(300.0f, 0.1f, 60.0f, 0.1f, 200.0f, 200, 100, 4);
+        new pid_t(260.0f, 0.1f, 20.0f, 20.0f, 200.0f, 200, 100, 4,pid_t::INTEGRAL_LIMIT | pid_t::OUTPUT_FILTER | pid_t::DERIVATIVE_FILTER | pid_t::DERIVATIVE_ON_MEASUREMENT);
     hybrid_deps_ptr->pid_deps.roll_pid =
-        new pid_t(80.0f, 0.1f, 30.0f, 0.1f, 80.0f, 200, 100, 4);
+        new pid_t(120.0f, 0.1f, 6.0f, 20.0f, 200.0f, 200, 100, 4,pid_t::INTEGRAL_LIMIT | pid_t::OUTPUT_FILTER | pid_t::DERIVATIVE_FILTER | pid_t::DERIVATIVE_ON_MEASUREMENT);
 
     hybrid_deps_ptr->pid_deps.leg_pos_pid[0] =
-        new pid_t(11.0f, 0.005f, 0.008f, 0.0f, 1.0f, 20, 10, 4);
+        new pid_t(7.0f, 0.005f, 0.008f, 0.0f, 0.5f, 20, 10, 4);
     hybrid_deps_ptr->pid_deps.leg_pos_pid[1] =
-        new pid_t(10.0f, 0.005f, 0.008f, 0.0f, 1.0f, 20, 10, 4);
+        new pid_t(7.0f, 0.005f, 0.008f, 0.0f, 0.5f, 20, 10, 4);
     hybrid_deps_ptr->pid_deps.leg_vel_pid[0] =
         new pid_t(200.0f, 0.005f, 0.008f, 0.0f, 100.0f, 20, 10, 4);
     hybrid_deps_ptr->pid_deps.leg_vel_pid[1] =

@@ -209,11 +209,11 @@ void deps_init()
     quad_deps_ptr->pid_deps.fric_pid[0] =
         new pid_t(6.40f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
     quad_deps_ptr->pid_deps.fric_pid[1] =
-        new pid_t(6.968f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
+        new pid_t(11.28f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
     quad_deps_ptr->pid_deps.fric_pid[2] =
-        new pid_t(6.968f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
-    quad_deps_ptr->pid_deps.fric_pid[3] =
         new pid_t(6.4f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
+    quad_deps_ptr->pid_deps.fric_pid[3] =
+        new pid_t(11.28f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
 
     quad_deps_ptr->pid_deps.trigger_pos_pid =
         new pid_t(20.2f, 0.03f, 0.005f, 1.0f, 20.0f, 200, 100, 4);
