@@ -104,13 +104,23 @@ void screw_gimbal_t::_communicate_chassis()
     std::array<uint8_t, 8> raw_data1{};
     pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x102,
                                  raw_data1);
-    std::memcpy(&_ctx.data.current_chassis_pitch_rad, &raw_data1, sizeof(float));
-
-    // std::array<uint8_t, 8> raw_data2{};
-    // pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x103,
-    //                              raw_data2);
-    // _ctx.data.chassis_q[0] = reinterpret_cast<uint16_t *>(raw_data2.data());
+    std::memcpy(&_ctx.data.current_chassis_pitch_rad, &raw_data1,
+                sizeof(float));
+    std::array<uint8_t, 8> raw_data2{};
+    if (pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x103,
+                                     raw_data2))
+    {
+        // 强制转换为 int16_t 指针，方便按索引访问
+        auto *src              = reinterpret_cast<int16_t *>(raw_data2.data());
+        // 逐个还原并放回 float 数组
+        _ctx.data.chassis_q[0] = static_cast<float>(src[0]) / 32767.0f; // q0
+        _ctx.data.chassis_q[1] = static_cast<float>(src[1]) / 32767.0f; // q1
+        _ctx.data.chassis_q[2] = static_cast<float>(src[2]) / 32767.0f; // q2
+        _ctx.data.chassis_q[3] = static_cast<float>(src[3]) / 32767.0f; // q3
+    }
 }
+
+
 
 // =========================================================
 // 状态机逻辑
