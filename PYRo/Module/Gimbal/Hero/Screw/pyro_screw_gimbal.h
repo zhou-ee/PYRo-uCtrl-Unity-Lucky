@@ -24,7 +24,9 @@ struct screw_gimbal_cmd_t final : public cmd_base_t
     float target_pitch;
     float target_yaw;
 
-    screw_gimbal_cmd_t() : pitch_delta_angle(0.0f), yaw_delta_angle(0.0f),auto_aim(false),target_pitch(0.0f),target_yaw(0.0f)
+    screw_gimbal_cmd_t()
+        : pitch_delta_angle(0.0f), yaw_delta_angle(0.0f), auto_aim(false),
+          target_pitch(0.0f), target_yaw(0.0f)
     {
     }
 };
@@ -81,6 +83,7 @@ class screw_gimbal_t final
     static void _gimbal_control(gimbal_context_t *ctx);
     static void _send_motor_command(gimbal_context_t *ctx);
     void _communicate_chassis();
+    void _calculate_relative_angles();
 
     // --- 成员变量 ---
 
@@ -104,6 +107,10 @@ class screw_gimbal_t final
         float current_y_accel{0};
 
         float chassis_q[4];
+        float gimbal_q[4];
+        float relative_pitch_rad; // 四元数计算得到
+        float relative_roll_rad;  // 四元数计算得到
+        float relative_yaw_rad;   // 6020反馈
 
         // 目标
         float target_pitch_rad{0};
@@ -154,7 +161,6 @@ class screw_gimbal_t final
     // 静态配置 (编译器常量)
     // =====================================================
     static constexpr float PITCH_OFFSET_RAD = 0.0f;
-    static constexpr float YAW_OFFSET_RAD   = 0.0f;
 };
 
 } // namespace pyro
