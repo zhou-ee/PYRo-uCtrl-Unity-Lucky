@@ -23,6 +23,10 @@ void hybrid_chassis_t::fsm_active_t::cruising_state_t::execute(owner *owner)
 
     owner->_leg_vmc();
 
+    // owner->_ctx.data.target_leg_rad[0] = LEG_LENGTH_MAX_POS - LEG_POS_BUFFER_RAD;
+    // owner->_ctx.data.target_leg_rad[1] = LEG_LENGTH_MAX_POS - LEG_POS_BUFFER_RAD;
+    // owner->_leg_length_control();
+
     // 2. 麦轮速度环控制 (提供平面移动的主动力)
     owner->_mecanum_control();
 

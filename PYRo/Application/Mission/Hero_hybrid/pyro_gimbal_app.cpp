@@ -176,9 +176,9 @@ void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
     else
     {
         screw_gimbal_cmd_ptr->pitch_delta_angle =
-            -rc_ctrl->rc.ch_ry * 0.0035f - rc_ctrl->mouse.y * 0.1f;
+            -rc_ctrl->rc.ch_ry * 0.0035f - rc_ctrl->mouse.y * 0.25f;
         screw_gimbal_cmd_ptr->yaw_delta_angle =
-            -rc_ctrl->rc.ch_rx * 0.0035f - rc_ctrl->mouse.x * 0.1f;
+            -rc_ctrl->rc.ch_rx * 0.0025f - rc_ctrl->mouse.x * 0.6f;
     }
 }
 
@@ -265,7 +265,7 @@ void deps_init()
     // Pitch: 使用 DM 电机 (示例 ID: Master 0x11, Slave 0x21, CAN1)
     // 根据 hybrid 中的用法进行配置
     screw_gimbal_deps->motor_deps.pitch =
-        new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_5, can_hub_t::can2);
+        new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_5, can_hub_t::can3);
 
     // Yaw: 使用 DJI GM6020 (ID 2, CAN1)
     screw_gimbal_deps->motor_deps.yaw = new dji_gm_6020_motor_drv_t(
@@ -274,15 +274,17 @@ void deps_init()
 
     // 3. 初始化串级 PID
     screw_gimbal_deps->pid_deps.pitch_pos =
-        new pid_t(6.0f, 0.0f, 0.0f, 1.0f, 8.0f, 3, 3,
+        new pid_t(15.6f, 0.15f, 0.05f, 1.0f, 6.0f, 40, 10,
                   4); // 位置环输出为 rad/s，限制在电机可接受范围内
     screw_gimbal_deps->pid_deps.pitch_spd =
-        new pid_t(10.0f, 0.0f, 0.0f, 0.0f, 20.0f, 10, 5,
+        new pid_t(6.0f, 0.0f, 0.0f, 0.0f, 10.0f, 20, 10,
                   4); // 输出限制匹配电机 Nm 级
 
     // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
     screw_gimbal_deps->pid_deps.yaw_pos =
-        new pid_t(8.2f, 0.1f, 0.22f, 0.8f, 10.0f);
+        new pid_t(12.2f, 0.1f, 0.02f, 0.8f, 10.0f,40, 10,
+                  4);
     screw_gimbal_deps->pid_deps.yaw_spd =
-        new pid_t(3.0f, 0.0003f, 0.0001f, 0.2f, 3.0f);
+        new pid_t(4.5f, 0.0003f, 0.0001f, 0.2f, 3.0f,40, 10,
+                  4);
 }

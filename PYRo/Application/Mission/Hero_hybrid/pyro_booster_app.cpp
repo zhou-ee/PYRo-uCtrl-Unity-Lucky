@@ -164,17 +164,17 @@ extern "C"
 
     void hero_booster_init(void *argument)
     {
-        // quad_booster_ptr     = pyro::quad_booster_t::instance();
-        // quad_booster_cmd_ptr = new pyro::quad_booster_cmd_t();
-        // deps_init();
-        // quad_booster_ptr->configure(*quad_deps_ptr);
-        // dr16_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
-        //     pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
-        // vt03_ctrl_ptr = static_cast<pyro::vt03_drv_t::vt03_ctrl_t const *>(
-        //     pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->read());
-        // quad_booster_ptr->start();
-        // xTaskCreate(hero_booster_thread, "start_app_thread", 128, nullptr,
-        //             configMAX_PRIORITIES - 1, nullptr);
+        quad_booster_ptr     = pyro::quad_booster_t::instance();
+        quad_booster_cmd_ptr = new pyro::quad_booster_cmd_t();
+        deps_init();
+        quad_booster_ptr->configure(*quad_deps_ptr);
+        dr16_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
+            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
+        vt03_ctrl_ptr = static_cast<pyro::vt03_drv_t::vt03_ctrl_t const *>(
+            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->read());
+        quad_booster_ptr->start();
+        xTaskCreate(hero_booster_thread, "start_app_thread", 128, nullptr,
+                    configMAX_PRIORITIES - 1, nullptr);
         vTaskDelete(nullptr);
     }
 }
