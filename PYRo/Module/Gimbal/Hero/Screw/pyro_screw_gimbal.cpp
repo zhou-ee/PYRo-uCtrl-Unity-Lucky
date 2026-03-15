@@ -90,12 +90,12 @@ screw_gimbal_t::gimbal_context_t screw_gimbal_t::get_ctx() const
 
 void screw_gimbal_t::_send_motor_command(gimbal_context_t *ctx)
 {
-    // ctx->motor.pitch->send_torque(ctx->data.out_pitch_torque);
+    ctx->motor.pitch->send_torque(ctx->data.out_pitch_torque);
     // ctx->motor.pitch->send_torque(ctx->data.out_gravity_torque +
     //                               ctx->data.out_pitch_torque);
     ctx->motor.yaw->send_torque(ctx->data.out_yaw_torque);
 
-    ctx->motor.pitch->send_torque(0);
+    // ctx->motor.pitch->send_torque(0);
     // ctx->motor.yaw->send_torque(0);
 }
 

@@ -178,7 +178,7 @@ static void deps_init()
     hybrid_deps_ptr->pid_deps.pitch_pid =
         new pid_t(260.0f, 0.1f, 20.0f, 20.0f, 200.0f, 200, 100, 4,pid_t::INTEGRAL_LIMIT | pid_t::OUTPUT_FILTER | pid_t::DERIVATIVE_FILTER | pid_t::DERIVATIVE_ON_MEASUREMENT);
     hybrid_deps_ptr->pid_deps.roll_pid =
-        new pid_t(120.0f, 0.1f, 6.0f, 20.0f, 200.0f, 200, 100, 4,pid_t::INTEGRAL_LIMIT | pid_t::OUTPUT_FILTER | pid_t::DERIVATIVE_FILTER | pid_t::DERIVATIVE_ON_MEASUREMENT);
+        new pid_t(360.0f, 0.1f, 10.0f, 20.0f, 200.0f, 200, 100, 4,pid_t::INTEGRAL_LIMIT | pid_t::OUTPUT_FILTER | pid_t::DERIVATIVE_FILTER | pid_t::DERIVATIVE_ON_MEASUREMENT);
 
     hybrid_deps_ptr->pid_deps.leg_pos_pid[0] =
         new pid_t(7.0f, 0.005f, 0.008f, 0.0f, 0.5f, 20, 10, 4);

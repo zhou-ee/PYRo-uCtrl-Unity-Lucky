@@ -176,7 +176,7 @@ void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
     else
     {
         screw_gimbal_cmd_ptr->pitch_delta_angle =
-            -rc_ctrl->rc.ch_ry * 0.0035f - rc_ctrl->mouse.y * 0.25f;
+            -rc_ctrl->rc.ch_ry * 0.0025f - rc_ctrl->mouse.y * 0.25f;
         screw_gimbal_cmd_ptr->yaw_delta_angle =
             -rc_ctrl->rc.ch_rx * 0.0025f - rc_ctrl->mouse.x * 0.6f;
     }

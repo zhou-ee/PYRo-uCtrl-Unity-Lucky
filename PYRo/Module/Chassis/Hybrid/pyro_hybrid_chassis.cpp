@@ -546,12 +546,12 @@ void hybrid_chassis_t::_send_motor_command() const
     // 麦轮和履带：仅在 flag 为 true 时发送指令
     if (freq_div_flag)
     {
-        // for (int i = 0; i < 4; i++)
-        //     _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
-        _ctx.motor.mecanum[0]->send_torque(_ctx.data.out_mecanum_torque[0]);
-        _ctx.motor.mecanum[1]->send_torque(0);
-        _ctx.motor.mecanum[2]->send_torque(0);
-        _ctx.motor.mecanum[3]->send_torque(0);
+        for (int i = 0; i < 4; i++)
+            _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
+        // _ctx.motor.mecanum[0]->send_torque(_ctx.data.out_mecanum_torque[0]);
+        // _ctx.motor.mecanum[1]->send_torque(0);
+        // _ctx.motor.mecanum[2]->send_torque(0);
+        // _ctx.motor.mecanum[3]->send_torque(0);
 
         for (int i = 0; i < 2; i++)
             _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
