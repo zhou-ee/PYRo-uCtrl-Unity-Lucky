@@ -52,9 +52,9 @@ void quad_booster_t::fsm_active_t::on_execute(owner *owner)
 
     // 3. 拨弹盘堵转判断
     // 通过拨盘电机的速度和扭矩判断是否堵转
-    constexpr float STALL_TIME_THRESHOLD   = 300.0f; // 堵转时间阈值
-    constexpr float STALL_TORQUE_THRESHOLD = 2.5f;   // 堵转扭矩阈值
-    constexpr float STALL_SPEED_THRESHOLD  = 0.2f;   // 堵转速度阈值
+    constexpr float STALL_TIME_THRESHOLD   = 400.0f; // 堵转时间阈值
+    constexpr float STALL_TORQUE_THRESHOLD = 3.0f;   // 堵转扭矩阈值
+    constexpr float STALL_SPEED_THRESHOLD  = 0.15f;   // 堵转速度阈值
 
     static float stall_start_time          = 0.0f;
     if (abs(owner->_ctx.data.current_trig_radps) < STALL_SPEED_THRESHOLD &&

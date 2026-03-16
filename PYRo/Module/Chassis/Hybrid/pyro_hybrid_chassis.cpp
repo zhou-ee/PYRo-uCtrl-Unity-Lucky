@@ -519,7 +519,7 @@ void hybrid_chassis_t::_mecanum_control()
         _ctx.data.out_mecanum_torque[i] = _ctx.pid.mecanum_pid[i]->calculate(
             _ctx.data.target_wheel_rpm[i], _ctx.data.current_wheel_rpm[i]);
     }
-    _power_control();
+    // _power_control();
     // _ctx.data.out_mecanum_torque[0] = 0;
     //  _ctx.data.out_mecanum_torque[1] = 0;
     //  // _ctx.data.out_mecanum_torque[2] = 0;
@@ -548,6 +548,10 @@ void hybrid_chassis_t::_send_motor_command() const
     {
         for (int i = 0; i < 4; i++)
             _ctx.motor.mecanum[i]->send_torque(_ctx.data.out_mecanum_torque[i]);
+        // _ctx.motor.mecanum[0]->send_torque(_ctx.data.out_mecanum_torque[0]);
+        // _ctx.motor.mecanum[1]->send_torque(0);
+        // _ctx.motor.mecanum[2]->send_torque(0);
+        // _ctx.motor.mecanum[3]->send_torque(0);
 
         for (int i = 0; i < 2; i++)
             _ctx.motor.track[i]->send_torque(_ctx.data.out_track_torque[i]);
