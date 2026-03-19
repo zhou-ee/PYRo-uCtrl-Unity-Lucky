@@ -133,7 +133,8 @@ public:
     void calculate_restricted_torques(
         motor_data_t* motor_data,
         int motor_num,
-        float power_limit
+        float power_limit,
+        float buf_engy
     ) const;
 
     /**
@@ -151,6 +152,7 @@ public:
         motor_data_t* motor_data,
         int motor_num,
         float power_limit,
+        float buf_engy,
         const float* power_ratios
     ) const;
 

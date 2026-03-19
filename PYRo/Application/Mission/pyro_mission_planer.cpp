@@ -12,6 +12,7 @@ extern "C"
     extern void hero_pc_com_init(void *argument);
 #elif BOARD_ID == CHASSIS_ID
     extern void hero_chassis_init(void *argument);
+    extern void hero_ui_init(void *argument);
 #endif
 #endif
 
@@ -31,6 +32,8 @@ extern "C"
 #elif BOARD_ID == CHASSIS_ID
         xTaskCreate(hero_chassis_init, "pyro_chassis_init", 512, nullptr,
                     configMAX_PRIORITIES - 1, nullptr);
+        xTaskCreate(hero_ui_init, "pyro_ui_init", 512, nullptr,
+                    configMAX_PRIORITIES - 3, nullptr);
 #endif
 #endif
 

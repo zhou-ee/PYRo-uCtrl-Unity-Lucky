@@ -55,6 +55,7 @@ void shoot_tx()
     {
         pyro::can_tx_drv_t::clear(0x102);
         pyro::can_tx_drv_t::add_data(0x102, 32, current_speed);
+        pyro::can_tx_drv_t::send(0x102,pyro::can_hub_t::get_instance()->hub_get_can_obj(pyro::can_hub_t::can2));
         last_speed = current_speed;
     }
 
@@ -84,10 +85,14 @@ void chassis_rxcmd(void const *rc_ctrl)
         mec_cmd_ptr->vy = 0;
     }
     mec_cmd_ptr->wz =
-        3 * static_cast<float>(static_cast<int8_t>(raw_data[2])) / 127.0f;
+        10 * static_cast<float>(static_cast<int8_t>(raw_data[2])) / 127.0f;
     if (abs(mec_cmd_ptr->wz) < 0.1f)
     {
         mec_cmd_ptr->wz = 0;
+    }
+    if (abs(mec_cmd_ptr->vx) + abs(mec_cmd_ptr->vy) > 1.0f)
+    {
+        mec_cmd_ptr->wz = 0.5f * mec_cmd_ptr->wz;
     }
     mec_cmd_ptr->mode = static_cast<pyro::cmd_base_t::mode_t>(raw_data[3]);
 }

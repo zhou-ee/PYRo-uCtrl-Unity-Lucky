@@ -44,7 +44,7 @@ void supercap_drv_t::supercap_task_t::run_loop()
 supercap_drv_t *supercap_drv_t::get_instance()
 {
     static supercap_drv_t instance(
-        uart_drv_t::get_instance(uart_drv_t::which_uart::uart10));
+        uart_drv_t::get_instance(uart_drv_t::which_uart::uart7));
     return &instance;
 }
 

@@ -47,7 +47,7 @@ class direct_gimbal_t final
     struct gimbal_context_t;
 
   public:
-    [[nodiscard]] gimbal_context_t get_ctx() const;
+    [[nodiscard]] const gimbal_context_t& get_ctx() const;
 
   private:
     direct_gimbal_t();

@@ -69,7 +69,7 @@ enum class interaction_sub_cmd : uint16_t
     UI_CMD_DRAW_2    = 0x0102,
     UI_CMD_DRAW_5    = 0x0103,
     UI_CMD_DRAW_7    = 0x0104,
-    UI_CMD_DRAW_CHAR = 0x0105,
+    UI_CMD_DRAW_CHAR = 0x0110,
     // 机器人间通信 (Robot -> Robot)
     ROBOT_COMM_START = 0x0200,
     ROBOT_COMM_END   = 0x02FF,

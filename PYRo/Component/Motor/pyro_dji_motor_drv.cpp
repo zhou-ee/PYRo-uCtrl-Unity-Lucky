@@ -168,7 +168,15 @@ status_t dji_motor_drv_t::send_torque(float torque)
     data.fill(0);
     torque=constraint(torque,_max_torque_f);
     int16_t torque_i = (int16_t)(torque / _max_torque_f * _max_torque_i);
-    _tx_frame->update_value(_register_id, torque_i);
+    if (_enable)
+    {
+        _tx_frame->update_value(_register_id, torque_i);
+    }
+    else
+    {
+        _tx_frame->update_value(_register_id, 0);
+    }
+
     return PYRO_OK;
 }
 

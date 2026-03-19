@@ -85,7 +85,7 @@ void direct_gimbal_t::_update_feedback()
     // _ctx.data.current_yaw_radps = _ctx.motor.yaw->get_current_rotate();
 }
 
-direct_gimbal_t::gimbal_context_t direct_gimbal_t::get_ctx() const
+const direct_gimbal_t::gimbal_context_t& direct_gimbal_t::get_ctx() const
 {
     return _ctx;
 }

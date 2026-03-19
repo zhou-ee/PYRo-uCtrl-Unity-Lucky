@@ -112,9 +112,9 @@ void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
     else
     {
         direct_gimbal_cmd_ptr->pitch_delta_angle =
-            -rc_ctrl->rc.ch_ry * 0.0035f - rc_ctrl->mouse.y * 0.1f;
+            -rc_ctrl->rc.ch_ry * 0.0035f - rc_ctrl->mouse.y * 0.25f;
         direct_gimbal_cmd_ptr->yaw_delta_angle =
-            -rc_ctrl->rc.ch_rx * 0.0035f - rc_ctrl->mouse.x * 0.1f;
+            -rc_ctrl->rc.ch_rx * 0.0035f - rc_ctrl->mouse.x * 0.6f;
     }
 }
 
@@ -189,7 +189,19 @@ void chassis_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
     vy     = static_cast<int8_t>(rc_ctrl->key.a.state   ? 127
                                  : rc_ctrl->key.d.state ? -127
                                                         : -rc_ctrl->rc.ch_lx * 127);
+    static float shift_using_time = 0;
+    static bool gyroscope_en = false;
+    if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.shift.ctrl
+        && shift_using_time != rc_ctrl->key.shift.change_time)
+    {
+        gyroscope_en = !gyroscope_en;
+        shift_using_time = rc_ctrl->key.shift.change_time;
+    }
     wz     = static_cast<int8_t>(rc_ctrl->rc.wheel * 127);
+    if (gyroscope_en)
+    {
+        wz = 127;
+    }
     active = 1;
     pyro::can_tx_drv_t::add_data(0x101, 8, vx);
     pyro::can_tx_drv_t::add_data(0x101, 8, vy);

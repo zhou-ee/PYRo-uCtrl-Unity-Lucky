@@ -32,6 +32,7 @@ void quad_booster_t::state_passive_t::execute(owner *owner)
     {
         owner->_ctx.data.out_trig_torque = 0.0f;
         _trigger_stopped                 = true;
+        owner->_ctx.motor.trigger_wheel->disable();
     }
     if (!_trigger_stopped)
         owner->_trigger_speed_control();

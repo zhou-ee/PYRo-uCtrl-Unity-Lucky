@@ -105,18 +105,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Component/Supercap/pyro_supercap_drv.cpp
         PYRo/Component/Measure/pyro_ms53l0m_drv.cpp
 
-        # --- Module ---
-#        PYRo/Module/Chassis/Rudder/pyro_rud_chassis.cpp
-#        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_active_state.cpp
-#        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_passive_state.cpp
-#        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_moving_state.cpp
-#        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_braking_state.cpp
-#        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_turning_state.cpp
-#        PYRo/Module/pyro_module_base.cpp
-#        PYRo/Module/Yaw/pyro_yaw.cpp
-#        PYRo/Module/Yaw/fsm/pyro_yaw_passive_state.cpp
-#        PYRo/Module/Yaw/fsm/pyro_yaw_active_state.cpp
-
         # --- Application ---
         ## --- Demo ---
         PYRo/Application/Demo/demo_task.cpp
@@ -145,10 +133,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         # --- Device ---
         PYRo/Device/BMI088/BMI088_driver.cpp
         PYRo/Device/BMI088/BMI088_middleware.cpp
+        PYRo/Component/Referee/UI/pyro_ui_drv.cpp
 
-#        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_moving_state.cpp
-#        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_braking_state.cpp
-#        PYRo/Module/Chassis/Rudder/fsm/pyro_rud_turning_state.cpp
 
 
 
@@ -176,6 +162,7 @@ if (ROBOT_ID EQUAL HERO_ID)
             PYRo/Application/Mission/Hero/pyro_chassis_app.cpp
             PYRo/Application/Mission/Hero/pyro_gimbal_app.cpp
             PYRo/Application/Mission/Hero/pyro_booster_app.cpp
+            PYRo/Application/Mission/Hero/pyro_ui_app.cpp
             PYRo/Application/Mission/Hero/pyro_pc_com.cpp
     )
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
@@ -262,6 +249,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Component/Powermeter
         PYRo/Component/RC
         PYRo/Component/Referee
+        PYRo/Component/Referee/UI
         PYRo/Component/Shoot
         PYRo/Component/Supercap
         PYRo/Component/Measure

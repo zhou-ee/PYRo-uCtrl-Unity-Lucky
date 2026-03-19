@@ -6,13 +6,25 @@ namespace pyro
 
 void quad_booster_t::fsm_active_t::on_enter(owner *owner)
 {
+    owner->_ctx.motor.trigger_wheel->enable();
+    for (int i = 0; i < 4; i++)
+    {
+        owner->_ctx.motor.fric_wheels[i]->enable();
+    }
     change_state(&_homing_state);
 }
 
 void quad_booster_t::fsm_active_t::on_execute(owner *owner)
 {
+    if (owner->_ctx.cmd->reset_trig)
+    {
+        change_state(&_homing_state);
+    }
     // 1. 摩擦轮控制
-    owner->_speed_contorl();
+    if (owner->_ctx.cmd->speed_contorl_en)
+    {
+        owner->_speed_contorl();
+    }
 
     if (owner->_ctx.cmd->fric_on)
     {
@@ -51,9 +63,11 @@ void quad_booster_t::fsm_active_t::on_execute(owner *owner)
 
     // 3. 拨弹盘堵转判断
     // 通过拨盘电机的速度和扭矩判断是否堵转
-    constexpr float STALL_TIME_THRESHOLD   = 300.0f; // 堵转时间阈值
-    constexpr float STALL_TORQUE_THRESHOLD = 2.5f;   // 堵转扭矩阈值
-    constexpr float STALL_SPEED_THRESHOLD  = 0.2f;   // 堵转速度阈值
+    constexpr float STALL_TIME_THRESHOLD   = 240.0f; // 堵转时间阈值
+    constexpr float HEAT_TIME              = 1500.0f;
+    constexpr float HEAT_TORQUE            = 12.0f;
+    constexpr float STALL_TORQUE_THRESHOLD = 3.2f;  // 堵转扭矩阈值
+    constexpr float STALL_SPEED_THRESHOLD  = 1.0f; // 堵转速度阈值
 
     static float stall_start_time          = 0.0f;
     if (abs(owner->_ctx.data.current_trig_radps) < STALL_SPEED_THRESHOLD &&
@@ -83,6 +97,27 @@ void quad_booster_t::fsm_active_t::on_execute(owner *owner)
     {
         stall_start_time = 0.0f; // 重置堵转计时
     }
+    // static float heat_stall_time = 0.0f;
+    // if (abs(owner->_ctx.data.current_trig_torque) > HEAT_TORQUE)
+    // {
+    //     if (heat_stall_time == 0.0f)
+    //     {
+    //         heat_stall_time = dwt_drv_t::get_timeline_ms();
+    //     }
+    //     else
+    //     {
+    //         const float elapsed_time =
+    //             dwt_drv_t::get_timeline_ms() - heat_stall_time;
+    //         if (elapsed_time >= HEAT_TIME)
+    //         {
+    //             owner->_ctx.motor.trigger_wheel->disable();
+    //         }
+    //     }
+    // }
+    // else
+    // {
+    //     heat_stall_time = 0.0f;
+    // }
 }
 
 void quad_booster_t::fsm_active_t::on_exit(owner *owner)

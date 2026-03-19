@@ -128,6 +128,7 @@ void power_control_drv_t::calculate_restricted_torques(
     motor_data_t* motor_data,
     int motor_num,
     float power_limit,
+    float buf_engy,
     const float* power_ratios
 ) const
 {
@@ -217,6 +218,14 @@ void power_control_drv_t::calculate_restricted_torques(
         }
     }
 
+    if (buf_engy < 40.0f)
+    {
+        for (int i = 0; i < motor_num; i++)
+        {
+            motor_data[i].restricted_torque = 0.8f * motor_data[i].restricted_torque;
+        }
+    }
+
     // 更新 last_torque 为下一次滤波做准备
     for(int i = 0; i < motor_num; i++)
     {
@@ -237,10 +246,11 @@ void power_control_drv_t::calculate_restricted_torques(
 void power_control_drv_t::calculate_restricted_torques(
     motor_data_t* motor_data,
     int motor_num,
-    float power_limit
+    float power_limit,
+    float buf_engy
 ) const
 {
-    calculate_restricted_torques(motor_data, motor_num, power_limit, nullptr);
+    calculate_restricted_torques(motor_data, motor_num, power_limit, buf_engy,nullptr);
 }
 
 /**

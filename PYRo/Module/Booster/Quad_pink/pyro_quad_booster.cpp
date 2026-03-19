@@ -30,10 +30,10 @@ status_t quad_booster_t::_init()
     // 摩擦轮 PID
     _ctx.pid.fric_pid[0] = new pid_t(6.40f, 0.02f, 0.02f, 2.5f, 20, 270, 80, 4);
     _ctx.pid.fric_pid[1] =
-        new pid_t(6.968f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
+        new pid_t(10.968f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
     _ctx.pid.fric_pid[2] = new pid_t(6.40f, 0.02f, 0.02f, 2.5f, 20, 320, 80, 4);
     _ctx.pid.fric_pid[3] =
-        new pid_t(6.968f, 0.02f, 0.02f, 2.5f, 20, 270, 80, 4);
+        new pid_t(10.968f, 0.02f, 0.02f, 2.5f, 20, 270, 80, 4);
 
     // 2. 拨弹电机初始化
     _ctx.motor.trigger_wheel =
@@ -41,9 +41,9 @@ status_t quad_booster_t::_init()
 
     // 拨弹 PID
     _ctx.pid.trigger_pos_pid =
-        new pid_t(10.2f, 0.03f, 0.005f, 1.0f, 15.0f, 200, 100, 4);
+        new pid_t(8.2f, 0.03f, 0.005f, 1.0f, 10.0f, 200, 100, 4);
     _ctx.pid.trigger_spd_pid =
-        new pid_t(3.6f, 0.02f, 0.005f, 2.0f, 20.0f, 200, 100, 4);
+        new pid_t(3.0f, 0.02f, 0.005f, 2.0f, 20.0f, 200, 100, 4);
     // 14
     //  重置数据
     _ctx.data.last_rotor_rad = 0.0f; // 默认从0开始比较
@@ -138,6 +138,7 @@ void quad_booster_t::_speed_contorl()
     std::array<uint8_t, 8> raw_data{};
 
     // 仅在成功接收到新弹速的这一帧，才进行闭环计算
+    static float calc_speed[3];
     if (can_rx_drv_t::get_data(pyro::can_hub_t::can3, 0x102, raw_data))
     {
         // 1. 更新弹速历史数据
@@ -145,12 +146,15 @@ void quad_booster_t::_speed_contorl()
         _ctx.shoot_data.ball_speed[1] = _ctx.shoot_data.ball_speed[0];
         _ctx.shoot_data.ball_speed[0] =
             *reinterpret_cast<float *>(raw_data.data());
+        calc_speed[2] = _ctx.shoot_data.ball_speed[2];
+        calc_speed[1] = _ctx.shoot_data.ball_speed[1];
+        calc_speed[0] = _ctx.shoot_data.ball_speed[0];
 
         for (int i = 0; i < 3; i++)
         {
-            if (_ctx.shoot_data.ball_speed[i] == 0.0f)
+            if (calc_speed[i] == 0.0f)
             {
-                _ctx.shoot_data.ball_speed[i] = _ctx.cmd->target_speed;
+                calc_speed[i] = _ctx.shoot_data.ball_speed[0];
             }
         }
 
@@ -164,10 +168,14 @@ void quad_booster_t::_speed_contorl()
             constexpr float w2 = 0.07f; // 上上发
 
             // --- B. 计算带符号的均方误差 ---
-            float e0 = _ctx.shoot_data.ball_speed[0] - _ctx.cmd->target_speed;
-            float e1 = _ctx.shoot_data.ball_speed[1] - _ctx.cmd->target_speed;
-            float e2 = _ctx.shoot_data.ball_speed[2] - _ctx.cmd->target_speed;
-
+            float e0 = calc_speed[0] - _ctx.cmd->target_speed;
+            float e1 = calc_speed[1] - _ctx.cmd->target_speed;
+            float e2 = calc_speed[2] - _ctx.cmd->target_speed;
+            if (abs(e0) > abs(e1) + abs(e2))
+            {
+                calc_speed[0] = 0.5f * calc_speed[1] + 0.5f * calc_speed[2];
+                e0 = calc_speed[0] - _ctx.cmd->target_speed;
+            }
             // 采用 e * |e| 保留误差方向 (加速或减速)
             float signed_weighted_mse = (w0 * e0 * std::abs(e0)) +
                                         (w1 * e1 * std::abs(e1)) +
@@ -200,7 +208,7 @@ void quad_booster_t::_speed_contorl()
     }
 }
 
-quad_booster_t::booster_ctx_t quad_booster_t::get_ctx() const
+quad_booster_t::booster_ctx_t& quad_booster_t::get_ctx()
 {
     return _ctx;
 }
@@ -249,6 +257,10 @@ bool quad_booster_t::_heat_control()
     can_rx_drv_t::get_data(pyro::can_hub_t::can3, 0x103, raw_data);
     _ctx.data.current_heat = *reinterpret_cast<uint16_t *>(raw_data.data());
     _ctx.data.current_heat_limit = *reinterpret_cast<uint16_t *>(raw_data.data() + 2);
+    if (_ctx.data.current_heat_limit == 0)
+    {
+        return true;
+    }
 
     if (_ctx.data.current_heat + 100 < _ctx.data.current_heat_limit)
     {

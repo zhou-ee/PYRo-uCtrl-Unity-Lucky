@@ -9,12 +9,12 @@ void quad_booster_t::fsm_active_t::state_stall_t::enter(owner *owner)
     owner->_ctx.data.target_trig_radps = 0;
     if (&owner->_state_active._homing_state == owner->_state_active._last_state)
     {
-        owner->_ctx.data.target_trig_rad -= 1.32f; // 待调整
+        owner->_ctx.data.target_trig_rad -= 0.0f; // 待调整
     }
     else if (&owner->_state_active._stall_state ==
              owner->_state_active._last_state)
     {
-        // 什么都不做
+
     }
     else
     {
@@ -27,12 +27,18 @@ void quad_booster_t::fsm_active_t::state_stall_t::execute(owner *owner)
 
     // 回到合适角度后，切换回拨弹状态
     if (fabs(owner->_ctx.data.current_trig_rad -
-             owner->_ctx.data.target_trig_rad) < 0.12f)
+             owner->_ctx.data.target_trig_rad) < 0.2f)
     {
         request_switch(&owner->_state_active._interim_state);
     }
-
     owner->_trigger_position_control();
+    // if (&owner->_state_active._stall_state ==
+    //          owner->_state_active._last_state)
+    // {
+    //     owner->_ctx.data.target_trig_rad = owner->_ctx.data.current_trig_rad;
+    //     owner->_ctx.data.target_trig_radps = 0;
+    //     owner->_ctx.data.out_trig_torque = 0;
+    // }
     owner->_send_trigger_command();
 }
 

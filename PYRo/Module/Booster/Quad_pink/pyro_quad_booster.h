@@ -16,10 +16,12 @@ struct quad_booster_cmd_t final : public cmd_base_t
 {
     bool fric_on;     // 摩擦轮开启
     bool fire_enable; // 拨弹开启
+    bool speed_contorl_en;
+    bool reset_trig;
     float target_speed;
 
     quad_booster_cmd_t()
-        : fric_on(false), fire_enable(false), target_speed(0.0f)
+        : fric_on(false), fire_enable(false), speed_contorl_en(true), reset_trig(false), target_speed(0.0f)
     {
     }
 };
@@ -47,7 +49,7 @@ class quad_booster_t final
   public:
     quad_booster_t(const quad_booster_t &)            = delete;
     quad_booster_t &operator=(const quad_booster_t &) = delete;
-    [[nodiscard]] booster_ctx_t get_ctx() const;
+    [[nodiscard]] booster_ctx_t& get_ctx();
 
   private:
     quad_booster_t();
@@ -119,8 +121,8 @@ class quad_booster_t final
     struct shoot_data_t
     {
         float ball_speed[3]{};
-        float fric1_mps = 12.2f;
-        float fric2_mps = 8.5f;
+        float fric1_mps = 12.5f;
+        float fric2_mps = 7.5f;
     };
 
     struct booster_ctx_t

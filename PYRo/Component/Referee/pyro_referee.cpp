@@ -7,6 +7,7 @@
 #include "pyro_crc.h"
 #include "pyro_dwt_drv.h"
 #include "pyro_core_config.h"
+#include "pyro_core_dma_heap.h"
 #include <cstring> // for memcpy, strlen
 
 namespace pyro
@@ -58,6 +59,7 @@ referee_drv_t::referee_drv_t(uart_drv_t *uart_handle)
       _robot_id(0), _is_online(false), _last_update_time(0)
 {
     fifo_s_init(&_fifo, _fifo_buf, FIFO_BUF_LEN);
+    _tx_buffer = static_cast<uint8_t *>(pvPortDmaMalloc(MAX_TX_FRAME_LEN));
     memset(_tx_buffer, 0, MAX_TX_FRAME_LEN);
 
     _task = new referee_task(this);
@@ -396,6 +398,7 @@ void referee_drv_t::solve_data(const uint8_t *frame)
             break;
         case cmd_id::ROBOT_STATE:
             safe_copy(_data.robot_status, frame + index, data_length);
+            _robot_id = _data.robot_status.robot_id;  // <--- 新增这行，自动同步真实ID！
             break;
         case cmd_id::POWER_HEAT_DATA:
             safe_copy(_data.power_heat, frame + index, data_length);

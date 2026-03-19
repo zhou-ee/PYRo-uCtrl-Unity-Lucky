@@ -136,7 +136,7 @@ class referee_drv_t
 
     uint8_t _send_seq;
     uint16_t _robot_id;
-    uint8_t _tx_buffer[MAX_TX_FRAME_LEN]{};
+    uint8_t *_tx_buffer;
 
     std::bitset<MAX_CMD_ID_COUNT> _enabled_ids;
     bool _is_online;

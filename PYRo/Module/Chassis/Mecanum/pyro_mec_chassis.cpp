@@ -67,7 +67,6 @@ status_t mec_chassis_t::_init()
     {
         // pid = new pid_t(0.32f, 0.0003f, 0.0000f, 1.0f, 20.0f);
         pid = new pid_t(0.2f, 0.00f, 0.0000f, 1.0f, 20.0f);
-
     }
 
     // 跟随 PID (位置环：输入弧度误差，输出 rad/s)
@@ -122,15 +121,16 @@ void mec_chassis_t::_power_control()
             static_cast<float>(referee_drv_t::get_instance()
                                    ->get_data()
                                    .robot_status.chassis_power_limit) +
-                100.0f);
+                100.0f,buffer_engy);
     }
     else
     {
         power_control_drv_t::get_instance().calculate_restricted_torques(
         _ctx.power_motor_data, 4, referee_drv_t::get_instance()
                                ->get_data()
-                               .robot_status.chassis_power_limit);
-        // _ctx.power_motor_data, 4, 40);
+                               .robot_status.chassis_power_limit,buffer_engy);
+        // power_control_drv_t::get_instance().calculate_restricted_torques(
+        //     _ctx.power_motor_data, 4, 240);
     }
     for (int i = 0; i < 4; i++)
         _ctx.data.out_wheel_torque[i] =
@@ -337,7 +337,63 @@ void mec_chassis_t::_fsm_execute()
         _main_fsm.change_state(&_state_passive);
     }
 
-    _send_supercap_command();
+    static bool _last_status = false;
+    static uint32_t _timer = 0;
+    static bool _delay_done = false;
+
+    bool current_status = referee_drv_t::get_instance()->get_data().robot_status.power_management_chassis_output;
+
+    if (current_status)
+    {
+        // --- 情况 A：Chassis 有输出 ---
+        if (!_last_status)
+        {
+            // 刚切到有输出状态：重置计时器和延迟标志
+            _timer = 0;
+            _delay_done = false;
+        }
+
+        if (!_delay_done)
+        {
+            // 1. 处理 1000 tick 的初始延迟
+            if (++_timer >= 1000)
+            {
+                _delay_done = true;
+                _timer = 0; // 重置用于后续的 10 tick 周期
+
+                // 达到 1000 tick 时立即发送第一次开启指令
+                _ctx.supercap_cmd.use_cap = 1;
+                _send_supercap_command();
+            }
+        }
+        else
+        {
+            // 2. 延迟结束后，以 10 tick 为周期发送
+            if (++_timer >= 10)
+            {
+                _timer = 0;
+                _ctx.supercap_cmd.use_cap = 1;
+                _send_supercap_command();
+            }
+        }
+    }
+    else
+    {
+        // --- 情况 B：Chassis 无输出 ---
+        if (_last_status)
+        {
+            // 刚切换到无输出状态：发送一次 use_cap = 0
+            _ctx.supercap_cmd.use_cap = 0;
+            _send_supercap_command();
+
+            // 重置状态位，防止重复发送
+            _delay_done = false;
+            _timer = 0;
+        }
+    }
+
+    // 更新旧状态
+    _last_status = current_status;
 
     _main_fsm.execute(this);
 }
