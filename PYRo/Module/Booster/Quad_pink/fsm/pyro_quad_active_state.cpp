@@ -63,16 +63,21 @@ void quad_booster_t::fsm_active_t::on_execute(owner *owner)
 
     // 3. 拨弹盘堵转判断
     // 通过拨盘电机的速度和扭矩判断是否堵转
-    constexpr float STALL_TIME_THRESHOLD   = 240.0f; // 堵转时间阈值
-    constexpr float HEAT_TIME              = 1500.0f;
-    constexpr float HEAT_TORQUE            = 12.0f;
-    constexpr float STALL_TORQUE_THRESHOLD = 3.2f;  // 堵转扭矩阈值
-    constexpr float STALL_SPEED_THRESHOLD  = 1.0f; // 堵转速度阈值
+    constexpr float STALL_TIME_THRESHOLD   = 300.0f; // 堵转时间阈值
+    constexpr float HEAT_TIME              = 2000.0f;
+    constexpr float HEAT_TORQUE            = 15.0f;
+    constexpr float STALL_TORQUE_THRESHOLD = 5.0f;   // 堵转扭矩阈值
+    constexpr float STALL_SPEED_THRESHOLD  = 0.3f;   // 堵转速度阈值
 
     static float stall_start_time          = 0.0f;
+    static uint16_t clear_stall_counter    = 0;      // 新增：用于防抖计时的计数器
+
     if (abs(owner->_ctx.data.current_trig_radps) < STALL_SPEED_THRESHOLD &&
         abs(owner->_ctx.data.current_trig_torque) > STALL_TORQUE_THRESHOLD)
     {
+        // 只要满足堵转条件，立刻清空“退出堵转”的计数器
+        clear_stall_counter = 0;
+
         if (stall_start_time == 0.0f)
         {
             stall_start_time = dwt_drv_t::get_timeline_ms();
@@ -89,35 +94,69 @@ void quad_booster_t::fsm_active_t::on_execute(owner *owner)
                 {
                     reset();
                 }
-                stall_start_time = 0.0f; // 重置堵转计时
+                stall_start_time = 0.0f; // 触发反转后重置堵转计时
             }
         }
     }
     else
     {
-        stall_start_time = 0.0f; // 重置堵转计时
+        // 不满足堵转条件时，防抖逻辑启动
+        if (stall_start_time != 0.0f)
+        {
+            clear_stall_counter++;
+            if (clear_stall_counter >= 20) // 连续20个周期不满足堵转条件
+            {
+                stall_start_time = 0.0f;   // 真正重置堵转计时
+                clear_stall_counter = 0;   // 计数器归零
+            }
+        }
+        else
+        {
+            clear_stall_counter = 0; // 平时未触发堵转检测时，保持计数器为0
+        }
     }
-    // static float heat_stall_time = 0.0f;
-    // if (abs(owner->_ctx.data.current_trig_torque) > HEAT_TORQUE)
-    // {
-    //     if (heat_stall_time == 0.0f)
-    //     {
-    //         heat_stall_time = dwt_drv_t::get_timeline_ms();
-    //     }
-    //     else
-    //     {
-    //         const float elapsed_time =
-    //             dwt_drv_t::get_timeline_ms() - heat_stall_time;
-    //         if (elapsed_time >= HEAT_TIME)
-    //         {
-    //             owner->_ctx.motor.trigger_wheel->disable();
-    //         }
-    //     }
-    // }
-    // else
-    // {
-    //     heat_stall_time = 0.0f;
-    // }
+
+    // 4. 拨弹盘热量（过载）保护逻辑
+    static float heat_stall_time = 0.0f;
+    static uint16_t clear_heat_counter = 0; // 新增：用于热量保护防抖的计数器
+
+    if (abs(owner->_ctx.data.current_trig_torque) > HEAT_TORQUE)
+    {
+        // 只要扭矩超标，立刻清空“退出过载”的计数器
+        clear_heat_counter = 0;
+
+        if (heat_stall_time == 0.0f)
+        {
+            heat_stall_time = dwt_drv_t::get_timeline_ms();
+        }
+        else
+        {
+            const float elapsed_time =
+                dwt_drv_t::get_timeline_ms() - heat_stall_time;
+            if (elapsed_time >= HEAT_TIME)
+            {
+                // 持续高扭矩超过 1500ms，切断电机输出以保护硬件
+                owner->_ctx.motor.trigger_wheel->disable();
+            }
+        }
+    }
+    else
+    {
+        // 扭矩回落到安全范围内时，防抖逻辑启动
+        if (heat_stall_time != 0.0f)
+        {
+            clear_heat_counter++;
+            if (clear_heat_counter >= 20) // 连续20个周期扭矩低于阈值
+            {
+                heat_stall_time = 0.0f;   // 真正重置热量计时
+                clear_heat_counter = 0;   // 计数器归零
+            }
+        }
+        else
+        {
+            clear_heat_counter = 0; // 平时未触发时，保持计数器为0
+        }
+    }
 }
 
 void quad_booster_t::fsm_active_t::on_exit(owner *owner)

@@ -41,9 +41,9 @@ status_t quad_booster_t::_init()
 
     // 拨弹 PID
     _ctx.pid.trigger_pos_pid =
-        new pid_t(8.2f, 0.03f, 0.005f, 1.0f, 10.0f, 200, 100, 4);
+        new pid_t(18.6f, 0.003f, 0.0002f, 1.0f, 10.0f, 30, 5, 4);
     _ctx.pid.trigger_spd_pid =
-        new pid_t(3.0f, 0.02f, 0.005f, 2.0f, 20.0f, 200, 100, 4);
+        new pid_t(1.8f, 0.05f, 0.00005f, 2.0f, 20.0f, 10, 5, 4);
     // 14
     //  重置数据
     _ctx.data.last_rotor_rad = 0.0f; // 默认从0开始比较
@@ -83,7 +83,7 @@ void quad_booster_t::_update_feedback()
     _ctx.motor.trigger_wheel->update_feedback();
 
     constexpr float reciprocal_ratio =
-        dji_m3508_motor_drv_t::reciprocal_reduction_ratio;
+        dji_m3508_motor_drv_t::reciprocal_reduction_ratio_14;
 
     // --- A. 速度反馈 ---
     _ctx.data.current_trig_radps =

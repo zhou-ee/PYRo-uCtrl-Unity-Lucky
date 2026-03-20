@@ -122,7 +122,7 @@ class quad_booster_t final
     {
         float ball_speed[3]{};
         float fric1_mps = 12.5f;
-        float fric2_mps = 7.5f;
+        float fric2_mps = 8.5f;
     };
 
     struct booster_ctx_t

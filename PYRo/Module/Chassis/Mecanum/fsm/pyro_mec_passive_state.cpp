@@ -7,6 +7,10 @@ void mec_chassis_t::state_passive_t::enter(owner *owner)
     // 清零目标
     for (int i = 0; i < 4; i++)
     {
+        owner->_ctx.motor.wheels[i]->disable();
+    }
+    for (int i = 0; i < 4; i++)
+    {
         owner->_ctx.data.target_wheel_rpm[i] = 0;
         owner->_ctx.data.out_wheel_torque[i] = 0;
     }

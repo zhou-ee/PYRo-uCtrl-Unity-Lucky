@@ -44,8 +44,8 @@ ui_figure_data_t ui_drv_t::create_base_figure(const char name[3], ui_operate op,
 ui_drv_t& ui_drv_t::draw_line(const char name[3], ui_operate op, uint8_t layer, ui_color color, uint16_t width, uint16_t start_x, uint16_t start_y, uint16_t end_x, uint16_t end_y)
 {
     auto fig = create_base_figure(name, op, ui_figure::LINE, layer, color, width, start_x, start_y);
-    fig.details_a = end_x;
-    fig.details_b = end_y;
+    fig.details_d = end_x;
+    fig.details_e = end_y;
     _buffer.push_back(fig);
     return *this;
 }

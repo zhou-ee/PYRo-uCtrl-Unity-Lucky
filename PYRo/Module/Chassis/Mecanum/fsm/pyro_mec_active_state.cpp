@@ -6,6 +6,10 @@ namespace pyro
 void mec_chassis_t::state_active_t::enter(owner *owner)
 {
     // 进入 Active 模式时，重置 PID
+    for (int i = 0; i < 4; i++)
+    {
+        owner->_ctx.motor.wheels[i]->enable();
+    }
     owner->_ctx.pid.follow_pid->clear();
     for(auto* pid : owner->_ctx.pid.wheel_pid) {
         pid->clear();
