@@ -54,9 +54,9 @@ void chassis_rxcmd(void const *rc_ctrl)
     pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can1, 0x101,
                                  raw_data);
     hybrid_cmd_ptr->vx =
-        1.0f * static_cast<float>(static_cast<int8_t>(raw_data[0])) / 127.0f;
+        2.5f * static_cast<float>(static_cast<int8_t>(raw_data[0])) / 127.0f;
     hybrid_cmd_ptr->vy =
-        1.0f * static_cast<float>(static_cast<int8_t>(raw_data[1])) / 127.0f;
+        2.5f * static_cast<float>(static_cast<int8_t>(raw_data[1])) / 127.0f;
     hybrid_cmd_ptr->mode =
         static_cast<pyro::cmd_base_t::mode_t>(raw_data[3] & 0x01);
     hybrid_cmd_ptr->track_en    = true;
@@ -181,9 +181,9 @@ static void deps_init()
         new pid_t(360.0f, 0.1f, 10.0f, 20.0f, 200.0f, 200, 100, 4,pid_t::INTEGRAL_LIMIT | pid_t::OUTPUT_FILTER | pid_t::DERIVATIVE_FILTER | pid_t::DERIVATIVE_ON_MEASUREMENT);
 
     hybrid_deps_ptr->pid_deps.leg_pos_pid[0] =
-        new pid_t(7.0f, 0.005f, 0.008f, 0.0f, 0.5f, 20, 10, 4);
+        new pid_t(10.0f, 0.005f, 0.008f, 0.0f, 0.5f, 20, 10, 4);
     hybrid_deps_ptr->pid_deps.leg_pos_pid[1] =
-        new pid_t(7.0f, 0.005f, 0.008f, 0.0f, 0.5f, 20, 10, 4);
+        new pid_t(10.0f, 0.005f, 0.008f, 0.0f, 0.5f, 20, 10, 4);
     hybrid_deps_ptr->pid_deps.leg_vel_pid[0] =
         new pid_t(200.0f, 0.005f, 0.008f, 0.0f, 100.0f, 20, 10, 4);
     hybrid_deps_ptr->pid_deps.leg_vel_pid[1] =
