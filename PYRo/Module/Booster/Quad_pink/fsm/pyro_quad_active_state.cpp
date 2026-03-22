@@ -63,9 +63,9 @@ void quad_booster_t::fsm_active_t::on_execute(owner *owner)
 
     // 3. 拨弹盘堵转判断
     // 通过拨盘电机的速度和扭矩判断是否堵转
-    constexpr float STALL_TIME_THRESHOLD   = 300.0f; // 堵转时间阈值
+    constexpr float STALL_TIME_THRESHOLD   = 500.0f; // 堵转时间阈值
     constexpr float HEAT_TIME              = 2000.0f;
-    constexpr float HEAT_TORQUE            = 15.0f;
+    constexpr float HEAT_TORQUE            = 10.0f;
     constexpr float STALL_TORQUE_THRESHOLD = 5.0f;   // 堵转扭矩阈值
     constexpr float STALL_SPEED_THRESHOLD  = 0.3f;   // 堵转速度阈值
 
@@ -104,7 +104,7 @@ void quad_booster_t::fsm_active_t::on_execute(owner *owner)
         if (stall_start_time != 0.0f)
         {
             clear_stall_counter++;
-            if (clear_stall_counter >= 20) // 连续20个周期不满足堵转条件
+            if (clear_stall_counter >= 8) // 连续20个周期不满足堵转条件
             {
                 stall_start_time = 0.0f;   // 真正重置堵转计时
                 clear_stall_counter = 0;   // 计数器归零
@@ -146,7 +146,7 @@ void quad_booster_t::fsm_active_t::on_execute(owner *owner)
         if (heat_stall_time != 0.0f)
         {
             clear_heat_counter++;
-            if (clear_heat_counter >= 20) // 连续20个周期扭矩低于阈值
+            if (clear_heat_counter >= 10) // 连续20个周期扭矩低于阈值
             {
                 heat_stall_time = 0.0f;   // 真正重置热量计时
                 clear_heat_counter = 0;   // 计数器归零

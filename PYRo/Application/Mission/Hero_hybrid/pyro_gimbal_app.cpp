@@ -268,6 +268,7 @@ void deps_init()
         new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_5, can_hub_t::can3);
 
     // Yaw: 使用 DJI GM6020 (ID 2, CAN1)
+
     screw_gimbal_deps->motor_deps.yaw = new dji_gm_6020_motor_drv_t(
         dji_motor_tx_frame_t::id_3, can_hub_t::can1);
 

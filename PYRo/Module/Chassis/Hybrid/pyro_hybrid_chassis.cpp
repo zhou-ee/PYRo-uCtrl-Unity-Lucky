@@ -295,7 +295,7 @@ void hybrid_chassis_t::_power_control()
     // else
     // {
     power_control_drv_t::get_instance().calculate_restricted_torques(
-        _ctx.power_motor_data, 4, 240);
+        _ctx.power_motor_data, 4, 240,60);
     // }
     for (int i = 0; i < 4; i++)
         _ctx.data.out_mecanum_torque[i] =
@@ -353,20 +353,20 @@ void hybrid_chassis_t::_leg_vmc()
 
         // 6. 虚拟阻尼墙限位保护
         float tau_wall = 0.0f;
-        // if (theta > LEG_MAX_POS - LEG_POS_BUFFER_RAD)
-        // {
-        //     tau_wall =
-        //         -LEG_K_WALL * (theta - (LEG_MAX_POS - LEG_POS_BUFFER_RAD)) -
-        //         LEG_D_WALL * theta_dot;
-        //     tau_wall = fminf(0.0f, tau_wall);
-        // }
-        // else if (theta < LEG_MIN_POS + LEG_POS_BUFFER_RAD)
-        // {
-        //     tau_wall =
-        //         LEG_K_WALL * ((LEG_MIN_POS + LEG_POS_BUFFER_RAD) - theta) -
-        //         LEG_D_WALL * theta_dot;
-        //     tau_wall = fmaxf(0.0f, tau_wall);
-        // }
+        if (theta > LEG_MAX_POS - LEG_POS_BUFFER_RAD)
+        {
+            tau_wall =
+                -LEG_K_WALL * (theta - (LEG_MAX_POS - LEG_POS_BUFFER_RAD)) -
+                LEG_D_WALL * theta_dot;
+            tau_wall = fminf(0.0f, tau_wall);
+        }
+        else if (theta < LEG_MIN_POS + LEG_POS_BUFFER_RAD)
+        {
+            tau_wall =
+                LEG_K_WALL * ((LEG_MIN_POS + LEG_POS_BUFFER_RAD) - theta) -
+                LEG_D_WALL * theta_dot;
+            tau_wall = fmaxf(0.0f, tau_wall);
+        }
 
         // 7. 力矩饱和安全限制 (基于优先级的削峰逻辑)
         const float tau_priority = tau_gravity + tau_wall;

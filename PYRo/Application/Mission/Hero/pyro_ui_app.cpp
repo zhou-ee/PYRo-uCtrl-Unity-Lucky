@@ -13,11 +13,13 @@ static pyro::vt03_drv_t::vt03_ctrl_t const *vt03_ctrl_ptr = nullptr;
 static pyro::referee_drv_t *referee_ptr                   = nullptr;
 static pyro::ui_drv_t *ui_ptr                             = nullptr;
 
-float fric1_mps                                           = 0.0f;
-float fric2_mps                                           = 0.0f;
-bool fric_en                                              = false;
+static float fric1_mps                                    = 0.0f;
+static float fric2_mps                                    = 0.0f;
+static bool fric_en                                       = false;
 static bool flush_flag                                    = false;
 static bool speed_control_en                              = false;
+static bool fric1_online                                  = false;
+static bool fric2_online                                  = false;
 
 /**
  * @brief 静态 UI 绘制（仅在初始化或手动刷新时调用，使用 ADD）
@@ -31,7 +33,7 @@ void ui_draw_static()
     // 准星竖线
     ui_ptr
         ->draw_line("L01", pyro::ui_operate::ADD, 1, pyro::ui_color::GREEN, 4,
-                    860, 615,1060 , 615)
+                    860, 615, 1060, 615)
         .draw_line("L02", ui_operate::ADD, 1, pyro::ui_color::ORANGE, 4, 860,
                    585, 1060, 585);
     ui_ptr->flush(); // 拼包发送
@@ -61,23 +63,56 @@ void ui_draw_static()
 void ui_update_dynamic()
 {
     // 修改摩擦轮速度值 (MODIFY)
-    if (speed_control_en)
+    if (fric_en)
     {
-        ui_ptr
-            ->draw_float("DF1", pyro::ui_operate::MODIFY, 4,
-                         pyro::ui_color::YELLOW, 20, 2, 230, 800, fric1_mps)
-            .draw_float("DF2", pyro::ui_operate::MODIFY, 4,
-                        pyro::ui_color::YELLOW, 20, 2, 230, 750, fric2_mps);
+        if (fric1_online)
+        {
+            if (speed_control_en)
+            {
+                ui_ptr->draw_float("DF1", pyro::ui_operate::MODIFY, 4,
+                                   pyro::ui_color::YELLOW, 20, 2, 230, 800,
+                                   fric1_mps);
+            }
+            else
+            {
+                ui_ptr->draw_float("DF1", pyro::ui_operate::MODIFY, 4,
+                                   pyro::ui_color::WHITE, 20, 2, 230, 800,
+                                   fric1_mps);
+            }
+        }
+        else
+        {
+            ui_ptr->draw_float("DF1", pyro::ui_operate::MODIFY, 4,
+                               pyro::ui_color::BLACK, 20, 2, 230, 800, 0.0f);
+        }
+        if (fric2_online)
+        {
+            if (speed_control_en)
+            {
+                ui_ptr->draw_float("DF2", pyro::ui_operate::MODIFY, 4,
+                                   pyro::ui_color::YELLOW, 20, 2, 230, 750,
+                                   fric2_mps);
+            }
+            else
+            {
+                ui_ptr->draw_float("DF2", pyro::ui_operate::MODIFY, 4,
+                                   pyro::ui_color::WHITE, 20, 2, 230, 750,
+                                   fric2_mps);
+            }
+        }
+        else
+        {
+            ui_ptr->draw_float("DF2", pyro::ui_operate::MODIFY, 4,
+                               pyro::ui_color::BLACK, 20, 2, 230, 750, 0.0f);
+        }
     }
     else
     {
-        ui_ptr
-            ->draw_float("DF1", pyro::ui_operate::MODIFY, 4,
-                         pyro::ui_color::WHITE, 20, 2, 230, 800, fric1_mps)
-            .draw_float("DF2", pyro::ui_operate::MODIFY, 4,
-                        pyro::ui_color::WHITE, 20, 2, 230, 750, fric2_mps);
+        ui_ptr->draw_float("DF1", pyro::ui_operate::MODIFY, 4,
+                               pyro::ui_color::WHITE, 20, 2, 230, 800, 0.0f);
+        ui_ptr->draw_float("DF2", pyro::ui_operate::MODIFY, 4,
+                               pyro::ui_color::WHITE, 20, 2, 230, 750, 0.0f);
     }
-
     ui_ptr->flush();
 }
 
@@ -92,6 +127,8 @@ void uirxbooster()
         fric_en          = (raw_data[2] & 0x01) != 0;
         flush_flag       = (raw_data[2] & 0x02) != 0;
         speed_control_en = (raw_data[2] & 0x04) != 0;
+        fric1_online     = (raw_data[2] & 0x08) != 0;
+        fric2_online     = (raw_data[2] & 0x10) != 0;
     }
 }
 

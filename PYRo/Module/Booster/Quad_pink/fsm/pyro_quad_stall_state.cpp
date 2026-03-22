@@ -5,16 +5,19 @@ namespace pyro
 {
 void quad_booster_t::fsm_active_t::state_stall_t::enter(owner *owner)
 {
-    owner->_ctx.data.target_trig_rad   = owner->_ctx.data.current_trig_rad;
-    owner->_ctx.data.target_trig_radps = 0;
+
     if (&owner->_state_active._homing_state == owner->_state_active._last_state)
     {
+        owner->_ctx.data.target_trig_rad   = owner->_ctx.data.current_trig_rad;
+        owner->_ctx.data.target_trig_radps = 0;
         owner->_ctx.data.target_trig_rad -= 0.1f; // 待调整
     }
     else if (&owner->_state_active._stall_state ==
              owner->_state_active._last_state)
     {
-
+        owner->_ctx.data.target_trig_rad   = owner->_ctx.data.current_trig_rad;
+        owner->_ctx.data.target_trig_radps = 0;
+        owner->_ctx.data.out_trig_torque = 0;
     }
     else
     {

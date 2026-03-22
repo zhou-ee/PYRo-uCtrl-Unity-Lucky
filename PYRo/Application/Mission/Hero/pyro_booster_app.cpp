@@ -16,7 +16,7 @@ static pyro::quad_booster_t *quad_booster_ptr             = nullptr;
 static pyro::quad_booster_cmd_t *quad_booster_cmd_ptr     = nullptr;
 static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
 static pyro::vt03_drv_t::vt03_ctrl_t const *vt03_ctrl_ptr = nullptr;
-static bool flush_flag = false;
+static bool flush_flag                                    = false;
 
 void booster_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
 {
@@ -89,33 +89,37 @@ void booster_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
         {
             flush_flag = true;
         }
-        if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.r.ctrl &&
-        rc_ctrl->key.r.change_time != r_using_time)
-        {
-            r_using_time                  = rc_ctrl->key.r.change_time;
-            quad_booster_ptr->get_ctx().shoot_data.fric1_mps -= 0.1f;
-        }
-        if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.f.ctrl &&
-        rc_ctrl->key.f.change_time != f_using_time)
-        {
-            f_using_time                  = rc_ctrl->key.f.change_time;
-            quad_booster_ptr->get_ctx().shoot_data.fric2_mps -= 0.1f;
-        }
     }
     else
     {
         flush_flag = false;
     }
-    if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.r.ctrl &&
-    rc_ctrl->key.r.change_time != r_using_time)
+    if (rc_ctrl->key.g.state)
     {
-        r_using_time                  = rc_ctrl->key.r.change_time;
+        if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.r.ctrl &&
+            rc_ctrl->key.r.change_time != r_using_time)
+        {
+            r_using_time = rc_ctrl->key.r.change_time;
+            quad_booster_ptr->get_ctx().shoot_data.fric1_mps -= 0.1f;
+        }
+        if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.f.ctrl &&
+            rc_ctrl->key.f.change_time != f_using_time)
+        {
+            f_using_time = rc_ctrl->key.f.change_time;
+            quad_booster_ptr->get_ctx().shoot_data.fric2_mps -= 0.1f;
+        }
+    }
+
+    if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.r.ctrl &&
+        rc_ctrl->key.r.change_time != r_using_time)
+    {
+        r_using_time = rc_ctrl->key.r.change_time;
         quad_booster_ptr->get_ctx().shoot_data.fric1_mps += 0.1f;
     }
     if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.f.ctrl &&
-    rc_ctrl->key.f.change_time != f_using_time)
+        rc_ctrl->key.f.change_time != f_using_time)
     {
-        f_using_time                  = rc_ctrl->key.f.change_time;
+        f_using_time = rc_ctrl->key.f.change_time;
         quad_booster_ptr->get_ctx().shoot_data.fric2_mps += 0.1f;
     }
 
@@ -123,8 +127,9 @@ void booster_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
     if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.v.ctrl &&
         rc_ctrl->key.v.change_time != v_using_time)
     {
-        v_using_time                  = rc_ctrl->key.v.change_time;
-       quad_booster_cmd_ptr->speed_contorl_en = !quad_booster_cmd_ptr->speed_contorl_en;
+        v_using_time = rc_ctrl->key.v.change_time;
+        quad_booster_cmd_ptr->speed_contorl_en =
+            !quad_booster_cmd_ptr->speed_contorl_en;
     }
 
     if (vt03_drv_t::gear_state_t::GEAR_LEFT == rc_ctrl->rc.gear.state)
@@ -191,15 +196,13 @@ void booster_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
     if (vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->key.b.ctrl &&
         rc_ctrl->key.b.change_time != b_using_time)
     {
-        b_using_time                  = rc_ctrl->key.b.change_time;
+        b_using_time                     = rc_ctrl->key.b.change_time;
         quad_booster_cmd_ptr->reset_trig = true;
     }
     else
     {
         quad_booster_cmd_ptr->reset_trig = false;
     }
-
-
 }
 
 void booster2ui()
@@ -209,28 +212,50 @@ void booster2ui()
         quad_booster_ptr->get_ctx().shoot_data.fric1_mps * 10);
     static auto fric2_speed = static_cast<int8_t>(
         quad_booster_ptr->get_ctx().shoot_data.fric2_mps * 10);
-    static bool fric_on = false;
+    static bool fric_on               = false;
     static bool speed_control_enabled = false;
+    static bool fric1_online;
+    static bool fric2_online;
     if (quad_booster_cmd_ptr->fric_on)
     {
-        fric_on = true;
+        fric_on     = true;
         fric1_speed = static_cast<int8_t>(
-        quad_booster_ptr->get_ctx().shoot_data.fric1_mps * 10);
+            quad_booster_ptr->get_ctx().shoot_data.fric1_mps * 10);
         fric2_speed = static_cast<int8_t>(
-        quad_booster_ptr->get_ctx().shoot_data.fric2_mps * 10);
+            quad_booster_ptr->get_ctx().shoot_data.fric2_mps * 10);
         speed_control_enabled = quad_booster_cmd_ptr->speed_contorl_en;
+        if (quad_booster_ptr->get_ctx().data.fric_online[1] &&
+            quad_booster_ptr->get_ctx().data.fric_online[3])
+        {
+            fric1_online = true;
+        }
+        else
+        {
+            fric1_online = false;
+        }
+        if (quad_booster_ptr->get_ctx().data.fric_online[0] &&
+            quad_booster_ptr->get_ctx().data.fric_online[2])
+        {
+            fric2_online = true;
+        }
+        else
+        {
+            fric2_online = false;
+        }
     }
     else
     {
-        fric_on = false;
+        fric_on     = false;
         fric1_speed = 0;
         fric2_speed = 0;
     }
     pyro::can_tx_drv_t::add_data(0x110, 8, fric1_speed);
     pyro::can_tx_drv_t::add_data(0x110, 8, fric2_speed);
     pyro::can_tx_drv_t::add_data(0x110, 1, fric_on);
-    pyro::can_tx_drv_t::add_data(0x110,1,flush_flag);
-    pyro::can_tx_drv_t::add_data(0x110,1,speed_control_enabled);
+    pyro::can_tx_drv_t::add_data(0x110, 1, flush_flag);
+    pyro::can_tx_drv_t::add_data(0x110, 1, speed_control_enabled);
+    pyro::can_tx_drv_t::add_data(0x110, 1, fric1_online);
+    pyro::can_tx_drv_t::add_data(0x110, 1, fric2_online);
 
     pyro::can_tx_drv_t::send(0x110,
                              pyro::can_hub_t::get_instance()->hub_get_can_obj(

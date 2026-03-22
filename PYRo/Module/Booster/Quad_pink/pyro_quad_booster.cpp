@@ -41,9 +41,9 @@ status_t quad_booster_t::_init()
 
     // 拨弹 PID
     _ctx.pid.trigger_pos_pid =
-        new pid_t(18.6f, 0.003f, 0.0002f, 1.0f, 10.0f, 30, 5, 4);
+        new pid_t(16.8f, 0.003f, 0.01f, 1.0f, 12.0f, 15, 5, 4);
     _ctx.pid.trigger_spd_pid =
-        new pid_t(1.8f, 0.05f, 0.00005f, 2.0f, 20.0f, 10, 5, 4);
+        new pid_t(1.2f, 0.0002f, 0.0005f, 2.0f, 16.0f, 10, 5, 4);
     // 14
     //  重置数据
     _ctx.data.last_rotor_rad = 0.0f; // 默认从0开始比较
@@ -77,6 +77,7 @@ void quad_booster_t::_update_feedback()
             _ctx.motor.fric_wheels[i]->get_current_rotate() * FRIC1_RADIUS;
         _ctx.data.current_fric_torque[i] =
             _ctx.motor.fric_wheels[i]->get_current_torque();
+        _ctx.data.fric_online[i] = _ctx.motor.fric_wheels[i]->is_online();
     }
 
     // 2. 拨弹反馈

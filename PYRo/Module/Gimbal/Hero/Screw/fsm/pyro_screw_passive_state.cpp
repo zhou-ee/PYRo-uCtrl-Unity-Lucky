@@ -14,6 +14,7 @@ void screw_gimbal_t::state_passive_t::enter(owner *owner)
     owner->_ctx.pid.yaw_spd->clear();
 
     owner->_ctx.motor.pitch->disable();
+    owner->_ctx.motor.yaw->disable();
 }
 
 void screw_gimbal_t::state_passive_t::execute(owner *owner)

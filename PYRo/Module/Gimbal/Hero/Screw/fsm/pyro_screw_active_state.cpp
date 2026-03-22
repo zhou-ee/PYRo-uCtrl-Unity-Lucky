@@ -10,6 +10,7 @@ namespace pyro
 void screw_gimbal_t::state_active_t::enter(owner *owner)
 {
     owner->_ctx.motor.pitch->enable();
+    owner->_ctx.motor.yaw->enable();
 }
 
 void screw_gimbal_t::state_active_t::execute(owner *owner)

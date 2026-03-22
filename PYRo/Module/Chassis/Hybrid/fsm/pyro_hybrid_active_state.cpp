@@ -10,8 +10,8 @@ void hybrid_chassis_t::fsm_active_t::on_enter(owner *owner)
     owner->_ctx.motor.mecanum[1]->enable();
     owner->_ctx.motor.mecanum[2]->enable();
     owner->_ctx.motor.mecanum[3]->enable();
-    owner->_ctx.motor.track[0]  ->disable();
-    owner->_ctx.motor.track[1]  ->disable();
+    owner->_ctx.motor.track[0]  ->enable();
+    owner->_ctx.motor.track[1]  ->enable();
     owner->_ctx.motor.leg[0]    ->enable();
     owner->_ctx.motor.leg[1]    ->enable();
 }

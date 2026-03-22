@@ -20,13 +20,13 @@ constexpr float LEG_K_WALL                = 300.0f; // 虚拟墙弹性系数 (N*
 constexpr float LEG_D_WALL                = 20.0f; // 虚拟墙阻尼系数 (N*m*s/rad)
 constexpr float LEG_GRA_K_WALL            = 50.0f; // 自重补偿虚拟墙 (N*m/rad)
 constexpr float LEG_GRA_D_WALL            = 10.0f;
-constexpr float YAW_OFFSET_RAD            = -1.99801016f;
+constexpr float YAW_OFFSET_RAD            = 0.850592375f;
 // IMU 机械安装偏移补偿 (需将底盘置于绝对水平面上读取原始数据填入)
 constexpr float PITCH_OFFSET_RAD =
     0.0; // 示例值，正负号取决于你的 IMU 坐标系方向
 constexpr float NORMAL_PITCH =
-    0.07f; // 机器人正常站立时的俯仰角 (rad)，用于自重补偿的基准点
-constexpr float ROLL_OFFSET_RAD                  = 0.0153984586f;
+    -0.05f; // 机器人正常站立时的俯仰角 (rad)，用于自重补偿的基准点
+constexpr float ROLL_OFFSET_RAD                  = -0.0268692989f;
 constexpr uint32_t JX_POLY_DEGREE                = 7; // JX 多项式拟合阶数
 constexpr uint32_t JY_POLY_DEGREE                = 5; // JY 多项式拟合阶数
 constexpr uint32_t XB_POLY_DEGREE                = 6; // XB 多项式拟合阶数
@@ -53,8 +53,8 @@ constexpr float DIST_HIP      = 0.1805f;  // 质心到髋关节的水平距离
 constexpr float H_COG         = 0.18f;   // 重心垂直高度
 constexpr float H_HIP_OFFSET  = 0.074f;  // 髋关节与前轮轴心的垂直落差
 inline float LEFT_LEG_OFFSET_RAD =
-   0.512117863f; // 左腿位置偏移 (rad)，正值表示向前偏移
+  -0.295823097f; // 左腿位置偏移 (rad)，正值表示向前偏移
 inline float RIGHT_LEG_OFFSET_RAD =
-  -1.35284793f; // 右腿位置偏移 (rad)，正值表示向前偏移
+  -1.30241764f; // 右腿位置偏移 (rad)，正值表示向前偏移
 
 #endif

@@ -211,10 +211,7 @@ void mec_chassis_t::_kinematics_solve()
 
     // 最终角速度 = 跟随产生的角速度 + 选手手动输入的角速度(小陀螺/微调)
     float final_wz = follow_wz;
-    if (_ctx.cmd->wz != 0.0f)
-    {
-        final_wz = _ctx.cmd->wz;
-    }
+
 
     // -------------------------------------------------------------
     // 2. 矢量旋转 (将云台坐标系速度转换到底盘坐标系)
@@ -235,6 +232,19 @@ void mec_chassis_t::_kinematics_solve()
     // sin(90) + 0 = -1 (符合)
     float vx_chassis   = _ctx.cmd->vx * c_theta + _ctx.cmd->vy * s_theta;
     float vy_chassis   = -_ctx.cmd->vx * s_theta + _ctx.cmd->vy * c_theta;
+
+    if (_ctx.cmd->wz != 0.0f)
+    {
+        final_wz = _ctx.cmd->wz;
+    }
+    else
+    {
+        if (abs(final_wz) > 3.0f)
+        {
+            vx_chassis *= 0.22f;
+            vy_chassis *= 0.22f;
+        }
+    }
 
     int offline_count  = 0;
     auto missing_wheel = mecanum_kin_t::missing_mec_e::NONE;
