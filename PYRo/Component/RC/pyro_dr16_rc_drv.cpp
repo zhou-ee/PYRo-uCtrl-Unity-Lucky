@@ -17,7 +17,7 @@ dr16_drv_t::dr16_drv_t(uart_drv_t& dr16_uart)
 {
 }
 
-bool dr16_drv_t::check_packet(const uint8_t *buf, uint16_t len) {
+bool dr16_drv_t::check_packet(const uint8_t *buf) {
     return true;
 }
 

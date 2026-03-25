@@ -38,7 +38,7 @@ private:
         uint16_t crc;
     } vt03_buf_t;
 
-    bool check_packet(const uint8_t *buf, uint16_t len) override;
+    bool check_packet(const uint8_t *buf) override;
     void unpack(const uint8_t *buf) override;
 
     static status_t error_check(const vt03_buf_t *vt03_buf);

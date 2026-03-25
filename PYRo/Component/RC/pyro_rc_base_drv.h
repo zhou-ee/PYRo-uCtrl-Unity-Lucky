@@ -38,8 +38,8 @@ class rc_drv_t
              uint16_t frame_len);
     virtual ~rc_drv_t();
 
-    virtual bool check_packet(const uint8_t *buf, uint16_t len) = 0;
-    virtual void unpack(const uint8_t *buf)                     = 0;
+    virtual bool check_packet(const uint8_t *buf) = 0;
+    virtual void unpack(const uint8_t *buf)       = 0;
 
   private:
     // ---------------------------------------------------------

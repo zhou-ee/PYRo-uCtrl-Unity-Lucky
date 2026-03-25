@@ -17,7 +17,7 @@ vt03_drv_t::vt03_drv_t(uart_drv_t& vt03_uart)
 {
 }
 
-bool vt03_drv_t::check_packet(const uint8_t *buf, uint16_t len) {
+bool vt03_drv_t::check_packet(const uint8_t *buf) {
     return (buf[0] == 0xA9 && buf[1] == 0x53);
 }
 
@@ -45,7 +45,7 @@ void vt03_drv_t::unpack(const uint8_t *buf) {
             if (raw == 2) return sw_pos_t::DOWN;
             return sw_pos_t::UNKNOWN;
         };
-        shared_v_rc.switches.right.update(map_gear(vt03_buf->gear));
+        shared_v_rc.switches.gear.update(map_gear(vt03_buf->gear));
 
         shared_v_rc.buttons.trigger.update(vt03_buf->trigger);
         shared_v_rc.buttons.fn_l.update(vt03_buf->fn_l);

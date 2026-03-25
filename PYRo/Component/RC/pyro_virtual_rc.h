@@ -24,6 +24,7 @@ struct virtual_rc_t
     {
         tiny_switch_t left;
         tiny_switch_t right;
+        tiny_switch_t gear;
     } switches;
     struct
     {

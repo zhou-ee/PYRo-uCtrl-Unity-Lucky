@@ -31,7 +31,7 @@ private:
         uint16_t wheel;
     } dr16_buf_t;
 
-    bool check_packet(const uint8_t *buf, uint16_t len) override;
+    bool check_packet(const uint8_t *buf) override;
     void unpack(const uint8_t *buf) override;
 
     static status_t error_check(const dr16_buf_t *dr16_buf);

@@ -72,7 +72,7 @@ void rc_drv_t::disable()
 bool rc_drv_t::rc_callback(const uint8_t *buf, const uint16_t len,
                            BaseType_t &xHigherPriorityTaskWoken)
 {
-    if (len == _frame_len && check_packet(buf, len))
+    if (len == _frame_len && check_packet(buf))
     {
         if (__builtin_ctz(sequence) >= _priority_bit)
         {
@@ -86,23 +86,26 @@ bool rc_drv_t::rc_callback(const uint8_t *buf, const uint16_t len,
 
 void rc_drv_t::task_run_loop()
 {
-    if (xMessageBufferReceive(_rc_msg_buffer, _rx_buf, _frame_len,
-                              portMAX_DELAY) == _frame_len)
+    while (true)
     {
-        sequence |= (1 << _priority_bit);
-    }
-
-    while (sequence >> _priority_bit & 0x01)
-    {
-        const size_t bytes = xMessageBufferReceive(
-            _rc_msg_buffer, _rx_buf, _frame_len, pdMS_TO_TICKS(100));
-        if (bytes == _frame_len)
+        if (xMessageBufferReceive(_rc_msg_buffer, _rx_buf, _frame_len,
+                                  portMAX_DELAY) == _frame_len)
         {
-            unpack(_rx_buf);
+            sequence |= (1 << _priority_bit);
         }
-        else if (bytes == 0)
+
+        while (sequence >> _priority_bit & 0x01)
         {
-            sequence &= ~(1 << _priority_bit);
+            const size_t bytes = xMessageBufferReceive(
+                _rc_msg_buffer, _rx_buf, _frame_len, pdMS_TO_TICKS(100));
+            if (bytes == _frame_len)
+            {
+                unpack(_rx_buf);
+            }
+            else if (bytes == 0)
+            {
+                sequence &= ~(1 << _priority_bit);
+            }
         }
     }
 }
