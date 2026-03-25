@@ -15,7 +15,7 @@ extern "C"
     can_drv_t *can2_drv;
     can_drv_t *can3_drv;
     ins_drv_t *ins_drv;
-    dr16_drv_t *dr16_drv;
+    // dr16_drv_t *dr16_drv;
     vt03_drv_t *vt03_drv;
     referee_drv_t *referee_drv;
 
