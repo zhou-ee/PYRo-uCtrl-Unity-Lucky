@@ -77,6 +77,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Peripheral/CAN/pyro_can_drv.cpp
         PYRo/Peripheral/DWT/pyro_dwt_drv.cpp
         PYRo/Peripheral/UART/pyro_uart_drv.cpp
+        PYRo/Peripheral/UART/pyro_bsp_uart.cpp
 
         # --- Algorithm ---
         PYRo/Algorithm/Kinematics/pyro_kin_hybrid.cpp
@@ -97,13 +98,12 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Component/Powermeter/pyro_powermeter.cpp
         PYRo/Component/RC/pyro_dr16_rc_drv.cpp
         PYRo/Component/RC/pyro_rc_base_drv.cpp
-        PYRo/Component/RC/pyro_rc_hub.cpp
         PYRo/Component/RC/pyro_vt03_rc_drv.cpp
         PYRo/Component/Referee/fifo.c
         PYRo/Component/Referee/pyro_referee.cpp
         PYRo/Component/INS/pyro_ins.cpp
         PYRo/Component/Supercap/pyro_supercap_drv.cpp
-        PYRo/Component/Measure/pyro_ms53l0m_drv.cpp
+#        PYRo/Component/Measure/pyro_ms53l0m_drv.cpp
 
         # --- Application ---
         ## --- Demo ---
@@ -134,7 +134,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Device/BMI088/BMI088_driver.cpp
         PYRo/Device/BMI088/BMI088_middleware.cpp
         PYRo/Component/Referee/UI/pyro_ui_drv.cpp
-
 
 
 
@@ -172,33 +171,33 @@ if (ROBOT_ID EQUAL HERO_ID)
     )
 elseif (ROBOT_ID EQUAL SUB_HERO_ID)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-            PYRo/Application/Mission/Hero_hybrid/pyro_chassis_app.cpp
-            PYRo/Application/Mission/Hero_hybrid/pyro_booster_app.cpp
-            PYRo/Application/Mission/Hero_hybrid/pyro_gimbal_app.cpp
-
-            PYRo/Module/Booster/Quad_tango/pyro_quad_booster.cpp
-            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_passive_state.cpp
-            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_active_state.cpp
-            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_homing_state.cpp
-            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_ready_state.cpp
-            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_stall_state.cpp
-            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_interim_state.cpp
-            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_busy_state.cpp
-
-            PYRo/Module/Chassis/Hybrid/pyro_hybrid_chassis.cpp
-            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_active_state.cpp
-            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_passive_state.cpp
-            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_cruising_state.cpp
-            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_climbing_state.cpp
-            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_track_climbing_state.cpp
-            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_leg_retraction_state.cpp
-
-            PYRo/Module/Gimbal/Hero/Screw/pyro_screw_gimbal.cpp
-            PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_active_state.cpp
-            PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_passive_state.cpp
-
-            PYRo/Communication/Hero_hybrid/board_communicate.cpp
-            PYRo/Application/Mission/Hero_hybrid/pyro_pc_com.cpp
+#            PYRo/Application/Mission/Hero_hybrid/pyro_chassis_app.cpp
+#            PYRo/Application/Mission/Hero_hybrid/pyro_booster_app.cpp
+#            PYRo/Application/Mission/Hero_hybrid/pyro_gimbal_app.cpp
+#
+#            PYRo/Module/Booster/Quad_tango/pyro_quad_booster.cpp
+#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_passive_state.cpp
+#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_active_state.cpp
+#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_homing_state.cpp
+#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_ready_state.cpp
+#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_stall_state.cpp
+#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_interim_state.cpp
+#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_busy_state.cpp
+#
+#            PYRo/Module/Chassis/Hybrid/pyro_hybrid_chassis.cpp
+#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_active_state.cpp
+#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_passive_state.cpp
+#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_cruising_state.cpp
+#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_climbing_state.cpp
+#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_track_climbing_state.cpp
+#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_leg_retraction_state.cpp
+#
+#            PYRo/Module/Gimbal/Hero/Screw/pyro_screw_gimbal.cpp
+#            PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_active_state.cpp
+#            PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_passive_state.cpp
+#
+#            PYRo/Communication/Hero_hybrid/board_communicate.cpp
+#            PYRo/Application/Mission/Hero_hybrid/pyro_pc_com.cpp
     )
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
             PYRo/Module/Booster/Quad_tango
@@ -230,7 +229,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 
         # --- Device ---
         PYRo/Device/BMI088
-        PYRo/Device/VL53
+#        PYRo/Device/VL53
 
         # --- Algorithm ---
         PYRo/Algorithm/Common
@@ -252,7 +251,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Component/Referee/UI
         PYRo/Component/Shoot
         PYRo/Component/Supercap
-        PYRo/Component/Measure
+#        PYRo/Component/Measure
 
         # --- Module ---
         PYRo/Module

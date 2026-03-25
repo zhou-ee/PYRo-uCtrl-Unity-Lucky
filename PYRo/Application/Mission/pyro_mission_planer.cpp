@@ -53,8 +53,8 @@ extern "C"
         xTaskCreate(hero_booster_init, "pyro_booster_init", 512, nullptr,
                     configMAX_PRIORITIES - 1, nullptr);
 #elif BOARD_ID == CHASSIS_ID
-        xTaskCreate(hero_chassis_init, "pyro_chassis_init", 512, nullptr,
-                    configMAX_PRIORITIES - 1, nullptr);
+        // xTaskCreate(hero_chassis_init, "pyro_chassis_init", 512, nullptr,
+        //             configMAX_PRIORITIES - 1, nullptr);
 #endif
 #endif
 

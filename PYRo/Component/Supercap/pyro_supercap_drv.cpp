@@ -7,6 +7,9 @@
  */
 
 #include "pyro_supercap_drv.h"
+
+#include "pyro_bsp_uart.h"
+#include "pyro_core_config.h"
 #include "pyro_core_dma_heap.h"
 #include "pyro_crc.h"
 #include <cstring>
@@ -43,8 +46,7 @@ void supercap_drv_t::supercap_task_t::run_loop()
 /* instance ------------------------------------------------------------------*/
 supercap_drv_t *supercap_drv_t::get_instance()
 {
-    static supercap_drv_t instance(
-        uart_drv_t::get_instance(uart_drv_t::which_uart::uart7));
+    static supercap_drv_t instance(&PYRO_UART7);
     return &instance;
 }
 
@@ -126,10 +128,9 @@ void supercap_drv_t::init_impl()
     // We use a lambda to bridge to the member function
     _uart_drv->add_rx_event_callback(
         [this](const uint8_t *p, const uint16_t size,
-               BaseType_t& task_woken) -> bool
+               BaseType_t &task_woken) -> bool
         { return this->rx_callback(p, size, task_woken); },
         reinterpret_cast<uint32_t>(this));
-
 }
 
 // Called by supercap_task_t::run_loop()
@@ -170,7 +171,7 @@ void supercap_drv_t::run_loop_impl()
 
 /* ISR Callback --------------------------------------------------------------*/
 bool supercap_drv_t::rx_callback(const uint8_t *p_data, const uint16_t size,
-                                 BaseType_t& xHigherPriorityTaskWoken) const
+                                 BaseType_t &xHigherPriorityTaskWoken) const
 {
     // Minimal check in ISR: Frame Start and Minimum Length
     if (size == sizeof(rx_packet_t) + 1 && p_data[0] == FRAME_SOF &&

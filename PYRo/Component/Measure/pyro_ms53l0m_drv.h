@@ -37,7 +37,7 @@ public:
 
 private:
     // 构造函数私有化，禁止外部直接实例化
-    explicit ms53l0m_drv_t(uart_drv_t::which_uart uart_instance);
+    explicit ms53l0m_drv_t(uart_drv_t& uart_instance);
 
     /**
      * @brief 内部接收回调解析函数，用于处理底层 DMA 抛出的数据

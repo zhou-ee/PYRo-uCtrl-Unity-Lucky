@@ -4,6 +4,7 @@
 #include "task.h"
 
 #include "cstring"
+#include "pyro_bsp_uart.h"
 #include "pyro_core_config.h"
 
 
@@ -27,7 +28,7 @@ vofa_drv_t::~vofa_drv_t()
 
 vofa_drv_t &vofa_drv_t::get_instance(uint8_t max_length)
 {
-    static vofa_drv_t instance(max_length, uart_drv_t::get_instance(static_cast<uart_drv_t::which_uart>(VOFA_DEBUG_PORT)));
+    static vofa_drv_t instance(max_length, &VOFA_DEBUG_PORT);
     return instance;
 }
 

@@ -53,10 +53,10 @@
 #define BOARD_ID   CHASSIS_ID
 #endif
 
-#define PYRO_UART1 0
-#define PYRO_UART5 1
-#define PYRO_UART7 2
-#define PYRO_UART10 3
+#define PYRO_UART1 pyro::bsp_uart::get_uart1()
+#define PYRO_UART5 pyro::bsp_uart::get_uart5()
+#define PYRO_UART7 pyro::bsp_uart::get_uart7()
+#define PYRO_UART10 pyro::bsp_uart::get_uart10()
 
 #define DR16_UART PYRO_UART5
 #define VT03_UART PYRO_UART1

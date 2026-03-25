@@ -4,6 +4,8 @@
  */
 
 #include "pyro_referee.h"
+
+#include "pyro_bsp_uart.h"
 #include "pyro_crc.h"
 #include "pyro_dwt_drv.h"
 #include "pyro_core_config.h"
@@ -49,8 +51,7 @@ void referee_drv_t::referee_task::run_loop()
 
 referee_drv_t *referee_drv_t::get_instance()
 {
-    static referee_drv_t instance(
-        uart_drv_t::get_instance(static_cast<uart_drv_t::which_uart>(REFEREE_UART)));
+    static referee_drv_t instance(&REFEREE_UART);
     return &instance;
 }
 
@@ -398,7 +399,8 @@ void referee_drv_t::solve_data(const uint8_t *frame)
             break;
         case cmd_id::ROBOT_STATE:
             safe_copy(_data.robot_status, frame + index, data_length);
-            _robot_id = _data.robot_status.robot_id;  // <--- 新增这行，自动同步真实ID！
+            _robot_id =
+                _data.robot_status.robot_id; // <--- 新增这行，自动同步真实ID！
             break;
         case cmd_id::POWER_HEAT_DATA:
             safe_copy(_data.power_heat, frame + index, data_length);
