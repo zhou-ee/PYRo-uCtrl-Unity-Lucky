@@ -7,43 +7,70 @@
 #include "pyro_virtual_rc.h"
 #include "pyro_task.h"
 
-namespace pyro {
+namespace pyro
+{
 
-class rc_drv_t : public task_base_t {
-public:
-    inline static uint8_t sequence = 0x80;
+class rc_drv_t
+{
+  public:
+    inline static uint8_t sequence         = 0x80;
 
     // 全局唯一虚拟控制器，作为所有驱动映射的终点
-    inline static virtual_rc_t shared_v_rc;
+    inline static virtual_rc_t shared_v_rc = {};
 
-    static void init_virtual_rc() { shared_v_rc.init_all(); }
+    static void init_virtual_rc()
+    {
+        shared_v_rc.init_all();
+    }
 
+    // 暴露给 App 层的生命周期控制接口
+    void start();
+    void stop();
     void enable();
     void disable();
 
     [[nodiscard]] bool check_online() const;
     [[nodiscard]] rw_lock &get_lock() const;
 
-protected:
+  protected:
     // 构造函数接收引用
-    rc_drv_t(uart_drv_t& uart, const char* task_name, uint8_t priority_bit, uint16_t frame_len);
+    rc_drv_t(uart_drv_t &uart, const char *task_name, uint8_t priority_bit,
+             uint16_t frame_len);
     virtual ~rc_drv_t();
 
-    status_t init() override;
-    void run_loop() override;
-
     virtual bool check_packet(const uint8_t *buf, uint16_t len) = 0;
-    virtual void unpack(const uint8_t *buf) = 0;
+    virtual void unpack(const uint8_t *buf)                     = 0;
 
-private:
-    bool rc_callback(uint8_t *buf, uint16_t len, BaseType_t& xHigherPriorityTaskWoken);
+  private:
+    // ---------------------------------------------------------
+    // 【架构精髓】通过私有内部类实现组合，代理任务的运行逻辑
+    // ---------------------------------------------------------
+    class rc_task_t : public task_base_t
+    {
+      public:
+        rc_task_t(rc_drv_t *parent, const char *name);
 
+      protected:
+        status_t init() override;
+        void run_loop() override;
+
+      private:
+        rc_drv_t *_parent;
+    };
+
+    // 供内部任务调用的实际执行函数
+    status_t task_init();
+    void task_run_loop();
+    bool rc_callback(const uint8_t *buf, uint16_t len,
+                     BaseType_t &xHigherPriorityTaskWoken);
+
+    rc_task_t _task; // 包含一个任务实体 (Has-a)
     rw_lock *_lock{};
     MessageBufferHandle_t _rc_msg_buffer{};
-    uart_drv_t& _rc_uart; // 使用引用，绝对保证非空
+    uart_drv_t &_rc_uart;
     uint8_t _priority_bit{};
     uint16_t _frame_len{};
-    uint8_t* _rx_buf{};
+    uint8_t *_rx_buf{};
 };
 
 } // namespace pyro

@@ -5,7 +5,7 @@
 
 namespace pyro {
 
-class vt03_drv_t : public rc_drv_t {
+class vt03_drv_t final : public rc_drv_t {
 public:
     static vt03_drv_t& instance();
 

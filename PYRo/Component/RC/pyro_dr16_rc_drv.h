@@ -5,7 +5,7 @@
 
 namespace pyro {
 
-class dr16_drv_t : public rc_drv_t {
+class dr16_drv_t final : public rc_drv_t {
 public:
     static dr16_drv_t& instance();
 

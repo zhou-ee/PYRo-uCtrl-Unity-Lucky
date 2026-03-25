@@ -6,8 +6,6 @@
 namespace pyro {
 static constexpr uint16_t DR16_CH_VALUE_OFFSET = 1024;
 
-
-
 dr16_drv_t& dr16_drv_t::instance() {
     // 传入对单例对象的解引用（引用传递）
     static dr16_drv_t _inst(DR16_UART);
@@ -40,7 +38,7 @@ void dr16_drv_t::unpack(const uint8_t *buf) {
         shared_v_rc.axes.ly = static_cast<float>(dr16_buf->ch3 - DR16_CH_VALUE_OFFSET) / 660.0f;
         shared_v_rc.axes.wheel = static_cast<float>(dr16_buf->wheel - DR16_CH_VALUE_OFFSET) / 660.0f;
 
-        auto map_sw = [](uint32_t raw) {
+        auto map_sw = [](const uint8_t raw) {
             if (raw == 1) return sw_pos_t::UP;
             if (raw == 3) return sw_pos_t::MID;
             if (raw == 2) return sw_pos_t::DOWN;
@@ -56,7 +54,7 @@ void dr16_drv_t::unpack(const uint8_t *buf) {
         shared_v_rc.buttons.press_l.update(dr16_buf->press_l);
         shared_v_rc.buttons.press_r.update(dr16_buf->press_r);
 
-        uint16_t kc = dr16_buf->key_code;
+        const uint16_t kc = dr16_buf->key_code;
         shared_v_rc.keys.w.update(kc & (1<<0));
         shared_v_rc.keys.s.update(kc & (1<<1));
         shared_v_rc.keys.a.update(kc & (1<<2));

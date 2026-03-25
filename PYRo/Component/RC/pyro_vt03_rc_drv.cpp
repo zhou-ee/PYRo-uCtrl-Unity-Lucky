@@ -39,7 +39,7 @@ void vt03_drv_t::unpack(const uint8_t *buf) {
         shared_v_rc.axes.ly = static_cast<float>(vt03_buf->ch3 - VT03_CH_VALUE_OFFSET) / 660.0f;
         shared_v_rc.axes.wheel = static_cast<float>(vt03_buf->wheel - VT03_CH_VALUE_OFFSET) / 660.0f;
 
-        auto map_gear = [](uint64_t raw) {
+        auto map_gear = [](const uint8_t raw) {
             if (raw == 0) return sw_pos_t::UP;
             if (raw == 1) return sw_pos_t::MID;
             if (raw == 2) return sw_pos_t::DOWN;
@@ -58,7 +58,7 @@ void vt03_drv_t::unpack(const uint8_t *buf) {
         shared_v_rc.buttons.press_l.update(vt03_buf->press_l);
         shared_v_rc.buttons.press_r.update(vt03_buf->press_r);
 
-        uint16_t kc = vt03_buf->key_code;
+        const uint16_t kc = vt03_buf->key_code;
         shared_v_rc.keys.w.update(kc & (1<<0));
         shared_v_rc.keys.s.update(kc & (1<<1));
         shared_v_rc.keys.a.update(kc & (1<<2));
