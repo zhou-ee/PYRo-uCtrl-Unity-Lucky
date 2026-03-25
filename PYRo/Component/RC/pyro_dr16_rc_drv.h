@@ -2,20 +2,25 @@
 #define __PYRO_DR16_RC_DRV_H__
 
 #include "pyro_rc_base_drv.h"
+#include "pyro_core_config.h"
+#ifdef DR16_UART
 
-namespace pyro {
+namespace pyro
+{
 
-class dr16_drv_t final : public rc_drv_t {
-public:
-    static dr16_drv_t& instance();
+class dr16_drv_t final : public rc_drv_t
+{
+  public:
+    static dr16_drv_t &instance();
 
-    dr16_drv_t(const dr16_drv_t&) = delete;
-    dr16_drv_t& operator=(const dr16_drv_t&) = delete;
+    dr16_drv_t(const dr16_drv_t &)            = delete;
+    dr16_drv_t &operator=(const dr16_drv_t &) = delete;
 
-private:
-    explicit dr16_drv_t(uart_drv_t& dr16_uart);
+  private:
+    explicit dr16_drv_t(uart_drv_t &dr16_uart);
 
-    typedef struct __packed {
+    typedef struct __packed
+    {
         uint32_t ch0 : 11;
         uint32_t ch1 : 11;
         uint32_t ch2 : 11;
@@ -37,5 +42,6 @@ private:
     static status_t error_check(const dr16_buf_t *dr16_buf);
 };
 
-}
+} // namespace pyro
+#endif
 #endif

@@ -28,7 +28,9 @@ struct virtual_rc_t
     } switches;
     struct
     {
-        tiny_button_t trigger, fn_l, fn_r, press_l, press_r;
+        tiny_button_t trigger, fn_l, fn_r, pause;
+        tiny_button_t press_m;
+        tiny_button_t press_l, press_r;
     } buttons;
 
     struct

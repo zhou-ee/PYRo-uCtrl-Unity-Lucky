@@ -2,6 +2,9 @@
 #define __PYRO_VT03_RC_DRV_H__
 
 #include "pyro_rc_base_drv.h"
+#include "pyro_core_config.h"
+
+#ifdef VT03_UART
 
 namespace pyro {
 
@@ -45,4 +48,5 @@ private:
 };
 
 }
+#endif
 #endif

@@ -45,7 +45,7 @@ void rc_drv_t::stop()
 
 status_t rc_drv_t::task_init()
 {
-    _rc_msg_buffer = xMessageBufferCreate(_frame_len * 6 + 12);
+    _rc_msg_buffer = xMessageBufferCreate(_frame_len * 6 + 24);
     if (_rc_msg_buffer == nullptr)
         return PYRO_ERROR;
 

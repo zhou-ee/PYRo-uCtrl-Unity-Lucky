@@ -134,8 +134,12 @@ status_t uart_drv_t::enable_rx_dma()
 
 status_t uart_drv_t::disable_rx_dma() const
 {
-    if (HAL_OK != HAL_UART_AbortReceive(_huart))
-        return PYRO_ERROR;
+    if (state.rx_dma_enable)
+    {
+        if (HAL_OK != HAL_UART_AbortReceive(_huart))
+            return PYRO_ERROR;
+        return PYRO_OK;
+    }
     return PYRO_OK;
 }
 
