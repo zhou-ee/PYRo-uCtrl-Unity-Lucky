@@ -15,9 +15,6 @@ extern "C"
     can_drv_t *can2_drv;
     can_drv_t *can3_drv;
     ins_drv_t *ins_drv;
-    // dr16_drv_t *dr16_drv;
-    vt03_drv_t *vt03_drv;
-    referee_drv_t *referee_drv;
 
 
     void pyro_init_thread(void *argument)
@@ -41,24 +38,21 @@ extern "C"
 #ifdef DR16_UART
         DR16_UART.reset(100000, UART_WORDLENGTH_9B, UART_STOPBITS_2,
                         UART_PARITY_EVEN);
-        dr16_drv = &dr16_drv_t::instance();
-        dr16_drv->start();
-        dr16_drv->enable();
+        dr16_drv_t::instance().start();
+        dr16_drv_t::instance().enable();
 #endif
 
 #ifdef VT03_UART
         VT03_UART.reset(921600, UART_WORDLENGTH_8B, UART_STOPBITS_1,
                         UART_PARITY_NONE);
-        vt03_drv = &vt03_drv_t::instance();
-        vt03_drv->start();
-        vt03_drv->enable();
+        dr16_drv_t::instance().start();
+        dr16_drv_t::instance().enable();
 #endif
 
 #ifdef REFEREE_UART
         REFEREE_UART.reset(115200, UART_WORDLENGTH_8B, UART_STOPBITS_1,
                            UART_PARITY_NONE);
-        referee_drv = referee_drv_t::get_instance();
-        referee_drv->init();
+        referee_drv_t::get_instance()->init();
 #endif
 
 #ifdef SUPERCAP_UART

@@ -2,7 +2,7 @@
 #define __PYRO_RC_CONTROLS_H__
 
 #include <cstdint>
-#include "freertos.h"
+#include "FreeRTOS.h"
 #include "task.h"
 
 namespace pyro
@@ -18,12 +18,17 @@ enum class sw_pos_t : uint8_t
     MID     = 2,
     DOWN    = 3
 };
+
+// 动作路径（状态转移）事件
 enum class sw_event_t : uint8_t
 {
     NONE = 0,
-    TO_UP,
-    TO_MID,
-    TO_DOWN
+    UP_TO_MID,
+    MID_TO_UP,
+    MID_TO_DOWN,
+    DOWN_TO_MID,
+    UP_TO_DOWN,
+    DOWN_TO_UP,
 };
 
 class tiny_switch_t
@@ -44,12 +49,22 @@ class tiny_switch_t
             last_pos    = current_pos;
             current_pos = new_pos;
 
-            if (current_pos == sw_pos_t::UP)
-                dispatch(sw_event_t::TO_UP);
-            else if (current_pos == sw_pos_t::MID)
-                dispatch(sw_event_t::TO_MID);
-            else if (current_pos == sw_pos_t::DOWN)
-                dispatch(sw_event_t::TO_DOWN);
+            // 只有当 last_pos 不是 UNKNOWN 时才触发，防止上电读到初始值时产生误动作！
+            if (last_pos != sw_pos_t::UNKNOWN)
+            {
+                if (last_pos == sw_pos_t::UP && current_pos == sw_pos_t::MID)
+                    dispatch(sw_event_t::UP_TO_MID);
+                else if (last_pos == sw_pos_t::MID && current_pos == sw_pos_t::UP)
+                    dispatch(sw_event_t::MID_TO_UP);
+                else if (last_pos == sw_pos_t::MID && current_pos == sw_pos_t::DOWN)
+                    dispatch(sw_event_t::MID_TO_DOWN);
+                else if (last_pos == sw_pos_t::DOWN && current_pos == sw_pos_t::MID)
+                    dispatch(sw_event_t::DOWN_TO_MID);
+                else if (last_pos == sw_pos_t::UP && current_pos == sw_pos_t::DOWN)
+                    dispatch(sw_event_t::UP_TO_DOWN);
+                else if (last_pos == sw_pos_t::DOWN && current_pos == sw_pos_t::UP)
+                    dispatch(sw_event_t::DOWN_TO_UP);
+            }
         }
     }
 
@@ -182,7 +197,8 @@ class tiny_button_t
                     state = 0;
                 }
                 break;
-            default:
+
+            default: // 【防御性编程：遇到未知位翻转立刻复位】
                 state      = 0;
                 ticks      = 0;
                 repeat_cnt = 0;
@@ -211,7 +227,9 @@ template <typename TargetType, typename EventType> class rc_broker_t
     };
 
     // 利用 inline static 特性，直接在类内完成静态数组成员的初始化！
-    inline static sub_info_t _subs[MAX_SUBS] = {}; // NOLINT
+    // NOLINT 指令用于向 Clang-Tidy 抑制关于模板静态初始化的假阳性警告
+    // NOLINTNEXTLINE
+    inline static sub_info_t _subs[MAX_SUBS] = {};
 
   public:
     static void subscribe(TargetType *target, EventType ev, TaskHandle_t task,
@@ -238,9 +256,6 @@ template <typename TargetType, typename EventType> class rc_broker_t
         }
     }
 };
-
-// 【核心修复】彻底删除之前在类外面写的那个 template <typename T, typename E>
-// ... 变量实体定义
 
 // 别名方便使用
 using btn_broker = rc_broker_t<tiny_button_t, btn_event_t>;
