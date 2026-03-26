@@ -12,6 +12,12 @@ rc_drv_t::rc_task_t::rc_task_t(rc_drv_t *parent, const char *name)
 {
 }
 
+
+virtual_rc_t& rc_drv_t::read()
+{
+    return shared_v_rc;
+}
+
 status_t rc_drv_t::rc_task_t::init()
 {
     return _parent->task_init();
@@ -50,7 +56,6 @@ status_t rc_drv_t::task_init()
         return PYRO_ERROR;
 
     _rx_buf = new uint8_t[_frame_len];
-    _lock   = new rw_lock;
     return PYRO_OK;
 }
 
@@ -110,9 +115,10 @@ void rc_drv_t::task_run_loop()
     }
 }
 
-rw_lock &rc_drv_t::get_lock() const
+rw_lock &rc_drv_t::get_lock()
 {
-    return *_lock;
+    static rw_lock _lock{};
+    return _lock;
 }
 
 bool rc_drv_t::check_online() const
@@ -129,7 +135,6 @@ rc_drv_t::~rc_drv_t()
         _rc_msg_buffer = nullptr;
     }
     delete[] _rx_buf;
-    delete _lock;
 }
 
 } // namespace pyro

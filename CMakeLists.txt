@@ -172,31 +172,31 @@ if (ROBOT_ID EQUAL HERO_ID)
 elseif (ROBOT_ID EQUAL SUB_HERO_ID)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 #            PYRo/Application/Mission/Hero_hybrid/pyro_chassis_app.cpp
-#            PYRo/Application/Mission/Hero_hybrid/pyro_booster_app.cpp
-#            PYRo/Application/Mission/Hero_hybrid/pyro_gimbal_app.cpp
-#
-#            PYRo/Module/Booster/Quad_tango/pyro_quad_booster.cpp
-#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_passive_state.cpp
-#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_active_state.cpp
-#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_homing_state.cpp
-#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_ready_state.cpp
-#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_stall_state.cpp
-#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_interim_state.cpp
-#            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_busy_state.cpp
-#
-#            PYRo/Module/Chassis/Hybrid/pyro_hybrid_chassis.cpp
-#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_active_state.cpp
-#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_passive_state.cpp
-#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_cruising_state.cpp
-#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_climbing_state.cpp
-#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_track_climbing_state.cpp
-#            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_leg_retraction_state.cpp
-#
-#            PYRo/Module/Gimbal/Hero/Screw/pyro_screw_gimbal.cpp
-#            PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_active_state.cpp
-#            PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_passive_state.cpp
-#
-#            PYRo/Communication/Hero_hybrid/board_communicate.cpp
+            PYRo/Application/Mission/Hero_hybrid/pyro_booster_app.cpp
+            PYRo/Application/Mission/Hero_hybrid/pyro_gimbal_app.cpp
+
+            PYRo/Module/Booster/Quad_tango/pyro_quad_booster.cpp
+            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_passive_state.cpp
+            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_active_state.cpp
+            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_homing_state.cpp
+            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_ready_state.cpp
+            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_stall_state.cpp
+            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_interim_state.cpp
+            PYRo/Module/Booster/Quad_tango/fsm/pyro_quad_busy_state.cpp
+
+            PYRo/Module/Chassis/Hybrid/pyro_hybrid_chassis.cpp
+            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_active_state.cpp
+            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_passive_state.cpp
+            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_cruising_state.cpp
+            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_climbing_state.cpp
+            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_track_climbing_state.cpp
+            PYRo/Module/Chassis/Hybrid/fsm/pyro_hybrid_leg_retraction_state.cpp
+
+            PYRo/Module/Gimbal/Hero/Screw/pyro_screw_gimbal.cpp
+            PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_active_state.cpp
+            PYRo/Module/Gimbal/Hero/Screw/fsm/pyro_screw_passive_state.cpp
+
+            PYRo/Communication/Hero_hybrid/board_communicate.cpp
 #            PYRo/Application/Mission/Hero_hybrid/pyro_pc_com.cpp
     )
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC

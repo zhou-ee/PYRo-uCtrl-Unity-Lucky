@@ -13,15 +13,14 @@ namespace pyro
 class rc_drv_t
 {
   public:
-    inline static uint8_t sequence         = 0x80;
 
-    // 全局唯一虚拟控制器，作为所有驱动映射的终点
-    inline static virtual_rc_t shared_v_rc = {};
 
     static void init_virtual_rc()
     {
         shared_v_rc.init_all();
     }
+
+    static virtual_rc_t& read();
 
     // 暴露给 App 层的生命周期控制接口
     void start();
@@ -30,9 +29,12 @@ class rc_drv_t
     void disable();
 
     [[nodiscard]] bool check_online() const;
-    [[nodiscard]] rw_lock &get_lock() const;
+    [[nodiscard]] static rw_lock &get_lock();
 
   protected:
+    // 全局唯一虚拟控制器，作为所有驱动映射的终点
+    inline static uint8_t sequence         = 0x80;
+    inline static virtual_rc_t shared_v_rc = {};
     // 构造函数接收引用
     rc_drv_t(uart_drv_t &uart, const char *task_name, uint8_t priority_bit,
              uint16_t frame_len);
@@ -65,7 +67,6 @@ class rc_drv_t
                      BaseType_t &xHigherPriorityTaskWoken);
 
     rc_task_t _task; // 包含一个任务实体 (Has-a)
-    rw_lock *_lock{};
     MessageBufferHandle_t _rc_msg_buffer{};
     uart_drv_t &_rc_uart;
     uint8_t _priority_bit{};

@@ -1,6 +1,8 @@
 #include "pyro_module_base.h"
 #include "pyro_mutex.h"
-#include "pyro_rc_hub.h"
+#include "pyro_dr16_rc_drv.h"
+#include "pyro_vt03_rc_drv.h"
+#include "pyro_rc_base_drv.h"
 #include "pyro_screw_gimbal.h"
 #include "pyro_com_cantx.h"
 #include "pyro_dji_motor_drv.h"
@@ -9,16 +11,19 @@
 
 using namespace pyro;
 
-static pyro::screw_gimbal_t *screw_gimbal_ptr             = nullptr;
-static pyro::screw_gimbal_cmd_t *screw_gimbal_cmd_ptr     = nullptr;
-static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
-static pyro::vt03_drv_t::vt03_ctrl_t const *vt03_ctrl_ptr = nullptr;
-static pyro::screw_gimbal_deps_t *screw_gimbal_deps       = nullptr;
+// 定义任务通知的位掩码 (Event Bits)
+constexpr uint32_t EVENT_BIT_TRACK_TOGGLE = (1 << 0);
+constexpr uint32_t EVENT_BIT_LEG_TOGGLE   = (1 << 1);
 
-static void gimbal_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl);
-static void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl);
-static void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl);
-static void chassis_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl);
+static TaskHandle_t gimbal_task_handle                = nullptr;
+static pyro::screw_gimbal_t *screw_gimbal_ptr         = nullptr;
+static pyro::screw_gimbal_cmd_t *screw_gimbal_cmd_ptr = nullptr;
+static pyro::screw_gimbal_deps_t *screw_gimbal_deps   = nullptr;
+
+static void gimbal_dr162cmd();
+static void chassis_dr162cmd();
+static void gimbal_vt032cmd();
+static void chassis_vt032cmd(uint32_t notify_val);
 static void deps_init();
 
 extern StateBytes state_bytes;
@@ -29,15 +34,19 @@ extern "C"
     {
         while (true)
         {
-            if (rc_hub_t::get_instance(rc_hub_t::VT03)->check_online())
+            uint32_t notify_val = 0;
+            // 非阻塞提取任务通知（超时为0），并在退出时清空所有位
+            xTaskNotifyWait(0x00, 0xFFFFFFFF, &notify_val, 0);
+
+            if (vt03_drv_t::instance().check_online())
             {
-                chassis_vt032cmd(vt03_ctrl_ptr);
-                gimbal_vt032cmd(vt03_ctrl_ptr);
+                chassis_vt032cmd(notify_val);
+                gimbal_vt032cmd();
             }
-            else if (rc_hub_t::get_instance(rc_hub_t::DR16)->check_online())
+            else if (dr16_drv_t::instance().check_online())
             {
-                chassis_dr162cmd(dr16_ctrl_ptr);
-                gimbal_dr162cmd(dr16_ctrl_ptr);
+                chassis_dr162cmd(); // DR16 底盘不依赖边沿事件，基于连续状态
+                gimbal_dr162cmd();
             }
             screw_gimbal_ptr->set_command(*screw_gimbal_cmd_ptr);
             vTaskDelay(1);
@@ -48,44 +57,45 @@ extern "C"
     {
         screw_gimbal_cmd_ptr = new pyro::screw_gimbal_cmd_t();
         screw_gimbal_ptr     = pyro::screw_gimbal_t::instance();
-        dr16_ctrl_ptr = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
-            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
-        vt03_ctrl_ptr = static_cast<pyro::vt03_drv_t::vt03_ctrl_t const *>(
-            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->read());
+
         deps_init();
         screw_gimbal_ptr->configure(*screw_gimbal_deps);
         screw_gimbal_ptr->start();
+
+        // 1. 创建任务并获取句柄
         xTaskCreate(hero_gimbal_thread, "start_app_thread", 128, nullptr,
-                    configMAX_PRIORITIES - 1, nullptr);
+                    configMAX_PRIORITIES - 1, &gimbal_task_handle);
+
+        // 2. 将事件订阅到泛型 Broker 中
+        auto &vrc = pyro::rc_drv_t::read();
+        pyro::btn_broker::subscribe(&vrc.buttons.pause, pyro::btn_event_t::PRESS_DOWN, gimbal_task_handle, EVENT_BIT_TRACK_TOGGLE);
+        pyro::btn_broker::subscribe(&vrc.buttons.fn_r, pyro::btn_event_t::PRESS_DOWN, gimbal_task_handle, EVENT_BIT_LEG_TOGGLE);
+
         vTaskDelete(nullptr);
     }
 }
 
-void gimbal_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
+void gimbal_dr162cmd()
 {
-    pyro::read_scope_lock lock(
-        pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
+    pyro::read_scope_lock lock(rc_drv_t::get_lock());
+    auto &vrc = pyro::rc_drv_t::read();
 
-    if (pyro::dr16_drv_t::sw_state_t::SW_MID != rc_ctrl->rc.s_r.state)
+    if (pyro::sw_pos_t::MID != vrc.switches.right.current_pos)
     {
-        screw_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
+        screw_gimbal_cmd_ptr->mode              = pyro::cmd_base_t::mode_t::PASSIVE;
         screw_gimbal_cmd_ptr->pitch_delta_angle = 0;
         screw_gimbal_cmd_ptr->yaw_delta_angle   = 0;
         return;
     }
     screw_gimbal_cmd_ptr->mode              = pyro::cmd_base_t::mode_t::ACTIVE;
-    // screw_gimbal_cmd_ptr->pitch_delta_angle = 0;
-    // screw_gimbal_cmd_ptr->yaw_delta_angle   = 0;
-    screw_gimbal_cmd_ptr->pitch_delta_angle = -rc_ctrl->rc.ch_ry * 0.0025f;
-    screw_gimbal_cmd_ptr->yaw_delta_angle   = -rc_ctrl->rc.ch_rx * 0.0035f;
+    screw_gimbal_cmd_ptr->pitch_delta_angle = -vrc.axes.ry * 0.0025f;
+    screw_gimbal_cmd_ptr->yaw_delta_angle   = -vrc.axes.rx * 0.0035f;
 }
 
-void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
+void chassis_dr162cmd()
 {
-    pyro::read_scope_lock lock(
-        pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->get_lock());
-    static auto *p_ctrl =
-        static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(rc_ctrl);
+    pyro::read_scope_lock lock(rc_drv_t::get_lock());
+    auto &vrc = pyro::rc_drv_t::read();
 
     static int8_t vx        = 0;
     static int8_t vy        = 0;
@@ -94,11 +104,9 @@ void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
     static bool track_en    = false;
     static bool leg_retract = false;
 
-
-
     pyro::can_tx_drv_t::clear(0x101);
 
-    if (pyro::dr16_drv_t::sw_state_t::SW_DOWN == p_ctrl->rc.s_r.state)
+    if (pyro::sw_pos_t::DOWN == vrc.switches.right.current_pos)
     {
         vx          = 0;
         vy          = 0;
@@ -117,14 +125,16 @@ void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
                        pyro::can_hub_t::which_can::can1));
         return;
     }
-    vx     = static_cast<int8_t>(p_ctrl->rc.ch_ly * 127);
-    vy     = static_cast<int8_t>(-p_ctrl->rc.ch_lx * 127);
+
+    vx     = static_cast<int8_t>(vrc.axes.ly * 127);
+    vy     = static_cast<int8_t>(-vrc.axes.lx * 127);
     wz     = 0;
     active = true;
-    if (pyro::dr16_drv_t::sw_state_t::SW_DOWN != p_ctrl->rc.s_l.state)
+
+    if (pyro::sw_pos_t::DOWN != vrc.switches.left.current_pos)
     {
         track_en = true;
-        if (pyro::dr16_drv_t::sw_state_t::SW_MID == p_ctrl->rc.s_l.state)
+        if (pyro::sw_pos_t::MID == vrc.switches.left.current_pos)
         {
             leg_retract = true;
         }
@@ -137,6 +147,7 @@ void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
     {
         track_en = true;
     }
+
     pyro::can_tx_drv_t::add_data(0x101, 8, vx);
     pyro::can_tx_drv_t::add_data(0x101, 8, vy);
     pyro::can_tx_drv_t::add_data(0x101, 8, wz);
@@ -148,19 +159,22 @@ void chassis_dr162cmd(dr16_drv_t::dr16_ctrl_t const *rc_ctrl)
                                  pyro::can_hub_t::which_can::can1));
 }
 
-void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
+void gimbal_vt032cmd()
 {
-    pyro::read_scope_lock lock(
-        pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->get_lock());
-    if (vt03_drv_t::gear_state_t::GEAR_LEFT == rc_ctrl->rc.gear.state)
+    pyro::read_scope_lock lock(rc_drv_t::get_lock());
+    auto &vrc = pyro::rc_drv_t::read();
+
+    if (pyro::sw_pos_t::UP == vrc.switches.gear.current_pos)
     {
-        screw_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::PASSIVE;
+        screw_gimbal_cmd_ptr->mode              = pyro::cmd_base_t::mode_t::PASSIVE;
         screw_gimbal_cmd_ptr->pitch_delta_angle = 0;
         screw_gimbal_cmd_ptr->yaw_delta_angle   = 0;
         return;
     }
+
     screw_gimbal_cmd_ptr->mode = pyro::cmd_base_t::mode_t::ACTIVE;
-    if (vt03_drv_t::gear_state_t::GEAR_RIGHT == rc_ctrl->rc.gear.state)
+
+    if (pyro::sw_pos_t::DOWN == vrc.switches.gear.current_pos)
     {
         screw_gimbal_cmd_ptr->auto_aim = true;
     }
@@ -168,6 +182,7 @@ void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
     {
         screw_gimbal_cmd_ptr->auto_aim = false;
     }
+
     if (screw_gimbal_cmd_ptr->auto_aim)
     {
         screw_gimbal_cmd_ptr->target_pitch = state_bytes.input_data.shoot_pitch;
@@ -175,17 +190,20 @@ void gimbal_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
     }
     else
     {
+        // 补偿归一化乘积
+        float raw_mouse_y = vrc.mouse_axes.y * 32768.0f;
+        float raw_mouse_x = vrc.mouse_axes.x * 32768.0f;
         screw_gimbal_cmd_ptr->pitch_delta_angle =
-            -rc_ctrl->rc.ch_ry * 0.0025f - rc_ctrl->mouse.y * 0.25f;
+            -vrc.axes.ry * 0.0025f - raw_mouse_y * 0.25f;
         screw_gimbal_cmd_ptr->yaw_delta_angle =
-            -rc_ctrl->rc.ch_rx * 0.0025f - rc_ctrl->mouse.x * 0.6f;
+            -vrc.axes.rx * 0.0025f - raw_mouse_x * 0.6f;
     }
 }
 
-void chassis_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
+void chassis_vt032cmd(uint32_t notify_val)
 {
-    pyro::read_scope_lock lock(
-        pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->get_lock());
+    pyro::read_scope_lock lock(rc_drv_t::get_lock());
+    auto &vrc = pyro::rc_drv_t::read();
 
     static int8_t vx        = 0;
     static int8_t vy        = 0;
@@ -196,7 +214,7 @@ void chassis_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
 
     pyro::can_tx_drv_t::clear(0x101);
 
-    if (pyro::vt03_drv_t::gear_state_t::GEAR_LEFT == rc_ctrl->rc.gear.state)
+    if (pyro::sw_pos_t::UP == vrc.switches.gear.current_pos)
     {
         vx          = 0;
         vy          = 0;
@@ -215,36 +233,34 @@ void chassis_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
                        pyro::can_hub_t::which_can::can1));
         return;
     }
-    vx     = static_cast<int8_t>(rc_ctrl->key.w.state   ? 127
-                                 : rc_ctrl->key.s.state ? -127
-                                                        : rc_ctrl->rc.ch_ly * 127);
-    vy     = static_cast<int8_t>(rc_ctrl->key.a.state   ? 127
-                                 : rc_ctrl->key.d.state ? -127
-                                                        : -rc_ctrl->rc.ch_lx * 127);
+
+    vx     = static_cast<int8_t>(vrc.keys.w.current_level   ? 127
+                                 : vrc.keys.s.current_level ? -127
+                                                            : vrc.axes.ly * 127);
+    vy     = static_cast<int8_t>(vrc.keys.a.current_level   ? 127
+                                 : vrc.keys.d.current_level ? -127
+                                                            : -vrc.axes.lx * 127);
     wz     = 0;
     active = true;
-    static float pause_using_time = 0;
-    if (pyro::vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->rc.pause.ctrl &&
-        rc_ctrl->rc.pause.change_time != pause_using_time)
+
+    // 根据任务通知位判断边沿事件
+    if (notify_val & EVENT_BIT_TRACK_TOGGLE)
     {
         track_en = !track_en;
         if (!track_en)
         {
             leg_retract = false;
         }
-        pause_using_time = rc_ctrl->rc.pause.change_time;
     }
 
-    static float fn_r_using_time = 0;
-    if (pyro::vt03_drv_t::key_ctrl_t::KEY_PRESSED == rc_ctrl->rc.pause.ctrl &&
-        rc_ctrl->rc.fn_r.change_time != fn_r_using_time)
+    if (notify_val & EVENT_BIT_LEG_TOGGLE)
     {
-        fn_r_using_time = rc_ctrl->rc.fn_r.change_time;
         if (track_en)
         {
             leg_retract = !leg_retract;
         }
     }
+
     pyro::can_tx_drv_t::add_data(0x101, 8, vx);
     pyro::can_tx_drv_t::add_data(0x101, 8, vy);
     pyro::can_tx_drv_t::add_data(0x101, 8, wz);
@@ -255,7 +271,6 @@ void chassis_vt032cmd(vt03_drv_t::vt03_ctrl_t const *rc_ctrl)
                              pyro::can_hub_t::get_instance()->hub_get_can_obj(
                                  pyro::can_hub_t::which_can::can1));
 }
-
 
 void deps_init()
 {
@@ -268,10 +283,8 @@ void deps_init()
         new dji_m3508_motor_drv_t(dji_motor_tx_frame_t::id_5, can_hub_t::can3);
 
     // Yaw: 使用 DJI GM6020 (ID 2, CAN1)
-
     screw_gimbal_deps->motor_deps.yaw = new dji_gm_6020_motor_drv_t(
         dji_motor_tx_frame_t::id_3, can_hub_t::can1);
-
 
     // 3. 初始化串级 PID
     screw_gimbal_deps->pid_deps.pitch_pos =
@@ -283,9 +296,9 @@ void deps_init()
 
     // Yaw 轴 (DJI GM6020，输出为电流值/电压值，通常量级较大，如 +/- 30000)
     screw_gimbal_deps->pid_deps.yaw_pos =
-        new pid_t(12.2f, 0.1f, 0.02f, 0.8f, 10.0f,40, 10,
+        new pid_t(12.2f, 0.1f, 0.02f, 0.8f, 10.0f, 40, 10,
                   4);
     screw_gimbal_deps->pid_deps.yaw_spd =
-        new pid_t(4.5f, 0.0003f, 0.0001f, 0.2f, 3.0f,40, 10,
+        new pid_t(4.5f, 0.0003f, 0.0001f, 0.2f, 3.0f, 40, 10,
                   4);
 }
