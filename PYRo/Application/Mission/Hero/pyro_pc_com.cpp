@@ -41,17 +41,17 @@ extern "C"
             // operate_bytes.output_data.shoot_delay = 0.0f;
             operate_bytes.frame_tailer.end = '\n';
             append_crc16_check_sum((uint8_t*)&operate_bytes,sizeof(OperateBytes) - 1);
-            uart_drv_t::get_instance(uart_drv_t::which_uart::uart7)->write((uint8_t*)&operate_bytes, sizeof(OperateBytes));
+            // uart_drv_t::get_instance(uart_drv_t::which_uart::uart7)->write((uint8_t*)&operate_bytes, sizeof(OperateBytes));
             vTaskDelay(1);
         }
     }
 
     void hero_pc_com_init(void *argument)
     {
-        uart_comm_ptr =
-            new uart_comm_t(uart_drv_t::which_uart::uart7, 0x10, 256);
-        uint8_t sof = 0xA5;
-        uart_comm_ptr->register_msg_type(sizeof(StateBytes), &sof, 1);
+        // uart_comm_ptr =
+        //     new uart_comm_t(uart_drv_t::which_uart::uart7, 0x10, 256);
+        // uint8_t sof = 0xA5;
+        // uart_comm_ptr->register_msg_type(sizeof(StateBytes), &sof, 1);
 
         xTaskCreate(hero_pc_com_thread, "start_hero_pc_com_thread", 128,
 

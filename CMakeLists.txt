@@ -158,10 +158,10 @@ if (ROBOT_ID EQUAL HERO_ID)
             PYRo/Module/Chassis/Mecanum/fsm/pyro_mec_passive_state.cpp
             PYRo/Module/Chassis/Mecanum/fsm/pyro_mec_active_state.cpp
 
-            PYRo/Application/Mission/Hero/pyro_chassis_app.cpp
+#            PYRo/Application/Mission/Hero/pyro_chassis_app.cpp
             PYRo/Application/Mission/Hero/pyro_gimbal_app.cpp
             PYRo/Application/Mission/Hero/pyro_booster_app.cpp
-            PYRo/Application/Mission/Hero/pyro_ui_app.cpp
+#            PYRo/Application/Mission/Hero/pyro_ui_app.cpp
             PYRo/Application/Mission/Hero/pyro_pc_com.cpp
     )
     target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC

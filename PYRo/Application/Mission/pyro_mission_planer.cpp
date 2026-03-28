@@ -9,7 +9,7 @@ extern "C"
 #if BOARD_ID == GIMBAL_ID
     extern void hero_gimbal_init(void *argument);
     extern void hero_booster_init(void *argument);
-    extern void hero_pc_com_init(void *argument);
+    // extern void hero_pc_com_init(void *argument);
 #elif BOARD_ID == CHASSIS_ID
     extern void hero_chassis_init(void *argument);
     extern void hero_ui_init(void *argument);
@@ -36,8 +36,8 @@ extern "C"
                     configMAX_PRIORITIES - 1, nullptr);
         xTaskCreate(hero_booster_init, "pyro_booster_init", 512, nullptr,
                     configMAX_PRIORITIES - 1, nullptr);
-        xTaskCreate(hero_pc_com_init, "pyro_pc_com_init", 512, nullptr,
-                    configMAX_PRIORITIES - 3, nullptr);
+        // xTaskCreate(hero_pc_com_init, "pyro_pc_com_init", 512, nullptr,
+        //             configMAX_PRIORITIES - 3, nullptr);
 #elif BOARD_ID == CHASSIS_ID
         xTaskCreate(hero_chassis_init, "pyro_chassis_init", 512, nullptr,
                     configMAX_PRIORITIES - 1, nullptr);
