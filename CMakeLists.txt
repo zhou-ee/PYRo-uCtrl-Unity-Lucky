@@ -105,15 +105,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Component/Supercap/pyro_supercap_drv.cpp
 #        PYRo/Component/Measure/pyro_ms53l0m_drv.cpp
 
-        # --- Application ---
-        ## --- Demo ---
-        PYRo/Application/Demo/demo_task.cpp
-#        PYRo/Application/Demo/pyro_control_demo.cpp
-#        PYRo/Application/Demo/pyro_controller_demo.cpp
-        PYRo/Application/Demo/pyro_motor_demo.cpp
-        PYRo/Application/Demo/pyro_rc_demo.cpp
-        PYRo/Application/Demo/pyro_shoot_demo.cpp
-
         ## --- Mission ---
         PYRo/Application/Mission/pyro_init_thread.cpp
         PYRo/Application/Mission/pyro_mission_planer.cpp
