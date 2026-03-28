@@ -1,7 +1,6 @@
 #include "pyro_module_base.h"
 #include "pyro_mec_chassis.h"
 #include "pyro_mutex.h"
-#include "pyro_rc_hub.h"
 #include "pyro_com_canrx.h"
 #include "pyro_com_cantx.h"
 #include "pyro_referee.h"
@@ -9,8 +8,8 @@
 
 static pyro::mec_chassis_t *mec_chassis_ptr               = nullptr;
 static pyro::mec_cmd_t *mec_cmd_ptr                       = nullptr;
-static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
-static void chassis_rxcmd(void const *rc_ctrl);
+// static pyro::dr16_drv_t::dr16_ctrl_t const *dr16_ctrl_ptr = nullptr;
+static void chassis_rxcmd();
 static void shoot_tx();
 
 
@@ -22,7 +21,7 @@ extern "C"
         while (true)
         {
             shoot_tx();
-            chassis_rxcmd(dr16_ctrl_ptr);
+            chassis_rxcmd();
             mec_chassis_ptr->set_command(*mec_cmd_ptr);
             vTaskDelay(1);
         }
@@ -33,8 +32,8 @@ extern "C"
         pyro::can_rx_drv_t::subscribe(pyro::can_hub_t::which_can::can2, 0x101);
         mec_cmd_ptr     = new pyro::mec_cmd_t();
         mec_chassis_ptr = pyro::mec_chassis_t::instance();
-        dr16_ctrl_ptr   = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
-            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
+        // dr16_ctrl_ptr   = static_cast<pyro::dr16_drv_t::dr16_ctrl_t const *>(
+        //     pyro::rc_hub_t::get_instance(pyro::rc_hub_t::DR16)->read());
         mec_chassis_ptr->start();
         xTaskCreate(hero_chassis_thread, "start_app_thread", 128, nullptr,
                     configMAX_PRIORITIES - 1, nullptr);
@@ -67,7 +66,7 @@ void shoot_tx()
 }
 
 
-void chassis_rxcmd(void const *rc_ctrl)
+void chassis_rxcmd()
 {
     std::array<uint8_t, 8> raw_data{};
     pyro::can_rx_drv_t::get_data(pyro::can_hub_t::which_can::can2, 0x101,

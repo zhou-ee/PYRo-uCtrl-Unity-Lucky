@@ -4,12 +4,10 @@
 #include "pyro_referee.h"
 #include "pyro_ui_drv.h"
 #include "pyro_quad_booster.h"
-#include "pyro_rc_hub.h"
 #include "struct.h"
 
 using namespace pyro;
 
-static pyro::vt03_drv_t::vt03_ctrl_t const *vt03_ctrl_ptr = nullptr;
 static pyro::referee_drv_t *referee_ptr                   = nullptr;
 static pyro::ui_drv_t *ui_ptr                             = nullptr;
 
@@ -176,8 +174,6 @@ extern "C"
     void hero_ui_init(void *argument)
     {
         pyro::can_rx_drv_t::subscribe(can_hub_t::can2, 0x110);
-        vt03_ctrl_ptr = static_cast<pyro::vt03_drv_t::vt03_ctrl_t const *>(
-            pyro::rc_hub_t::get_instance(pyro::rc_hub_t::VT03)->read());
         referee_ptr = pyro::referee_drv_t::get_instance();
         ui_ptr      = new pyro::ui_drv_t(referee_ptr);
 

@@ -1,3 +1,5 @@
+
+
 /**
  * @file pyro_referee.cpp
  * @brief RoboMaster Referee System Driver (Modern C++ Style Implementation)
@@ -11,7 +13,7 @@
 #include "pyro_core_config.h"
 #include "pyro_core_dma_heap.h"
 #include <cstring> // for memcpy, strlen
-
+#ifdef REFEREE_UART
 namespace pyro
 {
 
@@ -451,3 +453,5 @@ void referee_drv_t::solve_data(const uint8_t *frame)
 }
 
 } // namespace pyro
+
+#endif

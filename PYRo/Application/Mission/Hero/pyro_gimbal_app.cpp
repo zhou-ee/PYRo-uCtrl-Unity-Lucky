@@ -208,10 +208,10 @@ void chassis_vt032cmd(uint32_t notify_val)
 
     vx     = static_cast<int8_t>(vrc.keys.w.current_level   ? 127
                                  : vrc.keys.s.current_level ? -127
-                                                            : vrc.axes.ly * 127);
+                                                            : vrc.axes.lx * 127);
     vy     = static_cast<int8_t>(vrc.keys.a.current_level   ? 127
                                  : vrc.keys.d.current_level ? -127
-                                                            : -vrc.axes.lx * 127);
+                                                            : -vrc.axes.ly * 127);
 
     static bool gyroscope_en = false;
     if (notify_val & EVENT_BIT_GYRO_TOGGLE)

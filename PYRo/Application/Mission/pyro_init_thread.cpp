@@ -45,8 +45,8 @@ extern "C"
 #ifdef VT03_UART
         VT03_UART.reset(921600, UART_WORDLENGTH_8B, UART_STOPBITS_1,
                         UART_PARITY_NONE);
-        dr16_drv_t::instance().start();
-        dr16_drv_t::instance().enable();
+        vt03_drv_t::instance().start();
+        vt03_drv_t::instance().enable();
 #endif
 
 #ifdef REFEREE_UART

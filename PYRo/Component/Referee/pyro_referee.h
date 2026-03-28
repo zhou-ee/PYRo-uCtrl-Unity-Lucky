@@ -27,8 +27,8 @@ class referee_drv_t
     static constexpr size_t MAX_TX_FRAME_LEN = FRAME_MAX_SIZE;
 
     static referee_drv_t *get_instance();
-
     // 禁止拷贝
+
     referee_drv_t(const referee_drv_t &)            = delete;
     referee_drv_t &operator=(const referee_drv_t &) = delete;
 
