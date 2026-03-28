@@ -69,7 +69,7 @@ class rud_chassis_t final
     ~rud_chassis_t() override = default;
 
     // --- 基类接口 ---
-    void _init() override;
+    status_t _init() override;
     void _update_feedback() override;
     void _fsm_execute() override;
 
@@ -126,6 +126,7 @@ class rud_chassis_t final
     rud_ctx_t _ctx;
     debug_ctx_t debug_data;
 
+    // --- FSM 状态定义 ---
     using owner = rud_chassis_t;
 
     struct state_passive_t : public state_t<owner>

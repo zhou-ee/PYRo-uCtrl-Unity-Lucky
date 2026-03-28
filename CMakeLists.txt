@@ -72,6 +72,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Core/Memory/pyro_core_dma_heap.c
         PYRo/Core/Memory/pyro_core_mem.cpp
         PYRo/Core/Task/pyro_task.cpp
+        PYRo/Core/DataBoard/pyro_databoard.cpp
 
         # --- Peripheral ---
         PYRo/Peripheral/CAN/pyro_can_drv.cpp
@@ -83,6 +84,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Algorithm/Kinematics/pyro_kin_hybrid.cpp
         PYRo/Algorithm/Kinematics/pyro_kin_mec.cpp
         PYRo/Algorithm/Kinematics/pyro_kin_rudder.cpp
+        PYRo/Algorithm/Kinematics/pyro_kin_wl.cpp
         PYRo/Algorithm/OLS/pyro_algo_ols.cpp
         PYRo/Algorithm/PID/pyro_algo_pid.cpp
         PYRo/Algorithm/EKF/QuaternionEKF.cpp
@@ -103,7 +105,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         PYRo/Component/Referee/pyro_referee.cpp
         PYRo/Component/INS/pyro_ins.cpp
         PYRo/Component/Supercap/pyro_supercap_drv.cpp
-#        PYRo/Component/Measure/pyro_ms53l0m_drv.cpp
+        PYRo/Component/Measure/pyro_ms53l0m_drv.cpp
+
 
         ## --- Mission ---
         PYRo/Application/Mission/pyro_init_thread.cpp
@@ -212,6 +215,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Core/Lock
         PYRo/Core/Memory
         PYRo/Core/Task
+        PYRo/Core/DataBoard
 
         # --- Peripheral ---
         PYRo/Peripheral/CAN
@@ -220,7 +224,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 
         # --- Device ---
         PYRo/Device/BMI088
-#        PYRo/Device/VL53
 
         # --- Algorithm ---
         PYRo/Algorithm/Common
@@ -242,12 +245,9 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
         PYRo/Component/Referee/UI
         PYRo/Component/Shoot
         PYRo/Component/Supercap
-#        PYRo/Component/Measure
 
         # --- Module ---
         PYRo/Module
-#        PYRo/Module/Chassis/Rudder
-#        PYRo/Module/Yaw
 
         # --- Communication ---
         PYRo/Communication
